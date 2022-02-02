@@ -1,0 +1,4 @@
+include ':game'
+include ':play_cli'
+include ':app'
+rootProject.name = "Code Word"

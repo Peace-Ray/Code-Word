@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/dimens.xml" value="0.1693840579710145" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_key_char.xml" value="0.1693840579710145" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_char.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_delete.xml" value="0.15677083333333333" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_enter.xml" value="0.15677083333333333" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_key_char.xml" value="0.14356884057971014" />
+        <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_key_delete.xml" value="0.1" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" project-jdk-name="JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>

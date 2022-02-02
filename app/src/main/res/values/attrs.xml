@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CodeKey">
+        <attr name="keyCodeCharacter" format="string"/>
+        <attr name="keyCodeLabel" format="string"/>
+        <attr name="keyCodeType" format="enum">
+            <enum name="character" value="0"/>
+            <enum name="enter" value="1"/>
+            <enum name="delete" value="2"/>
+            <enum name="none" value="3"/>
+        </attr>
+
+        <attr name="keyTextViewId" format="integer"/>
+        <attr name="keyImageViewId" format="integer"/>
+    </declare-styleable>
+</resources>
