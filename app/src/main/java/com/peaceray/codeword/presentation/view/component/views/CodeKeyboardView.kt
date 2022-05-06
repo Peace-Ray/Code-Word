@@ -1,22 +1,28 @@
 package com.peaceray.codeword.presentation.view.component.views
 
 import android.content.Context
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.AttrRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
-import com.peaceray.codeword.R
-import com.peaceray.codeword.game.data.Constraint
+import androidx.lifecycle.LifecycleOwner
 import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
+import com.peaceray.codeword.presentation.datamodel.ColorSwatch
+import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
+import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
+import javax.inject.Inject
 
 /**
  * Not a real Keyboard; a way to represent code character input buttons. Extends from
  * ConstraintLayout and (hopefully) supports any arbitrary layout as a result. Traverses its
  * inflated structure, and those of any added children, looking for CodeKeyViews which it
  */
+@AndroidEntryPoint
 class CodeKeyboardView: ConstraintLayout {
 
     //region Listeners
@@ -61,6 +67,17 @@ class CodeKeyboardView: ConstraintLayout {
 
         // Traverse the hierarchy looking for Keys.
         traverse(this)
+
+        // Set up automatic color changes
+        val context = context
+        if (context is LifecycleOwner) {
+            colorSwatchManager.colorSwatchLiveData.observe(context) { swatch ->
+                updateKeyColors(swatch)
+            }
+        }
+
+        Timber.v("onFinishInflate")
+        updateKeyColors(colorSwatchManager.colorSwatch)
     }
 
     // TODO listen for view hierarchy changes and re-traverse
@@ -68,39 +85,58 @@ class CodeKeyboardView: ConstraintLayout {
     //endregion
 
 
-    //region Keys
+    //region Operation
     //---------------------------------------------------------------------------------------------
-    private val characterKeys = mutableMapOf<Char, CodeKeyView>()
+    @Inject
+    lateinit var colorSwatchManager: ColorSwatchManager
+    private val keys = mutableListOf<CodeKeyView>()
+    private var characterEvaluations: Map<Char, CharacterEvaluation> = mapOf()
 
     private fun traverse(parent: View) {
         if (parent == this) {
-            characterKeys.clear()
+            keys.clear()
         }
 
         // Assumption: Keys do not contain each other.
         if (parent is CodeKeyView) {
             parent.setOnClickListener(onKeyClickListener)
-            if (parent.type == CodeKeyView.KeyType.CHARACTER) {
-                characterKeys[parent.character!!] = parent
-            }
+            keys.add(parent)
         } else if (parent is ViewGroup) {
             parent.children.forEach { traverse(it) }
         }
     }
 
     fun setCharacterEvaluations(evaluations: Map<Char, CharacterEvaluation>) {
-        evaluations.forEach { (c, evaluation) ->
-            Timber.v("applying character evaluations for $c: ${evaluation.markup}")
-            // TODO apply custom color scheme
-            characterKeys[c]?.setBackgroundColor(when(evaluation.markup) {
-                Constraint.MarkupType.EXACT -> resources.getColor(R.color.green_500)
-                Constraint.MarkupType.INCLUDED -> resources.getColor(R.color.amber_300)
-                Constraint.MarkupType.NO -> resources.getColor(R.color.black)
-                else -> resources.getColor(R.color.gray_500)
-            })
+        characterEvaluations = evaluations
+        updateKeyColors(colorSwatchManager.colorSwatch)
+    }
 
-            // TODO animate any change?
+    private fun updateKeyColors(swatch: ColorSwatch) {
+        Timber.v("updateKeyColors")
+        keys.forEach { view ->
+            val markup = characterEvaluations[view.character]?.markup
+            if (view.backgroundView == null) {
+                view.setBackgroundColor(swatch.evaluation.color(markup))
+            } else {
+                val drawable = view.backgroundView?.background
+                drawable?.colorFilter = PorterDuffColorFilter(
+                    swatch.evaluation.color(markup),
+                    PorterDuff.Mode.MULTIPLY
+                )
+                view.backgroundView?.background = drawable
+            }
+            view.textView?.setTextColor(swatch.evaluation.onColor(markup))
         }
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Property Overrides
+    //---------------------------------------------------------------------------------------------
+    override fun setEnabled(enabled: Boolean) {
+        super.setEnabled(enabled)
+
+        keys.forEach { it.isEnabled = enabled }
     }
     //---------------------------------------------------------------------------------------------
     //endregion

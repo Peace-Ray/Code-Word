@@ -15,9 +15,9 @@ import com.peaceray.codeword.game.data.Constraint
  * @property isEmpty Is this ViewDataGuess an empty field where a guess may go?
  * @property isGuess Is this ViewDataGuess a fully-entered (but not evaluated) guess?
  * @property isEvaluation Is this ViewDataGuess an evaluation (i.e. does it have a [constraint])?
- * @property letters A List of [ViewDataGuessLetter]s including any evaluation markup. Limited to
+ * @property letters A List of [GuessLetter]s including any evaluation markup. Limited to
  * the length of the [candidate].
- * @property lettersPadded A list of [ViewDataGuessLetter]s, padding to [length] if necessary.
+ * @property lettersPadded A list of [GuessLetter]s, padding to [length] if necessary.
  * Padding letters will be the space character ' '.
  */
 data class Guess private constructor(val length: Int, val candidate: String, val constraint: Constraint?) {
@@ -33,13 +33,13 @@ data class Guess private constructor(val length: Int, val candidate: String, val
     val isEvaluation = constraint != null
 
     val letters by lazy { List(if (length < candidate.length) length else candidate.length) {
-        ViewDataGuessLetter(candidate[it], constraint?.markup?.get(it))
+        GuessLetter(it, this, candidate[it], constraint?.markup?.get(it))
     } }
 
     val lettersPadded by lazy { List(length) {
         val letter = if (it < candidate.length) candidate[it] else ' '
         val markup = constraint?.markup?.get(it)
-        ViewDataGuessLetter(letter, markup)
+        GuessLetter(it, this, letter, markup)
     } }
 
     companion object {
@@ -53,4 +53,24 @@ data class Guess private constructor(val length: Int, val candidate: String, val
  * @property character The guess character.
  * @property markup The markup; may be empty.
  */
-data class ViewDataGuessLetter(val character: Char, val markup: Constraint.MarkupType? = null)
+data class GuessLetter(val position: Int, val guess: Guess, val character: Char = ' ', val markup: Constraint.MarkupType? = null) {
+    /**
+     * Convenience constructor for stand-alone guess letters, not connected to a larger guess,
+     * e.g. when displaying a legend for markup UI.
+     */
+    constructor(character: Char, markup: Constraint.MarkupType? = null): this(
+        0,
+        Guess(1, "$character"),
+        character,
+        markup
+    )
+
+    val isPlaceholder = character == ' '
+    val isGuess = character != ' ' && markup == null
+    val isEvaluation = markup != null
+
+    companion object {
+        val placeholder = GuessLetter(-1, Guess.placeholder)
+        fun placeholders(length: Int) = Guess(length).lettersPadded
+    }
+}

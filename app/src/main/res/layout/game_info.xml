@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    >
+
+    <TextView
+        android:id="@+id/seed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+    <TextView
+        android:id="@+id/gameInfoRounds"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+    <TextView
+        android:id="@+id/gameInfoGuess"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/keyboardContainer"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constrainedWidth="true"
+        app:layout_constrainedHeight="true"
+        android:overScrollMode="never"
+        android:padding="@dimen/guess_container_margin"
+        android:clipToPadding="false"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/legendContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+
+        <FrameLayout
+            android:id="@+id/legendCorrectLetter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/legendCorrectText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="@id/legendCorrectLetter"
+            app:layout_constraintBottom_toBottomOf="@id/legendCorrectLetter"
+            app:layout_constraintStart_toEndOf="@id/legendCorrectLetter"
+            android:text="@string/game_info_legend_correct"
+            />
+
+        <FrameLayout
+            android:id="@+id/legendPresentLetter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/legendCorrectLetter"
+            app:layout_constraintStart_toStartOf="parent"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/legendPresentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="@id/legendPresentLetter"
+            app:layout_constraintBottom_toBottomOf="@id/legendPresentLetter"
+            app:layout_constraintStart_toEndOf="@id/legendPresentLetter"
+            android:text="@string/game_info_legend_present"
+            />
+
+        <FrameLayout
+            android:id="@+id/legendNoLetter1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/legendPresentLetter"
+            app:layout_constraintStart_toStartOf="parent"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/legendNoLetter2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/legendPresentLetter"
+            app:layout_constraintStart_toEndOf="@id/legendNoLetter1"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/legendNoText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="@id/legendNoLetter2"
+            app:layout_constraintBottom_toBottomOf="@id/legendNoLetter2"
+            app:layout_constraintStart_toEndOf="@id/legendNoLetter2"
+            android:text="@string/game_info_legend_no"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <CheckBox
+        android:id="@+id/hardModeCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/game_setup_hard_mode_prompt"
+        />
+
+    <CheckBox
+        android:id="@+id/limitedRoundsCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/game_setup_limited_rounds_prompt"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/roundsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+
+        <TextView
+            android:id="@+id/roundsPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:text="@string/game_setup_rounds_prompt"
+            />
+
+        <TextView
+            android:id="@+id/roundsValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/roundsPrompt"
+            />
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/roundsBarrier"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="roundsPrompt,roundsValue"
+            />
+
+        <androidx.appcompat.widget.AppCompatSeekBar
+            android:id="@+id/roundsSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/roundsBarrier"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

@@ -4,6 +4,7 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
 import java.io.File
+import kotlin.random.Random
 
 /**
  * A [CandidateGenerationModule] based on an explicit vocabulary list, e.g. English words of
@@ -20,8 +21,9 @@ class VocabularyFileGenerator(
     val guessPolicy: ConstraintPolicy,
     val solutionPolicy: ConstraintPolicy,
     guessFilenames: List<String>? = null,
-    solutionFilenames: List<String>? = null
-): MonotonicCachingGenerationModule() {
+    solutionFilenames: List<String>? = null,
+    seed: Long? = null
+): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
 
     constructor(
         filename: String,

@@ -11,6 +11,24 @@
         <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_enter.xml" value="0.15677083333333333" />
         <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_key_char.xml" value="0.14356884057971014" />
         <entry key="..\:/Users/Jake/Development/Android/WordGame/app/src/main/res/layout/keyboard_qwerty_key_delete.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/drawable/background_keyboard_key.xml" value="0.1055" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/activity_game_setup.xml" value="0.17239583333333333" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/activity_settings.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/cell_letter.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/cell_letter_small.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/fragment_game.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/fragment_game_setup.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/game_info.xml" value="0.13958333333333334" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/game_setup.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/game_setup_seed_entry.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/keyboard_qwerty.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/keyboard_qwerty_key_char.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/keyboard_qwerty_key_delete.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/keyboard_qwerty_key_enter.xml" value="0.1" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/layout/ongoing_game_setup.xml" value="0.17916666666666667" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/menu/toolbar_main.xml" value="0.1609375" />
+        <entry key="..\:/Users/Jake/Development/Peace Ray/Git/Code-Word/app/src/main/res/menu/toolbar_setup.xml" value="0.17239583333333333" />
       </map>
     </option>
   </component>

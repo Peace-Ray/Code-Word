@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+
+    <!-- "Puzzle Info", should appear as action button if possible -->
+    <item
+        android:id="@+id/action_puzzle_info"
+        android:icon="@drawable/round_puzzle_info_white_48"
+        android:title="@string/action_puzzle_info"
+        app:showAsAction="ifRoom"
+        />
+
+    <!-- Settings, should always be in the overflow -->
+    <item android:id="@+id/action_settings"
+        android:icon="@drawable/round_settings_white_48"
+        android:title="@string/action_settings"
+        app:showAsAction="never"/>
+
+    <!-- App Info, should always be in the overflow -->
+    <item android:id="@+id/action_app_info"
+        android:icon="@drawable/round_info_white_48"
+        android:title="@string/action_app_info"
+        app:showAsAction="never"/>
+
+
+</menu>

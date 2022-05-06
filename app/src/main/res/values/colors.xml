@@ -16,7 +16,11 @@
 
     <color name="red_error">#FFB00020</color>
 
+    <color name="gray_200">#FFEEEEEE</color>
+    <color name="gray_300">#FFE0E0E0</color>
     <color name="gray_500">#FF9E9E9E</color>
+    <color name="gray_600">#FF757575</color>
+    <color name="gray_800">#FF424242</color>
 
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>

@@ -2,13 +2,16 @@ package com.peaceray.codeword.presentation.view.component.views
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.AttrRes
 import androidx.annotation.IdRes
 import androidx.core.content.withStyledAttributes
+import androidx.core.view.isVisible
 import com.peaceray.codeword.R
+import com.peaceray.codeword.utils.extensions.isVisibleToUser
 import com.peaceray.codeword.utils.getEnum
 import timber.log.Timber
 
@@ -24,9 +27,11 @@ class CodeKeyView: FrameLayout {
 
     var textView: TextView? = null
     var imageView: ImageView? = null
+    var backgroundView: View? = null
 
     @IdRes private var textViewId: Int = R.id.keyTextView
     @IdRes private var imageViewId: Int = R.id.keyImageView
+    @IdRes private var backgroundViewId: Int = R.id.keyBackgroundView
     //---------------------------------------------------------------------------------------------
     //endregion
 
@@ -78,6 +83,7 @@ class CodeKeyView: FrameLayout {
 
             textViewId = getInt(R.styleable.CodeKey_keyTextViewId, textViewId)
             imageViewId = getInt(R.styleable.CodeKey_keyImageViewId, imageViewId)
+            backgroundViewId = getInt(R.styleable.CodeKey_keyBackgroundViewId, backgroundViewId)
         }
     }
 
@@ -87,11 +93,37 @@ class CodeKeyView: FrameLayout {
         // get text and image views
         textView = findViewById(textViewId)
         imageView = findViewById(imageViewId)
+        backgroundView = findViewById(backgroundViewId)
 
         textView?.text = label
         // TODO set image src?
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
 
-        Timber.v("onFinishInflate with textViewId $textViewId textView $textView character $character label $label")
+    //region Property Overrides
+    //---------------------------------------------------------------------------------------------
+    private var lastSetEnabled: Boolean? = null
+
+    override fun setEnabled(enabled: Boolean) {
+        super.setEnabled(enabled)
+
+        if (enabled != lastSetEnabled) {
+            lastSetEnabled = enabled
+            val zValue = if (enabled) resources.getDimension(R.dimen.keyboard_key_elevation) else 0.0f
+            val alphaValue = if (enabled) 1.0f else 0.7f
+            if (isVisibleToUser()) {
+                Timber.v("animating Keyboard change")
+                backgroundView?.animate()
+                    ?.z(zValue)
+                    ?.alpha(alphaValue)
+                    ?.setDuration(resources.getInteger(android.R.integer.config_shortAnimTime).toLong())
+            } else {
+                Timber.v("setting keyboard change")
+                z = zValue
+                alpha = alphaValue
+            }
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion

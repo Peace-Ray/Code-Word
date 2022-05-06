@@ -1,8 +1,11 @@
 package com.peaceray.codeword.data.model.game
 
 import android.os.Parcelable
+import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import kotlinx.parcelize.Parcelize
+import kotlin.IllegalArgumentException
+import kotlin.random.Random
 
 /**
  * Parameters for a Game setup. Independent of actual player moves. Note that this describes,
@@ -29,39 +32,73 @@ data class GameSetup(
     val evaluation: Evaluation,
     val vocabulary: Vocabulary,
     val solver: Solver,
-    val evaluator: Evaluator
+    val evaluator: Evaluator,
+    val randomSeed: Long,
+    val daily: Boolean = false
 ): Parcelable {
-    @Parcelize data class Board(val letters: Int, val rounds: Int): Parcelable
+    @Parcelize data class Board(val rounds: Int): Parcelable {
+        init {
+            if (rounds < 0) throw IllegalArgumentException("rounds must be non-negative")
+        }
+    }
     @Parcelize data class Evaluation(val type: ConstraintPolicy, val enforced: ConstraintPolicy = ConstraintPolicy.IGNORE): Parcelable
-    @Parcelize data class Vocabulary(val type: VocabularyType, val characters: Int = 0): Parcelable {
+    @Parcelize data class Vocabulary(val language: CodeLanguage, val type: VocabularyType, val length: Int, val characters: Int): Parcelable {
         enum class VocabularyType { LIST, ENUMERATED }
+        init {
+            if (length <= 0) throw IllegalArgumentException("letters must be positive")
+            if (characters <= 0) throw IllegalArgumentException("characters must be positive")
+        }
     }
     enum class Solver { PLAYER, BOT }
     enum class Evaluator { PLAYER, HONEST, CHEATER }
 
+    fun with(
+        board: Board? = null,
+        evaluation: Evaluation? = null,
+        vocabulary: Vocabulary? = null,
+        solver: Solver? = null,
+        evaluator: Evaluator? = null,
+        daily: Boolean? = null,
+        randomSeed: Long? = null,
+        randomized: Boolean = false
+    ) = GameSetup(
+        board = board ?: this.board,
+        evaluation = evaluation ?: this.evaluation,
+        vocabulary = vocabulary ?: this.vocabulary,
+        solver = solver ?: this.solver,
+        evaluator = evaluator ?: this.evaluator,
+        daily = daily ?: this.daily,
+        randomSeed = if (randomized) createSeed() else randomSeed ?: this.randomSeed
+    )
+
     companion object {
+        fun createSeed() = Random.nextLong(Int.MAX_VALUE.toLong())
+        
         fun forWordPuzzle(honest: Boolean = true, hard: Boolean = false) = GameSetup(
-            board = Board(5, if (honest) 6 else 0),
+            board = Board(if (honest) 6 else 0),
             evaluation = Evaluation(ConstraintPolicy.ALL, if (hard) ConstraintPolicy.POSITIVE else ConstraintPolicy.IGNORE),
-            vocabulary = Vocabulary(Vocabulary.VocabularyType.LIST),
+            vocabulary = Vocabulary(CodeLanguage.ENGLISH, Vocabulary.VocabularyType.LIST, 5,26),
             solver = Solver.PLAYER,
-            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER
+            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER,
+            randomSeed = createSeed()
         )
 
         fun forWordEvaluation(hard: Boolean = false, rounds: Int = 6)  = GameSetup(
-            board = Board(5, rounds),
+            board = Board(rounds),
             evaluation = Evaluation(ConstraintPolicy.ALL, if (hard) ConstraintPolicy.POSITIVE else ConstraintPolicy.IGNORE),
-            vocabulary = Vocabulary(Vocabulary.VocabularyType.LIST),
+            vocabulary = Vocabulary(CodeLanguage.ENGLISH, Vocabulary.VocabularyType.LIST, 5, 26),
             solver = Solver.BOT,
-            evaluator = Evaluator.PLAYER
+            evaluator = Evaluator.PLAYER,
+            randomSeed = createSeed()
         )
 
         fun forWordDemo(honest: Boolean = true, hard: Boolean = false) = GameSetup(
-            board = Board(5, if (honest) 6 else 0),
+            board = Board(if (honest) 6 else 0),
             evaluation = Evaluation(ConstraintPolicy.ALL, if (hard) ConstraintPolicy.POSITIVE else ConstraintPolicy.IGNORE),
-            vocabulary = Vocabulary(Vocabulary.VocabularyType.LIST),
+            vocabulary = Vocabulary(CodeLanguage.ENGLISH, Vocabulary.VocabularyType.LIST, 5, 26),
             solver = Solver.BOT,
-            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER
+            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER,
+            randomSeed = createSeed()
         )
 
         fun forCodePuzzle(
@@ -70,11 +107,12 @@ data class GameSetup(
             characters: Int = 6,
             honest: Boolean = true
         ) = GameSetup(
-            board = Board(length, rounds),
+            board = Board(rounds),
             evaluation = Evaluation(ConstraintPolicy.AGGREGATED),
-            vocabulary = Vocabulary(Vocabulary.VocabularyType.ENUMERATED, characters),
+            vocabulary = Vocabulary(CodeLanguage.CODE, Vocabulary.VocabularyType.ENUMERATED, length, characters),
             solver = Solver.PLAYER,
-            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER
+            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER,
+            randomSeed = createSeed()
         )
 
         fun forCodeEvaluation(
@@ -82,11 +120,12 @@ data class GameSetup(
             rounds: Int = 10,
             characters: Int = 6
         ) = GameSetup(
-            board = Board(length, rounds),
+            board = Board(rounds),
             evaluation = Evaluation(ConstraintPolicy.AGGREGATED),
-            vocabulary = Vocabulary(Vocabulary.VocabularyType.ENUMERATED, characters),
+            vocabulary = Vocabulary(CodeLanguage.CODE, Vocabulary.VocabularyType.ENUMERATED, length, characters),
             solver = Solver.BOT,
-            evaluator = Evaluator.PLAYER
+            evaluator = Evaluator.PLAYER,
+            randomSeed = createSeed()
         )
 
         fun forCodeDemo(
@@ -95,11 +134,12 @@ data class GameSetup(
             characters: Int = 6,
             honest: Boolean = true
         ) = GameSetup(
-            board = Board(length, rounds),
+            board = Board(rounds),
             evaluation = Evaluation(ConstraintPolicy.AGGREGATED),
-            vocabulary = Vocabulary(Vocabulary.VocabularyType.ENUMERATED, characters),
+            vocabulary = Vocabulary(CodeLanguage.CODE, Vocabulary.VocabularyType.ENUMERATED, length, characters),
             solver = Solver.BOT,
-            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER
+            evaluator = if (honest) Evaluator.HONEST else Evaluator.CHEATER,
+            randomSeed = createSeed()
         )
     }
 

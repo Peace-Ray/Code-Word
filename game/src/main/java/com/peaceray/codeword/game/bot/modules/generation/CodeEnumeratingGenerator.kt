@@ -3,6 +3,7 @@ package com.peaceray.codeword.game.bot.modules.generation
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import kotlin.random.Random
 
 /**
  * A class that creates codes by enumerating all possible combinations of the characters in
@@ -28,8 +29,9 @@ class CodeEnumeratingGenerator(
     val guessPolicy: ConstraintPolicy,
     val solutionPolicy: ConstraintPolicy,
     val shuffle: Boolean = false,
-    val truncateAtProduct: Int = 0
-): MonotonicCachingGenerationModule() {
+    val truncateAtProduct: Int = 0,
+    val seed: Long? = null
+): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
     val alphabet: List<Char> = if (shuffle) {
         alphabet.distinct().toList().shuffled()
     } else {
@@ -82,7 +84,7 @@ class CodeEnumeratingGenerator(
     }
 
     private fun codeSequence(): Sequence<String> {
-        val characters = if (shuffle) alphabet.shuffled() else alphabet
+        val characters = if (shuffle) alphabet.shuffled(random) else alphabet
         return generateSequence(0) { if (it < size - 1) it + 1 else null }
             .map {
                 var num = it

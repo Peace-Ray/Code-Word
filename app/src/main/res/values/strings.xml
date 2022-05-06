@@ -1,6 +1,136 @@
 <resources>
-    <string name="app_name">Code Word</string>
+    <string name="app_name">code/WORD</string>
 
+    <string name="action_puzzle_info">Puzzle Info</string>
+    <string name="action_new_puzzle">New Puzzle</string>
+    <string name="action_start_puzzle">Start Puzzle</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_app_info">App Info</string>
+
+    <!-- clip data -->
+    <string name="clip_seed_label">code/WORD game seed</string>
+    <string name="clip_seed_toast">Copied to clipboard</string>
+
+    <!-- game controls -->
     <string name="key_label_enter">Enter</string>
     <string name="key_label_delete">Delete</string>
+
+    <!-- game errors -->
+    <string name="game_error_word_length_zero">Enter a %1$s</string>
+    <string name="game_error_word_length">%1$s not long enough</string>
+    <string name="game_error_word_not_recognized">%1$s not recognized</string>
+    <string name="game_error_word_not_valid">%1$s not valid</string>
+    <string name="game_error_word_constraint_exact">Letter %3$d must be %2$s</string>
+    <string name="game_error_word_constraint_included">%1$s must include %2$s</string>
+    <string name="game_error_word_constraint_no">%1$s must not include %2$s</string>
+    <string name="game_error_word_constraint_exact_no_letter">%1$s must include exact matches</string>
+    <string name="game_error_word_constraint_included_no_letter">%1$s must have all included letters</string>
+    <string name="game_error_word_constraint">%1$s must match previous clues</string>
+    <string name="game_error_evaluation_inconsistent">Evaluation must be consistent with previous clues</string>
+    <string name="game_error_unknown">Something went wrong</string>
+
+    <!-- game setup -->
+    <string name="game_setup_launch_new">Start</string>
+    <string name="game_setup_launch_resume">Resume</string>
+    <string name="game_setup_launch_view">View</string>
+
+    <string name="game_setup_seed_hint">Seed</string>
+    <string name="game_setup_seed_prompt">Enter a Seed</string>
+    <string name="game_setup_seed_prompt_detail">Use game seeds to share a puzzle with friends</string>
+    <string name="game_setup_seed_cancel">Cancel</string>
+    <string name="game_setup_seed_confirm">Enter</string>
+
+    <string name="game_setup_player_role_prompt">I want to</string>
+    <string name="game_setup_player_role_value_solver">Guess</string>
+    <string name="game_setup_player_role_value_evaluator">Know</string>
+    <string name="game_setup_player_role_value_none">Spectate on</string>
+    <string name="game_setup_player_role_value_both">Practice for</string>
+
+    <string-array name="game_setup_player_role_values">
+        <item>@string/game_setup_player_role_value_solver</item>
+        <item>@string/game_setup_player_role_value_evaluator</item>
+        <item>@string/game_setup_player_role_value_none</item>
+        <item>@string/game_setup_player_role_value_both</item>
+    </string-array>
+
+
+    <string name="game_setup_language_prompt">Guess the secret:</string>
+    <string name="game_setup_language_prompt_with_player_role">A secret:</string>
+    <string name="game_setup_language_english">@string/template_english_secret</string>
+    <string name="game_setup_language_code">@string/template_code_secret</string>
+
+    <string name="game_setup_code_length_prompt">of length</string>
+
+    <string name="game_setup_code_characters_prompt_start">using</string>
+    <string name="game_setup_code_characters_prompt_end">letters</string>
+
+    <string name="game_setup_hard_mode_prompt">Hard mode</string>
+    <string name="game_setup_hard_mode_description">Each guess must use all previously revealed hints</string>
+
+    <string name="game_setup_evaluator_cheats_prompt">Opponent cheats</string>
+    <string name="game_setup_evaluator_cheats_hint">Secret word changes as you guess</string>
+
+    <string name="game_setup_limited_rounds_prompt">Limited guesses</string>
+    <string name="game_setup_rounds_prompt">Guesses:</string>
+
+    <!-- Game Info / Ongoing Game Setup -->
+    <string name="game_info_rounds">Guess the %1$s in %2$s tries.</string>
+    <string name="game_info_guess">Type a guess (%2$d-letter %1$s) and press the Enter button.</string>
+
+    <string name="game_info_legend_guess">@string/template_code</string>
+    <string name="game_info_legend_secret">@string/template_word</string>
+    <string name="game_info_legend_correct_letter">O</string>
+    <string name="game_info_legend_present_letter">D</string>
+    <string name="game_info_legend_no_letter_1">C</string>
+    <string name="game_info_legend_no_letter_2">E</string>
+    <string name="game_info_legend_intro">For the guess \"CODE\":</string>
+    <string name="game_info_legend_correct">is in the right place.</string>
+    <string name="game_info_legend_present">is used somewhere else.</string>
+    <string name="game_info_legend_no">are not in the word.</string>
+
+    <string name="game_info_hard_mode_prompt">Hard mode</string>
+    <string name="game_info_hard_mode_description">Each guess must use all previously revealed hints</string>
+    <string name="game_info_hard_mode_not_allowed">Can\'t turn on "Hard Mode" once the game starts</string>
+
+    <string name="game_info_limited_rounds_prompt">Limited guesses</string>
+    <string name="game_info_rounds_prompt">Guesses: %1$d (%2$d used)</string>
+
+    <!-- Template Values -->
+    <string name="template_english_secret">English Word</string>
+    <string name="template_code_secret">Code Sequence</string>
+
+    <string name="template_code_word">Code Word</string>
+    <string name="template_word">Word</string>
+    <string name="template_code">Code</string>
+    
+    <string name="template_number_zero">Zero</string>
+    <string name="template_number_one">One</string>
+    <string name="template_number_two">Two</string>
+    <string name="template_number_three">Three</string>
+    <string name="template_number_four">Four</string>
+    <string name="template_number_five">Five</string>
+    <string name="template_number_six">Six</string>
+    <string name="template_number_seven">Seven</string>
+    <string name="template_number_eight">Eight</string>
+    <string name="template_number_nine">Nine</string>
+    <string name="template_number_ten">Ten</string>
+    <string name="template_number_eleven">Eleven</string>
+    <string name="template_number_twelve">Twelve</string>
+
+    <string-array name="numbers">
+        <item>@string/template_number_zero</item>
+        <item>@string/template_number_one</item>
+        <item>@string/template_number_two</item>
+        <item>@string/template_number_three</item>
+        <item>@string/template_number_four</item>
+        <item>@string/template_number_five</item>
+        <item>@string/template_number_six</item>
+        <item>@string/template_number_seven</item>
+        <item>@string/template_number_eight</item>
+        <item>@string/template_number_nine</item>
+        <item>@string/template_number_ten</item>
+        <item>@string/template_number_eleven</item>
+        <item>@string/template_number_twelve</item>
+    </string-array>
+
 </resources>

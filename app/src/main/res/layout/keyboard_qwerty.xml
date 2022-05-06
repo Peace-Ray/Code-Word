@@ -6,7 +6,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#ff00ffff"
+    android:padding="@dimen/keyboard_margin"
+    android:clipChildren="false"
     >
 
     <LinearLayout
@@ -19,66 +20,76 @@
         app:layout_constraintBottom_toTopOf="@+id/keyboardRowTwo"
         android:orientation="horizontal"
         android:gravity="center"
-        android:background="#ffff00ff"
+        android:clipChildren="false"
         >
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="q"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="w"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="e"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="r"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="t"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="y"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="u"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="i"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="o"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="p"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
@@ -95,59 +106,69 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:weightSum="100"
+        android:clipChildren="false"
         >
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="a"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="s"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="d"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="f"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="g"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="h"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="j"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="k"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="l"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
@@ -166,62 +187,68 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:weightSum="100"
+        android:clipChildren="false"
         >
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="15" app:keyCodeType="enter"
             android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
-            android:background="@color/gray_500"
             >
             <include layout="@layout/keyboard_qwerty_key_enter"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="z"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="x"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="c"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="v"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="b"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="n"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
             android:layout_weight="10" app:keyCodeCharacter="m"
-            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height">
+            android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
+            android:clipChildren="false">
             <include layout="@layout/keyboard_qwerty_key_char"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
 
         <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
-            android:layout_weight="10" app:keyCodeType="delete"
+            android:layout_weight="15" app:keyCodeType="delete"
             android:layout_width="0dp" android:layout_height="@dimen/keyboard_row_height"
-            android:background="@color/gray_500"
             >
             <include layout="@layout/keyboard_qwerty_key_delete"/>
         </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>

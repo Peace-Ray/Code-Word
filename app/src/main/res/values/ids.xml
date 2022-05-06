@@ -2,4 +2,5 @@
 <resources>
     <item name="keyTextView" type="id"/>
     <item name="keyImageView" type="id"/>
+    <item name="keyBackgroundView" type="id"/>
 </resources>

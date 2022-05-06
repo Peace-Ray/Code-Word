@@ -2,6 +2,8 @@ package com.peaceray.codeword.game.bot.modules.generation
 
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import com.peaceray.codeword.game.bot.modules.shared.Seeded
+import kotlin.random.Random
 
 /**
  * A [CandidateGenerationModule] that caches its own output, providing it again (without
@@ -9,7 +11,7 @@ import com.peaceray.codeword.game.bot.modules.shared.Candidates
  * cache miss behavior (the actual generation of new Candidates). Use this superclass if your
  * generation behavior is deterministic given specific [Constraint]s.
  */
-abstract class CachingGenerationModule: CandidateGenerationModule {
+abstract class CachingGenerationModule(seed: Long): CandidateGenerationModule, Seeded(seed) {
     private var cachedCandidates: Candidates? = null
     private var cachedConstraints = listOf<Constraint>()
 

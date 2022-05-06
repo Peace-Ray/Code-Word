@@ -21,14 +21,57 @@ import com.peaceray.codeword.game.data.Constraint
  * The Game class does not actively solicit player actions. It passively accepts player
  * input, only checking whether the action is appropriate given the state of the game. Apply your
  * own control structure as appropriate to your use case.
+ *
+ * Serialization: Although Game is not a DataClass (because the arbitrary [validator] function
+ * makes otherwise-identical Games behave differently) its internal state, represented
+ * as game moves, can still be serialized as [constraints] and [currentGuess].
+ * Deserialization and restoration requires reproducing the original [validator] function.
+ * Use [Game.atMove] to restore the game to the previous state (require repeating move
+ * logic).
  */
-class Game(val settings: Settings, val validator: (String) -> Boolean) {
+class Game(settings: Settings, val validator: (String) -> Boolean) {
+
+    /**
+     * Creates a game and quickly plays through the specified moves, returning the
+     * result only when it has reached the indicated state. Provides a way to
+     * load a persisted Game. Note that Game is not a Data Class; the validator function
+     * prevents its direct serialization.
+     */
+    companion object {
+        @Throws(
+            IllegalStateException::class,
+            IllegalGuessException::class,
+            IllegalEvaluationException::class
+        )
+        fun atMove(
+            settings: Settings,
+            validator: (String) -> Boolean,
+            constraints: List<Constraint>,
+            currentGuess: String? = null
+        ): Game {
+            val game = Game(settings, validator)
+            constraints.forEach {
+                game.guess(it.candidate)
+                game.evaluate(it)
+            }
+            if (currentGuess != null) {
+                game.guess(currentGuess)
+            }
+            return game
+        }
+    }
+
     enum class State { GUESSING, EVALUATING, WON, LOST }
+    enum class SettingsError { LETTERS, ROUNDS, CONSTRAINT_POLICY }
     enum class GuessError { LENGTH, VALIDATION, CONSTRAINTS }
     enum class EvaluationError { GUESS }
 
-    class IllegalGuessException(val error: GuessError, message: String): IllegalArgumentException(message)
+    class IllegalSettingsException(val error: SettingsError, message: String): IllegalArgumentException(message)
+    class IllegalGuessException(val error: GuessError, val violations: List<Constraint.Violation>?, message: String): IllegalArgumentException(message)
     class IllegalEvaluationException(val error: EvaluationError, message: String): IllegalArgumentException(message)
+
+    var settings: Settings = settings
+        private set
 
     /**
      * The most recent guess provided by the guesser and not yet evaluated.
@@ -45,17 +88,15 @@ class Game(val settings: Settings, val validator: (String) -> Boolean) {
         get() = _constraints.toList()
 
     val state: State
-        get() {
-            if (constraints.any { it.correct }) {
-                return State.WON
-            } else if (constraints.size == settings.rounds) {
-                return State.LOST
-            } else if (currentGuess != null) {
-                return State.EVALUATING
-            } else {
-                return State.GUESSING
-            }
+        get() = when {
+            constraints.any { it.correct } -> State.WON
+            constraints.size == settings.rounds -> State.LOST
+            currentGuess != null -> State.EVALUATING
+            else -> State.GUESSING
         }
+
+    val started: Boolean
+        get() = over || currentGuess != null || round > 1
 
     val won: Boolean
         get() = state == State.WON
@@ -69,6 +110,26 @@ class Game(val settings: Settings, val validator: (String) -> Boolean) {
     val round: Int
         get() { return if (over) constraints.size else constraints.size + 1 }
 
+    fun canUpdateSettings(settings: Settings) = !over
+            && (this.settings.letters == settings.letters || !started)
+            && (this.settings.rounds >= round)
+            && (this.settings.constraintPolicy.isSubsetOf(settings.constraintPolicy) || !started)
+
+    @Throws(IllegalStateException::class, IllegalSettingsException::class)
+    fun updateSettings(settings: Settings) {
+        when {
+            over -> throw IllegalStateException("Can't update settings in state $state")
+            this.settings.letters != settings.letters && started ->
+                throw IllegalSettingsException(SettingsError.LETTERS, "Can't change number of letters once the Game is started")
+            this.settings.rounds < round ->
+                throw IllegalSettingsException(SettingsError.ROUNDS, "Can't change number of rounds to less than already played")
+            !this.settings.constraintPolicy.isSubsetOf(settings.constraintPolicy) && started ->
+                throw IllegalSettingsException(SettingsError.CONSTRAINT_POLICY, "Can't update to a more restrictive ConstraintPolicy once the game is started")
+        }
+
+        this.settings = settings
+    }
+
     @Throws(IllegalStateException::class, IllegalGuessException::class)
     fun guess(candidate: String) {
         if (state != State.GUESSING) {
@@ -78,6 +139,7 @@ class Game(val settings: Settings, val validator: (String) -> Boolean) {
         if (candidate.length != settings.letters) {
             throw IllegalGuessException(
                 GuessError.LENGTH,
+                null,
                 "Guess had ${candidate.length} letters; must have ${settings.letters}"
             )
         }
@@ -85,13 +147,18 @@ class Game(val settings: Settings, val validator: (String) -> Boolean) {
         if (!validator(candidate)) {
             throw IllegalGuessException(
                 GuessError.VALIDATION,
+                null,
                 "Guess failed validation"
             )
         }
 
-        if (!constraints.all { it.allows(candidate, settings.constraintPolicy) }) {
+        val violations = constraints.asSequence()
+            .map { it.violations(candidate, settings.constraintPolicy) }
+            .firstOrNull { it.isNotEmpty() }
+        if (violations != null) {
             throw IllegalGuessException(
                 GuessError.CONSTRAINTS,
+                violations,
                 "Guess does not match previous evaluation constraints"
             )
         }

@@ -3,6 +3,7 @@ package com.peaceray.codeword.game.bot.modules.generation
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import kotlin.random.Random
 
 /**
  * A class that creates codes by enumerating a collapsed set of combinations of the characters in
@@ -39,10 +40,11 @@ class CodeCollapsedEnumerationGenerator(
     val guessPolicy: ConstraintPolicy,
     val solutionPolicy: ConstraintPolicy,
     val shuffle: Boolean = false,
-    val truncateAtProduct: Int = 0
-): MonotonicCachingGenerationModule() {
+    val truncateAtProduct: Int = 0,
+    val seed: Long? = null
+): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
     val alphabet: List<Char> = if (shuffle) {
-        alphabet.distinct().toList().shuffled()
+        alphabet.distinct().toList().shuffled(random)
     } else {
         alphabet.distinct().toList().sorted()
     }
@@ -109,7 +111,7 @@ class CodeCollapsedEnumerationGenerator(
             codeSequence(prefix)
         } else {
             val nextChars = listOf(usedAlphabet, unusedAlphabet.subList(0, 1)).flatten()
-            val nextCharsOrdered = if (shuffle) nextChars.shuffled() else nextChars
+            val nextCharsOrdered = if (shuffle) nextChars.shuffled(random) else nextChars
             nextCharsOrdered.asSequence()
                 .flatMap {
                     val nextPrefix = "$prefix$it"

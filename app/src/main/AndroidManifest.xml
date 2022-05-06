@@ -24,6 +24,11 @@
             android:name="com.peaceray.codeword.presentation.view.activities.MainActivity"
             android:exported="false"
             />
+
+        <activity
+            android:name="com.peaceray.codeword.presentation.view.activities.GameSetupActivity"
+            android:exported="false"
+            />
     </application>
 
 </manifest>

@@ -1,8 +1,10 @@
 package com.peaceray.codeword.glue.modules
 
-import com.peaceray.codeword.presentation.contracts.CodeGameContract
+import com.peaceray.codeword.presentation.contracts.GameContract
+import com.peaceray.codeword.presentation.contracts.GameSetupContract
 import com.peaceray.codeword.presentation.contracts.HelloWorldContract
-import com.peaceray.codeword.presentation.presenters.CodeGamePresenter
+import com.peaceray.codeword.presentation.presenters.GamePresenter
+import com.peaceray.codeword.presentation.presenters.GameSetupPresenter
 import com.peaceray.codeword.presentation.presenters.HelloWorldPresenter
 import dagger.Binds
 import dagger.Module
@@ -19,7 +21,14 @@ abstract class HelloWorldModule {
 
 @Module
 @InstallIn(FragmentComponent::class)
-abstract class CodeGameModule {
+abstract class GameModule {
     @Binds
-    abstract fun bindCodeGamePresenter(presenter: CodeGamePresenter): CodeGameContract.Presenter
+    abstract fun bindGamePresenter(presenter: GamePresenter): GameContract.Presenter
+}
+
+@Module
+@InstallIn(FragmentComponent::class)
+abstract class GameSetupModule {
+    @Binds
+    abstract fun bindGameSetupPresenter(presenter: GameSetupPresenter): GameSetupContract.Presenter
 }

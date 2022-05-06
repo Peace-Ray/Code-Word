@@ -6,18 +6,22 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.LayoutRes
 import androidx.core.view.children
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.R
-import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.Guess
-import timber.log.Timber
+import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 
-class GuessViewHolder(val itemView: View, val layoutInflater: LayoutInflater): RecyclerView.ViewHolder(itemView) {
+class GuessViewHolder(
+    itemView: View,
+    val layoutInflater: LayoutInflater,
+    val colorSwatchManager: ColorSwatchManager
+): RecyclerView.ViewHolder(itemView) {
 
     //region View
     //---------------------------------------------------------------------------------------------
-    @LayoutRes
-    var layoutId: Int = R.layout.cell_letter
+    @LayoutRes var layoutId: Int = R.layout.cell_letter
 
     private val guessLetterContainer: ViewGroup = itemView.findViewById(R.id.guessLetterContainer)
     private val guessLetterTextViews = mutableListOf<TextView>()
@@ -28,7 +32,12 @@ class GuessViewHolder(val itemView: View, val layoutInflater: LayoutInflater): R
             if (v != null) guessLetterTextViews.add(v)
         }
 
-        Timber.v("Has ${guessLetterTextViews.size} TextViews")
+        val context = itemView.context
+        if (context is LifecycleOwner) {
+            colorSwatchManager.colorSwatchLiveData.observe(context) { swatch ->
+                setGuessColors(swatch, false)
+            }
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -41,34 +50,41 @@ class GuessViewHolder(val itemView: View, val layoutInflater: LayoutInflater): R
         set(value) = bind(value)
 
     fun bind(guess: Guess, animate: Boolean = false) {
+        var colorChange = _guess.constraint != guess.constraint
+        _guess = guess
+
         // extend letter views
         while (guessLetterContainer.childCount < guess.length) {
             val view = layoutInflater.inflate(layoutId, guessLetterContainer, true)
             guessLetterTextViews.add(view.findViewById(R.id.textView))
+            colorChange = true
         }
 
         // adjust visibility
         guessLetterContainer.children.forEachIndexed { index, view ->
             // TODO animate change. Grow / shrink / flip?
             view.visibility = if (index < guess.length) View.VISIBLE else View.GONE
+            colorChange = true
         }
 
         // set content
         guess.lettersPadded.forEachIndexed { index, guessLetter ->
-            // TODO apply custom color scheme
-            guessLetterTextViews[index].text = "${guessLetter.character}"
-            guessLetterTextViews[index].setBackgroundColor(when(guessLetter.markup) {
-                Constraint.MarkupType.EXACT -> itemView.resources.getColor(R.color.green_500)
-                Constraint.MarkupType.INCLUDED -> itemView.resources.getColor(R.color.amber_300)
-                Constraint.MarkupType.NO -> itemView.resources.getColor(R.color.gray_500)
-                else -> itemView.resources.getColor(R.color.design_default_color_surface)
-            })
-            guessLetterTextViews[index].setTextColor(if (guessLetter.markup == null) {
-                itemView.resources.getColor(R.color.gray_500)
-            } else {
-                itemView.resources.getColor(R.color.white)
-            })
+            val text = "${guessLetter.character}"
+            if (guessLetterTextViews[index].text != text) {
+                guessLetterTextViews[index].text = text
+            }
+            // TODO animate any change
+        }
+        
+        if (colorChange) {
+            setGuessColors(colorSwatchManager.colorSwatch, animate)
+        }
+    }
 
+    private fun setGuessColors(swatch: ColorSwatch, animate: Boolean) {
+        guess.lettersPadded.zip(guessLetterTextViews).forEach { (letter, textView) ->
+            textView.setBackgroundColor(swatch.evaluation.color(letter.markup))
+            textView.setTextColor(swatch.evaluation.onColor(letter.markup))
             // TODO animate any change
         }
     }

@@ -3,6 +3,7 @@ package com.peaceray.codeword.game.bot.modules.generation
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import kotlin.random.Random
 
 /**
  * A [CandidateGenerationModule] based on an explicit vocabulary list, e.g. English words of
@@ -19,8 +20,9 @@ class VocabularyListGenerator(
     val guessPolicy: ConstraintPolicy,
     val solutionPolicy: ConstraintPolicy,
     guessVocabulary: List<String>? = null,
-    solutionVocabulary: List<String>? = null
-): MonotonicCachingGenerationModule() {
+    solutionVocabulary: List<String>? = null,
+    seed: Long? = null
+): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
     val guessVocabulary = guessVocabulary ?: vocabulary
     val solutionVocabulary = solutionVocabulary ?: vocabulary
 

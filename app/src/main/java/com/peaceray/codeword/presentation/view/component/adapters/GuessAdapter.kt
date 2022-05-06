@@ -1,83 +1,58 @@
 package com.peaceray.codeword.presentation.view.component.adapters
 
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import androidx.annotation.LayoutRes
 import androidx.recyclerview.widget.RecyclerView
-import com.peaceray.codeword.R
 import com.peaceray.codeword.game.data.Constraint
-import com.peaceray.codeword.presentation.view.component.viewholders.GuessViewHolder
 import com.peaceray.codeword.presentation.datamodel.Guess
 import timber.log.Timber
-import javax.inject.Inject
 
-/**
- * A [RecyclerView.Adapter] displaying Constraints and a pending guess
- * (as Guess objects, the View DataModel wrapper for this concept).
- *
- * Default behavior is to display the Guess, if any, as the final item on the list.
- */
-class GuessAdapter @Inject constructor(
-    val layoutInflater: LayoutInflater
-): RecyclerView.Adapter<GuessViewHolder>() {
-
-    //region View configuration
-    //---------------------------------------------------------------------------------------------
-    @LayoutRes var layoutId: Int = R.layout.cell_guess
-
-    constructor(layoutInflater: LayoutInflater, @LayoutRes layoutId: Int): this(layoutInflater) {
-        this.layoutId = layoutId
-    }
-    //---------------------------------------------------------------------------------------------
-    //endregion
+abstract class GuessAdapter<T: RecyclerView.ViewHolder>: RecyclerView.Adapter<T>() {
 
     //region RecyclerView.Adapter Implementation
     //---------------------------------------------------------------------------------------------
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GuessViewHolder {
-        Timber.v("onCreateViewHolder: $viewType")
-        val cellView = layoutInflater.inflate(layoutId, parent, false)
-        return GuessViewHolder(cellView, layoutInflater)
-    }
-
-    override fun onBindViewHolder(holder: GuessViewHolder, position: Int) {
-        Timber.v("onBindViewHolder: $position")
-
-        val bindData = if (position < constraints.size) {
-            constraints[position]
-        } else if (position == constraints.size && guess != null) {
+    override fun onBindViewHolder(holder: T, position: Int) {
+        val guessRange = itemRangeToGuessRange(position, 1)
+        val guessPosition = guessRange.first
+        val bindGuess = if (guessPosition < constraints.size) {
+            constraints[guessPosition]
+        } else if (guessPosition == constraints.size && guess != null) {
             guess!!
         } else {
             placeholder
         }
 
-        // animation rules:
-        // DO animate replacement of guess with the same constraint at the same position
-        // (don't animate anything else for now)
-        // TODO other animation cases?
-        val animate = holder.adapterPosition == position
-                && holder.guess.isGuess && bindData.isEvaluation
-                && holder.guess.candidate == bindData.candidate
-        holder.bind(bindData, animate)
+        onBindGuessToViewHolder(holder, position, bindGuess)
     }
+
+    abstract fun onBindGuessToViewHolder(holder: T, position: Int, guess: Guess)
 
     override fun getItemCount(): Int {
         var wordRows = constraints.size
         if (guess != null) wordRows++
         val items = Math.max(wordRows, rows)
-
-        Timber.v("getItemCount: $items")
-        return items
+        val (start, count) = guessRangeToItemRange(0, items)
+        return start + count
     }
     //---------------------------------------------------------------------------------------------
     //endregion
 
+    //region Data View Access
+    //---------------------------------------------------------------------------------------------
+    fun guessItemRange(placeholders: Boolean = false): IntRange {
+        val length = if (placeholders) length else guess?.candidate?.length ?: 0
+        return if (length == 0) IntRange.EMPTY else {
+            val itemRange = guessSliceToItemRange(constraints.size, 0, length)
+            IntRange(itemRange.first, itemRange.first + itemRange.second - 1)
+        }
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
 
     //region Data Model
     //---------------------------------------------------------------------------------------------
-    private var length: Int = 0
+    var length: Int = 0
         private set
 
-    private var rows: Int = 0
+    var rows: Int = 0
         private set
 
     var placeholder = Guess.placeholder
@@ -169,9 +144,10 @@ class GuessAdapter @Inject constructor(
             // the new constraint replaces the existing guess or placeholder.
             constraints.add(Guess(constraint))
             if (constraints.size <= length || this.guess != null) {
-                notifyItemChanged(constraints.size - 1)
+                notifyGuessChanged(constraints.size - 1, this.guess, constraints.last())
             } else {
-                notifyItemInserted(constraints.size - 1)
+                val range = guessRangeToItemRange(constraints.size - 1, 1)
+                notifyItemRangeInserted(range.first, range.second)
             }
 
             // the new guess, if any, represents a placeholder change or addition.
@@ -179,31 +155,91 @@ class GuessAdapter @Inject constructor(
             // even if the old and new guesses have the same text.
             this.guess = if (guess == null) null else Guess(length, guess)
             if (this.guess != null) {
-                if (constraints.size < length) {
-                    notifyItemChanged(constraints.size)
+                if (constraints.size < rows) {
+                    notifyGuessChangedFromPlaceholder(constraints.size, this.guess)
                 } else {
-                    notifyItemInserted(constraints.size)
+                    val range = guessRangeToItemRange(constraints.size, 1)
+                    notifyItemRangeInserted(range.first, range.second)
                 }
             }
         } else {
             // could alter the guess, insert one, or remove the existing one.
             val oldGuess = this.guess
+            val oldBinding = this.guess ?: placeholder
             this.guess = if (guess == null) null else Guess(length, guess)
 
             // notify this specific position. Guesses are displayed after all constraints.
             if ((oldGuess != null && guess != null) || constraints.size < rows) {
                 // same position; content change
-                Timber.v("changed characters at row ${constraints.size}")
-                notifyItemChanged(constraints.size)
+                notifyGuessChanged(constraints.size, oldBinding, this.guess)
             } else if (oldGuess != null) {
                 // removed the guess
-                notifyItemRemoved(constraints.size)
+                val range = guessRangeToItemRange(constraints.size, 1)
+                notifyItemRangeRemoved(range.first, range.second)
             } else if (guess != null) {
                 // added a guess
-                notifyItemInserted(constraints.size)
+                val range = guessRangeToItemRange(constraints.size, 1)
+                notifyItemRangeInserted(range.first, range.second)
             }
         }
     }
+
+    private fun notifyGuessChangedFromPlaceholder(guessPosition: Int, guess: Guess?) {
+        if (guess != null) {
+            val changeStart = guess.lettersPadded.indexOfFirst { !it.isPlaceholder }
+            val changeEnd = guess.lettersPadded.indexOfLast { !it.isPlaceholder }
+
+            if (changeStart >= 0) {
+                val range = guessSliceToItemRange(
+                    guessPosition,
+                    changeStart,
+                    changeEnd - changeStart + 1
+                )
+                notifyItemRangeChanged(range.first, range.second)
+            }
+        }
+    }
+
+    private fun notifyGuessChanged(guessPosition: Int, oldGuess: Guess?, newGuess: Guess?) {
+        if (oldGuess == null || newGuess == null) {
+            notifyGuessChangedFromPlaceholder(guessPosition, oldGuess ?: newGuess)
+        } else {
+            val zipped = oldGuess.lettersPadded.zip(newGuess.lettersPadded)
+            val changeStart = zipped.indexOfFirst { (old, new) -> old != new }
+
+            val range: Pair<Int, Int> = if (changeStart < 0) guessRangeToItemRange(guessPosition, 1) else {
+                val changeEnd = zipped.indexOfLast { (old, new) -> old != new }
+                guessSliceToItemRange(guessPosition, changeStart, changeEnd - changeStart + 1)
+            }
+
+            notifyItemRangeChanged(range.first, range.second)
+        }
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Item Ranges
+    //---------------------------------------------------------------------------------------------
+    /**
+     * Convert a range of guesses (position and count) into a range of view items.
+     * For Adapters where each Guess is represented by a single ViewHolder, this in identity.
+     * Other Adapters may use other representations, such as one ViewHolder per letter.
+     */
+    abstract fun guessRangeToItemRange(guessStart: Int, guessCount: Int): Pair<Int, Int>
+
+    /**
+     * Convert a guess substring into a range of view items. For adapters where each Guess is represented
+     * by a single ViewHolder, this is Pair(guessPosition, 1). Other adapters may use other
+     * representations, such as one ViewHolder per letter.
+     */
+    abstract fun guessSliceToItemRange(guessPosition: Int, sliceStart: Int, sliceCount: Int): Pair<Int, Int>
+
+    /**
+     * Convert a range of view items (position and count) to a range of guesses.
+     * For Adapters where each Guess is represented by a single ViewHolder, this in identity.
+     * Other Adapters may use other representations, such as one ViewHolder per letter.
+     */
+    abstract fun itemRangeToGuessRange(itemStart: Int, itemCount: Int): Pair<Int, Int>
     //---------------------------------------------------------------------------------------------
     //endregion
 

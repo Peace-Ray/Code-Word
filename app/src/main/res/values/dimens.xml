@@ -1,4 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App -->
+    <dimen name="toolbar_elevation">16dp</dimen>
+
+    <!-- Keyboard -->
+    <dimen name="keyboard_elevation">@dimen/toolbar_elevation</dimen>
     <dimen name="keyboard_row_height">60dp</dimen>
+    <dimen name="keyboard_key_margin">3dp</dimen>
+    <dimen name="keyboard_key_elevation">4dp</dimen>
+    <dimen name="keyboard_margin">4dp</dimen>
+
+    <!-- Puzzle Container -->
+    <dimen name="guess_container_margin">16dp</dimen>
+    <!-- Puzzle Cells -->
+    <dimen name="guess_letter_cell_size">60dp</dimen>
+    <dimen name="guess_letter_cell_margin">2.5dp</dimen>
+    <dimen name="guess_letter_cell_stroke_width">2dp</dimen>
+    <dimen name="guess_letter_cell_corner_radius">6dp</dimen>
+    <dimen name="guess_letter_cell_elevation">6dp</dimen>
+    <dimen name="guess_letter_cell_small_size">30dp</dimen>
+    <dimen name="guess_letter_cell_small_margin">2.5dp</dimen>
+    <dimen name="guess_letter_cell_small_stroke_width">2dp</dimen>
+    <dimen name="guess_letter_cell_small_corner_radius">3dp</dimen>
+    <dimen name="guess_letter_cell_small_elevation">3dp</dimen>
+    <!-- Puzzle Text -->
+    <dimen name="guess_letter_text_size">36sp</dimen>
+    <dimen name="guess_letter_small_text_size">18sp</dimen>
+    <!-- Puzzle Animation -->
+    <dimen name="guess_letter_rumble_size">6dp</dimen>
+    <dimen name="guess_letter_animation_elevation">0.5dp</dimen>
 </resources>

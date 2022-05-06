@@ -10,7 +10,7 @@ import com.peaceray.codeword.game.bot.modules.shared.Candidates
  * filter operation to the previously returned [Candidates] fields. The initial generation of
  * [Candidates], and the filtering thereof, is left to subclasses.
  */
-abstract class MonotonicCachingGenerationModule: CachingGenerationModule() {
+abstract class MonotonicCachingGenerationModule(seed: Long): CachingGenerationModule(seed) {
     override fun onCacheMiss(
         previousCandidates: Candidates?,
         previousConstraints: List<Constraint>,

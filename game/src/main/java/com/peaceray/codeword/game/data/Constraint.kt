@@ -10,6 +10,7 @@ package com.peaceray.codeword.game.data
  * is aggregated with guessers only knowing the *number* of exact and included characters.
  */
 data class Constraint private constructor(val candidate: String, val markup: List<MarkupType>) {
+
     /**
      * A label marking a key (letter) in the candidate code, indicating its usage in
      * the unknown "true" code.
@@ -37,6 +38,42 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
         };
 
         abstract fun asKey(): Char
+    }
+
+    /**
+     * Describes a Violation of a Constraint by a guess or other candidate code.
+     *
+     * @param constraint The Constraint being violated
+     * @param candidate The candidate string which violates the Constraint
+     * @param markup The MarkupType being violated. e.g. for [MarkupType.EXACT], the letter
+     * does not appear in that location of the Candidate.
+     * @param character The character on which the Markup is applied, if applicable.
+     * @param position The position in the Constraint at which the Markup is applied, if applicable.
+     * @param candidatePosition The position in the candidate at which the violating character is found, if any.
+     */
+    data class Violation(
+        val constraint: Constraint,
+        val candidate: String,
+        val markup: MarkupType,
+        val position: Int? = null,
+        val character: Char? = null,
+        val candidatePosition: Int? = null,
+        val candidateCharacter: Char? = null
+    ) {
+        constructor(
+            constraint: Constraint,
+            candidate: String,
+            position: Int,
+            candidatePosition: Int? = null
+        ): this(
+            constraint,
+            candidate,
+            constraint.markup[position],
+            position,
+            constraint.candidate[position],
+            candidatePosition,
+            if (candidatePosition == null) null else candidate[candidatePosition]
+        )
     }
 
     val exact = markup.count { it == MarkupType.EXACT }
@@ -156,14 +193,15 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                 val remainingUnmatched = guessUnmatched.toMutableList()
 
                 // check that this matches the constraint's exact and included counts
-                exact == matchPairs.size
-                        && included == candidateUnmatched.count { remainingUnmatched.remove(it) }
+                val extraMatches = matchPairs.size - exact
+                val includedAndExtra = candidateUnmatched.count { remainingUnmatched.remove(it) } + extraMatches
+                extraMatches >= 0 && included <= includedAndExtra
             }
             else -> {
                 val zipped = candidate.zip(guess)
 
                 // find an exact match that is not satisfied
-                if (zipped.filterIndexed { index, _ -> markup[index] == Constraint.MarkupType.EXACT }
+                if (zipped.filterIndexed { index, _ -> markup[index] == MarkupType.EXACT }
                         .any { it.first != it.second }
                 ) {
                     return false
@@ -191,6 +229,93 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
 
                 // allow
                 true
+            }
+        }
+    }
+
+    /**
+     * Returns the violations found when comparing the provided guess against this constraint
+     * according to the specified policy.
+     *
+     * whether the provided guess is consistent with this Constraint; i.e. whether it is not
+     * eliminated by it according to the specified policy. Note that for games based only on
+     * [exact] and [included] counts, where the specific letters marked as such are not revealed to
+     * the guesser, only a policy of [ConstraintPolicy.IGNORE] makes sense, but
+     * [ConstraintPolicy.AGGREGATED] will provide "position-less" responses.
+     *
+     * @param guess The guess to check against this constraint
+     * @param policy The policy to apply.
+     * @return A List of pairs, with each item showing the [MarkupType] and string-position
+     * of a constraint character that is not matched by the guess.
+     */
+    fun violations(guess: String, policy: ConstraintPolicy): List<Violation> {
+        val list = mutableListOf<Violation>()
+        return when (policy) {
+            ConstraintPolicy.IGNORE -> list.toList()  // always allowed
+            ConstraintPolicy.AGGREGATED -> {
+                val (matchPairs, unmatchedPairs) = candidate.zip(guess).partition { it.first == it.second }
+                val (candidateUnmatched, guessUnmatched) = unmatchedPairs.unzip()
+                val remainingUnmatched = guessUnmatched.toMutableList()
+
+                // check that this matches the constraint's exact and included counts
+                val extraMatches = matchPairs.size - exact
+                val includedAndExtra = candidateUnmatched.count { remainingUnmatched.remove(it) } + extraMatches
+
+                if (extraMatches < 0) list.add(Violation(this, guess, MarkupType.EXACT))
+                if (included > includedAndExtra) list.add(Violation(this, guess, MarkupType.INCLUDED))
+                list.toList()
+            }
+            else -> {
+                val zipped = candidate.zip(guess)
+
+                // find exact matches that are not satisfied
+                zipped.forEachIndexed { index, pair ->
+                    if (markup[index] == MarkupType.EXACT && pair.first != pair.second) {
+                        list.add(Violation(this, guess, index, index))
+                    }
+                }
+
+                // all INCLUDED characters must be accounted for; exclude valid EXACT matches
+                val available = guess.filterIndexed { index, c ->
+                    markup[index] != MarkupType.EXACT || c != candidate[index]
+                }.toMutableList()
+
+                candidate.forEachIndexed { index, c ->
+                    if (markup[index] == MarkupType.INCLUDED) {
+                        if (c in available) {
+                            available.remove(c)
+                        } else {
+                            list.add(Violation(this, guess, index))
+                        }
+                    }
+                }
+
+                if (policy == ConstraintPolicy.ALL) {
+                    // non-included letters must not appear in the remaining string
+                    val remaining = guess.toMutableList()
+                    val indices = MutableList(remaining.size) { it }
+                    candidate.forEachIndexed { index, c ->
+                        if (markup[index] != MarkupType.NO) {
+                            val index = remaining.indexOf(c)
+                            if (index >= 0) {
+                                remaining.removeAt(index)
+                                indices.removeAt(index)
+                            }
+                        }
+                    }
+
+                    candidate.forEachIndexed { index, c ->
+                        if (markup[index] == MarkupType.NO && c in remaining) {
+                            val origIndex = indices[remaining.indexOf(c)]
+                            list.add(Violation(this, guess, index, origIndex))
+                            val indexNow = remaining.indexOf(c)
+                            remaining.removeAt(indexNow)
+                            indices.removeAt(indexNow)
+                        }
+                    }
+                }
+
+                list.toList()
             }
         }
     }

@@ -12,5 +12,6 @@
 
         <attr name="keyTextViewId" format="integer"/>
         <attr name="keyImageViewId" format="integer"/>
+        <attr name="keyBackgroundViewId" format="integer"/>
     </declare-styleable>
 </resources>
