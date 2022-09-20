@@ -2,6 +2,7 @@ package com.peaceray.codeword.game
 
 import com.peaceray.codeword.game.data.*
 import com.peaceray.codeword.game.data.Constraint
+import java.util.*
 
 /**
  * A Game represents an ongoing (or completed) interaction between two players: the secret
@@ -29,7 +30,7 @@ import com.peaceray.codeword.game.data.Constraint
  * Use [Game.atMove] to restore the game to the previous state (require repeating move
  * logic).
  */
-class Game(settings: Settings, val validator: (String) -> Boolean) {
+class Game(settings: Settings, val validator: (String) -> Boolean, uuid: UUID? = null) {
 
     /**
      * Creates a game and quickly plays through the specified moves, returning the
@@ -46,10 +47,11 @@ class Game(settings: Settings, val validator: (String) -> Boolean) {
         fun atMove(
             settings: Settings,
             validator: (String) -> Boolean,
+            uuid: UUID,
             constraints: List<Constraint>,
             currentGuess: String? = null
         ): Game {
-            val game = Game(settings, validator)
+            val game = Game(settings, validator, uuid)
             constraints.forEach {
                 game.guess(it.candidate)
                 game.evaluate(it)
@@ -69,6 +71,8 @@ class Game(settings: Settings, val validator: (String) -> Boolean) {
     class IllegalSettingsException(val error: SettingsError, message: String): IllegalArgumentException(message)
     class IllegalGuessException(val error: GuessError, val violations: List<Constraint.Violation>?, message: String): IllegalArgumentException(message)
     class IllegalEvaluationException(val error: EvaluationError, message: String): IllegalArgumentException(message)
+
+    val uuid = uuid ?: UUID.randomUUID()
 
     var settings: Settings = settings
         private set

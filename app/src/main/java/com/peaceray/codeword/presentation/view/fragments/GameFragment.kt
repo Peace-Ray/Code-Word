@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.annotation.LayoutRes
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,8 +19,10 @@ import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
-import com.peaceray.codeword.presentation.view.component.adapters.GuessLetterAdapter
-import com.peaceray.codeword.presentation.view.component.viewholders.GuessLetterViewHolder
+import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
+import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
+import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessLetterViewHolder
 import com.peaceray.codeword.presentation.view.component.views.CodeKeyboardView
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
@@ -36,14 +39,21 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         const val ARG_GAME_SEED = "${NAME}_GAME_SEED"
         const val ARG_GAME_SETUP = "${NAME}_GAME_SETUP"
         const val ARG_GAME_SETUP_UPDATE = "${NAME}_GAME_SETUP_UPDATE"
+        const val ARG_CURRENT_GUESS = "${NAME}_CURRENT_GUESS"
 
-        fun newInstance(seed: String?, gameSetup: GameSetup, gameSetupUpdate: GameSetup? = null): GameFragment {
+        fun newInstance(
+            seed: String?,
+            gameSetup: GameSetup,
+            gameSetupUpdate: GameSetup? = null,
+            currentGuess: String? = null
+        ): GameFragment {
             val fragment = GameFragment()
 
             val args = Bundle()
             args.putString(ARG_GAME_SEED, seed)
             args.putParcelable(ARG_GAME_SETUP, gameSetup)
             args.putParcelable(ARG_GAME_SETUP_UPDATE, gameSetupUpdate ?: gameSetup)
+            args.putString(ARG_CURRENT_GUESS, currentGuess)
 
             fragment.arguments = args
             return fragment
@@ -51,15 +61,44 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     }
 
     interface OnInteractionListener {
+        fun onGameStart(
+            fragment: Fragment,
+            seed: String?,
+            gameSetup: GameSetup
+        )
+
         fun onGameOver(
             fragment: GameFragment,
             seed: String?,
             gameSetup: GameSetup,
+            uuid: UUID,
             solution: String?,
             rounds: Int,
             solved: Boolean,
             playerVictory: Boolean
         )
+    }
+
+    /**
+     * Forfeit the game in progress. If the game is already over, this function has no effect
+     * (can't forfeit a completed game).
+     */
+    fun forfeit() {
+        presenter.onForfeit()
+    }
+
+    /**
+     * Retrieve the currently-entered guess, which may be a partial string.
+     */
+    fun getCurrentGuess() = guessAdapter.guesses.lastOrNull()?.candidate
+
+    /**
+     * Indicate to the Fragment that it will be swapped in to replace an existing GameFragment
+     * in the same state (and should therefore minimize transition animations)
+     */
+    fun swapIn(): GameFragment {
+        swappingIn = true
+        return this
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -69,19 +108,23 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     //---------------------------------------------------------------------------------------------
     private var _binding: FragmentGameBinding? = null
     private val binding get() = _binding!!
+    private var keyboardView: CodeKeyboardView? = null
 
     @Inject lateinit var guessAdapter: GuessLetterAdapter
     lateinit var guessLayoutManager: RecyclerView.LayoutManager
 
     @Inject lateinit var colorSwatchManager: ColorSwatchManager
 
+    private var swappingIn = false
+    private var started = false
+
     var listener: OnInteractionListener? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         listener = when {
-            parentFragment is GameSetupFragment.OnInteractionListener -> parentFragment as OnInteractionListener
-            context is GameFragment.OnInteractionListener -> context
+            parentFragment is OnInteractionListener -> parentFragment as OnInteractionListener
+            context is OnInteractionListener -> context
             else -> throw RuntimeException(
                 "${parentFragment.toString()} or ${context}"
                         + " must implement ${javaClass.simpleName}.OnInteractionListener"
@@ -106,34 +149,22 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
+        if (swappingIn) {   // postpone entry transition until Presenter applies settings
+            postponeEnterTransition()
+            Timber.v("Swapping In: postponing entry transition")
+        }
+
         // view behavior
         binding.constraintRecyclerView.adapter = guessAdapter
         binding.constraintRecyclerView.itemAnimator = GuessLetterViewHolder.ItemAnimator()
-        onRecyclerViewContentSizeChange()
-
-        binding.keyboardContainer.keyboardView.isEnabled = false
-        binding.keyboardContainer.keyboardView.onKeyListener = object: CodeKeyboardView.OnKeyListener {
-            override fun onCharacter(character: Char) {
-                Timber.v("onCharacter $character")
-                val guess = guessAdapter.guess?.candidate ?: ""
-                presenter.onGuessUpdated(guess, "$guess$character")
-            }
-
-            override fun onEnter() {
-                val guess = guessAdapter.guess?.candidate ?: ""
-                presenter.onGuess(guess)
-            }
-
-            override fun onDelete() {
-                val guess = guessAdapter.guess?.candidate ?: ""
-                if (guess.isNotEmpty()) {
-                    presenter.onGuessUpdated(guess, guess.dropLast(1))
-                }
-            }
-        }
+        onRecyclerViewContentHeightChange()
 
         // view colors
         colorSwatchManager.colorSwatchLiveData.observe(viewLifecycleOwner) { updateViewColors(it) }
+
+        // respond to size changes
+        binding.mainView.addOnLayoutChangeListener(onMainViewLayoutChangeListener)
 
         // attach to presenter for logic
         attach(presenter)
@@ -142,6 +173,31 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        // clear view status cache
+        recyclerViewCellWidth = null
+        recyclerViewWidth = null
+        recyclerViewScrolling = null
+    }
+
+    /**
+     * The Presenter is prompting the user for some action (even to "wait" for an update or a
+     * Game Over display). Therefore, if the Fragment has not yet been displayed -- perhaps because
+     * a transition animation was delayed -- it should at this point be shown to the screen.
+     */
+    private fun onPresenterPrompting() {
+        if (swappingIn) {
+            swappingIn = false
+            // make views visible (previously invisible to shortcut animation)
+            keyboardView?.visibility = View.VISIBLE
+            // start entry transition
+            startPostponedEnterTransition()
+            Timber.v("Swapping In: starting entry transition")
+        }
+
+        if (!started) {
+            started = true
+            listener?.onGameStart(this, getGameSeed(), getGameSetup())
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -149,7 +205,30 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     //region View Helpers
     //---------------------------------------------------------------------------------------------
     private var toast: Toast? = null
+    private var recyclerViewCellWidth: Int? = null
+    private var recyclerViewWidth: Int? = null
     private var recyclerViewScrolling: Boolean? = null
+
+    private var keyboardCharacterCount: Int = 0
+    private var keyboardLocale: Locale? = null
+    @LayoutRes var keyboardLayout: Int = 0
+
+    private val onMainViewLayoutChangeListener = object: View.OnLayoutChangeListener {
+        override fun onLayoutChange(
+            view: View?,
+            left: Int,
+            top: Int,
+            right: Int,
+            bottom: Int,
+            oldLeft: Int,
+            oldTop: Int,
+            oldRight: Int,
+            oldBottom: Int
+        ) {
+            onMainViewContentWidthChange(right - left)
+            onRecyclerViewContentHeightChange()
+        }
+    }
 
     private fun displayError(message: CharSequence) {
         toast?.cancel()
@@ -160,8 +239,9 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     private fun displayGuessError(message: CharSequence) {
         displayError(message)
         // rumble guess
-        val length = guessAdapter.guess?.candidate?.length ?: 0
-        guessAdapter.guessItemRange(placeholders = length == 0)
+        val length = guessAdapter.guesses.lastOrNull()?.candidate?.length ?: 0
+        val rangePair = guessAdapter.activeItemRange(placeholders = length == 0)
+        IntRange(rangePair.first, rangePair.first + rangePair.second - 1)
             .map { binding.constraintRecyclerView.findViewHolderForAdapterPosition(it) }
             .forEach { if (it is GuessLetterViewHolder) it.rumble() }
     }
@@ -172,25 +252,124 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     }
 
     private fun updateViewColors(swatch: ColorSwatch) {
+        Timber.v("from ColorManager?: updateViewColors")
         binding.mainView.setBackgroundColor(swatch.container.background)
         binding.constraintRecyclerView.setBackgroundColor(swatch.container.background)
-        binding.keyboardContainer.keyboardView.setBackgroundColor(swatch.container.background)
+        binding.keyboardContainer.setBackgroundColor(swatch.container.background)
     }
 
-    private fun onRecyclerViewContentSizeChange() {
-        binding.constraintRecyclerView.post {
-            val height = binding.constraintRecyclerView.computeVerticalScrollRange()
-            val scrolling = height > binding.constraintRecyclerView.height
-            if (scrolling != recyclerViewScrolling) {
-                // raise or lower keyboard
-                binding.keyboardContainer.keyboardView.animate()
-                    .z(if (scrolling) resources.getDimension(R.dimen.keyboard_elevation) else 0.0f)
-                    .setDuration(resources.getInteger(android.R.integer.config_shortAnimTime).toLong())
-                    .start()
+    private fun onMainViewContentWidthChange(width: Int) {
+        val cells = guessAdapter.itemsPerGameRow
+        if (cells > 0 && width > 0 && (cells != recyclerViewCellWidth || width != recyclerViewWidth)) {
+            Timber.v("cells $cells prevCells $recyclerViewCellWidth width $width prevWidth $recyclerViewWidth")
+            val availableWidth = width - (binding.constraintRecyclerView.paddingStart + binding.constraintRecyclerView.paddingEnd)
+            val availableWidthPerCell = availableWidth / cells
+            val letterLayout = GuessLetterCellLayout.create(resources, availableWidthPerCell.toFloat())
+            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, availableWidthPerCell.toFloat())
 
-                recyclerViewScrolling = scrolling
+            // set the layouts
+            if (guessAdapter.cellLayout[GuessLetterAdapter.ItemStyle.LETTER_MARKUP]?.layoutId != letterLayout.layoutId ||
+                    guessAdapter.cellLayout[GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER]?.layoutId != pipLayout.layoutId) {
+                binding.constraintRecyclerView.adapter = null
+                binding.constraintRecyclerView.layoutManager = null
+                guessAdapter.setCellLayouts(mapOf(
+                    Pair(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.EMPTY, letterLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout),
+                ))
+                binding.constraintRecyclerView.adapter = guessAdapter
+                binding.constraintRecyclerView.layoutManager = guessLayoutManager
+                guessAdapter.notifyDataSetChanged()
+            }
+
+            // update for later efficiency
+            recyclerViewWidth = width
+            recyclerViewCellWidth = cells
+        }
+    }
+
+    private fun onRecyclerViewContentHeightChange() {
+        binding.constraintRecyclerView.post {
+            _binding?.let {
+                val height = it.constraintRecyclerView.computeVerticalScrollRange()
+                val scrolling = height > it.constraintRecyclerView.height
+                Timber.v("keyboard elevation check for content height $height view height ${it.constraintRecyclerView.height} scrolling $scrolling")
+                if (scrolling != recyclerViewScrolling) {
+                    // raise or lower keyboard
+                    it.keyboardContainer.animate()
+                        ?.z(if (scrolling) resources.getDimension(R.dimen.keyboard_elevation) else 0.0f)
+                        ?.setDuration(resources.getInteger(android.R.integer.config_shortAnimTime).toLong())
+                        ?.start()
+
+                    recyclerViewScrolling = scrolling
+
+                    Timber.v("keyboard elevation set for scrolling $scrolling")
+                }
             }
         }
+    }
+
+    private fun onRecyclerViewActiveItemChange() {
+        val positionRange = guessAdapter.activeItemRange(true)
+        val position = if (positionRange.second == 0) positionRange.first else {
+            positionRange.first + positionRange.second - 1
+        }
+        binding.constraintRecyclerView.postDelayed({
+            binding.constraintRecyclerView.smoothScrollToPosition(position)
+        }, 100)
+    }
+
+    private val keyboardOnKeyListener = object: CodeKeyboardView.OnKeyListener {
+        override fun onCharacter(character: Char) {
+            Timber.v("onCharacter $character")
+            val guess = guessAdapter.guesses.lastOrNull()?.candidate ?: ""
+            presenter.onGuessUpdated(guess, "$guess$character")
+        }
+
+        override fun onEnter() {
+            val guess = guessAdapter.guesses.lastOrNull()?.candidate ?: ""
+            presenter.onGuess(guess)
+        }
+
+        override fun onDelete() {
+            val guess = guessAdapter.guesses.lastOrNull()?.candidate ?: ""
+            if (guess.isNotEmpty()) {
+                presenter.onGuessUpdated(guess, guess.dropLast(1))
+            }
+        }
+    }
+
+    private fun onKeyboardStyleUpdate(characters: Iterable<Char>, locale: Locale?) {
+        val charList = characters.toList()
+
+        if (charList.size != keyboardCharacterCount || keyboardLocale != locale) {
+            val layoutId = when {
+                locale != null -> R.layout.keyboard_qwerty
+                charList.size <= 4 -> R.layout.keyboard_code_0_4
+                charList.size <= 6 -> R.layout.keyboard_code_5_6
+                charList.size <= 10 -> R.layout.keyboard_code_7_10
+                charList.size <= 16 -> R.layout.keyboard_code_11_16
+                else -> R.layout.keyboard_code_17_27
+            }
+
+            if (layoutId != keyboardLayout) {
+                binding.keyboardContainer.removeAllViews()
+                val keyboard = layoutInflater.inflate(layoutId, binding.keyboardContainer, true)
+                keyboardView = keyboard.findViewById(R.id.keyboardView)
+                keyboardView?.visibility = if (swappingIn) View.INVISIBLE else View.VISIBLE // invisible to shortcut animations
+
+                keyboardView?.onKeyListener = keyboardOnKeyListener
+
+                // TODO set keyboard background color, elevation
+
+                keyboardLayout = layoutId
+            }
+        }
+
+        // update keyboard style
+        keyboardView?.keyStyle = if (locale == null) CodeKeyboardView.KeyStyle.CODE else CodeKeyboardView.KeyStyle.MARKUP
+        keyboardView?.setCodeCharacters(characters)
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -198,6 +377,7 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     //region CodeGameContract
     //---------------------------------------------------------------------------------------------
     @Inject lateinit var presenter: GameContract.Presenter
+    private var lastMoveAt: Long = 0        // the time the last game move was entered
 
     override fun getGameSeed(): String? {
         return requireArguments().getString(ARG_GAME_SEED)
@@ -211,127 +391,161 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         return requireArguments().getParcelable(ARG_GAME_SETUP_UPDATE)!!
     }
 
+    override fun getCachedGuess(): String {
+        return requireArguments().getString(ARG_CURRENT_GUESS) ?: ""
+    }
+
     override fun setGameFieldSize(length: Int, rows: Int) {
         Timber.v("setGameFieldSize: $length $rows")
-        guessLayoutManager = GridLayoutManager(context, length)
-        binding.constraintRecyclerView.layoutManager = guessLayoutManager
-
         guessAdapter.setGameFieldSize(length, rows)
-        onRecyclerViewContentSizeChange()
+
+        updateLayoutManager()
+
+        onMainViewContentWidthChange(binding.mainView.width)
+        onRecyclerViewContentHeightChange()
     }
 
     override fun setGameFieldUnlimited(length: Int) {
         Timber.v("setGameFieldUnlimited: $length")
-        guessLayoutManager = GridLayoutManager(context, length)
-        binding.constraintRecyclerView.layoutManager = guessLayoutManager
-
-        guessAdapter.setGameFieldSize(length, 0)
-        onRecyclerViewContentSizeChange()
+        setGameFieldSize(length, 0)
     }
 
     override fun setCodeLanguage(characters: Iterable<Char>, locale: Locale) {
-        TODO("Not yet implemented")
+        Timber.v("TODO: configure UI based on locale $locale characters $characters")
+        guessAdapter.setItemStyles(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
+
+        onKeyboardStyleUpdate(characters, locale)
+
+        // update grid width if already set
+        updateLayoutManager()
     }
 
     override fun setCodeComposition(characters: Iterable<Char>) {
-        TODO("Not yet implemented")
+        Timber.v("TODO: configure UI based on locale code characters $characters")
+        guessAdapter.setCodeCharacters(characters)
+        guessAdapter.setItemStyles(
+            GuessLetterAdapter.ItemStyle.LETTER_CODE,
+            GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
+        )
+
+        onKeyboardStyleUpdate(characters, null)
+
+        updateLayoutManager()
+    }
+
+    private fun updateLayoutManager() {
+        val gridLayoutManager = GridLayoutManager(context, guessAdapter.itemsPerGameRow)
+        val adapter = guessAdapter
+        gridLayoutManager.spanSizeLookup = object: GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                // Timber.d("getSpanSize for $position: ${adapter.positionSpan(position)}")
+                return adapter.positionSpan(position)
+            }
+        }
+        guessLayoutManager = gridLayoutManager
+        binding.constraintRecyclerView.layoutManager = gridLayoutManager
     }
 
     override fun setConstraints(constraints: List<Constraint>, animate: Boolean) {
         Timber.v("setConstraints: ${constraints.size}")
         // TODO deal with [animate]
-        guessAdapter.setConstraints(constraints)
+        guessAdapter.replace(constraints = constraints)
 
-        val positionRange = guessAdapter.guessItemRange(true)
-        binding.constraintRecyclerView.postDelayed({
-            binding.constraintRecyclerView.smoothScrollToPosition(positionRange.last)
-        }, 100)
-
-        onRecyclerViewContentSizeChange()
+        onRecyclerViewActiveItemChange()
+        onRecyclerViewContentHeightChange()
     }
 
     override fun setGuess(guess: String, animate: Boolean) {
         Timber.v("setGuess: $guess")
         // TODO deal with [animate]
-        guessAdapter.replaceGuess(guess = guess)
+        guessAdapter.update(guess = guess)
 
-        val positionRange = guessAdapter.guessItemRange(true)
-        binding.constraintRecyclerView.postDelayed({
-            binding.constraintRecyclerView.smoothScrollToPosition(positionRange.last)
-        }, 100)
+        onRecyclerViewActiveItemChange()
+
+        lastMoveAt = System.currentTimeMillis()
     }
 
     override fun replaceGuessWithConstraint(constraint: Constraint, animate: Boolean) {
         Timber.v("replaceGuessWithConstraint: $constraint")
         // TODO deal with [animate]
-        guessAdapter.replaceGuess(constraint = constraint)
+        guessAdapter.update(constraint = constraint)
 
-        val positionRange = guessAdapter.guessItemRange(true)
-        binding.constraintRecyclerView.postDelayed({
-            binding.constraintRecyclerView.smoothScrollToPosition(positionRange.last)
-        }, 100)
+        onRecyclerViewActiveItemChange()
+        onRecyclerViewContentHeightChange()
 
-        onRecyclerViewContentSizeChange()
+        lastMoveAt = System.currentTimeMillis()
+
+        if (animate) onPresenterPrompting()
     }
 
     override fun setCharacterEvaluations(evaluations: Map<Char, CharacterEvaluation>) {
         Timber.v("setCharacterEvaluations ${evaluations.size}")
-        binding.keyboardContainer.keyboardView.setCharacterEvaluations(evaluations)
+        keyboardView?.setCharacterEvaluations(evaluations)
     }
 
-    override fun promptForGuess() {
+    override fun promptForGuess(suggestedGuess: String?) {
         Timber.v("promptForGuess")
         // clear "guess" field or placeholder
-        guessAdapter.replaceGuess(guess = "")
+        guessAdapter.update(guess = (suggestedGuess ?: ""))
 
-        binding.keyboardContainer.keyboardView.isEnabled = true
+        keyboardView?.isEnabled = true
+
+        onPresenterPrompting()
     }
 
     override fun promptForEvaluation(guess: String) {
         Timber.v("promptForEvaluation $guess")
-        guessAdapter.replaceGuess(guess = guess)
+        guessAdapter.update(guess = guess)
 
-        binding.keyboardContainer.keyboardView.isEnabled = false
+        keyboardView?.isEnabled = false
+
+        onPresenterPrompting()
     }
 
     override fun promptForWait() {
         Timber.v("promptForWait")
-        // TODO disable guessing
+        keyboardView?.isEnabled = false
         // TODO disable evaluation
         // TODO show a "please wait" indicator
+
+        onPresenterPrompting()
     }
 
     override fun showGameOver(
+        uuid: UUID,
         solution: String?,
         rounds: Int,
         solved: Boolean,
         playerVictory: Boolean
     ) {
         Timber.v("showGameOver ($solution ${if (solved) "found" else "not found"} in $rounds) Player Victory: $playerVictory")
+        keyboardView?.isEnabled = false
 
-        binding.keyboardContainer.keyboardView.isEnabled = false
+        // note: allow a little leeway for the last action's animation to complete before
+        // showing a Game Over popup. There is no need for this delay if moves have not been
+        // recently entered.
+        // TODO a more formal animation scheduling system that queues game updates at a pace legible to players
+        val animUnits = 0.8 + guessAdapter.itemsPerGameRow * 0.2
+        val anim = resources.getInteger(android.R.integer.config_mediumAnimTime) * animUnits
+        view?.postDelayed({
+            listener?.onGameOver(
+                this,
+                getGameSeed(),
+                getUpdatedGameSetup(),
+                uuid,
+                solution,
+                rounds,
+                solved,
+                playerVictory
+            )
+        }, Math.max(0L, (lastMoveAt + anim.toLong() + 500) - System.currentTimeMillis()))
 
-        listener?.onGameOver(
-            this,
-            requireArguments().getString(ARG_GAME_SEED),
-            requireArguments().getParcelable(ARG_GAME_SETUP)!!,
-            solution,
-            rounds,
-            solved,
-            playerVictory
-        )
-
-        val playerString = if (playerVictory) "You Win!" else "Game Over"
-        val toastString = when {
-            solved -> "$playerString\n\"$solution\" guessed in $rounds rounds."
-            solution != null -> "$playerString\n\"$solution\" not guessed."
-            else -> "$playerString\nCode word wasn't guessed in $rounds rounds"
-        }
-
-        Toast.makeText(context, toastString, Toast.LENGTH_LONG).show()
+        onPresenterPrompting()
     }
 
     override fun showError(error: GameContract.ErrorType, violations: List<Constraint.Violation>?) {
+        onPresenterPrompting()
+
         val word = when (error) {
             GameContract.ErrorType.CODE_EMPTY,
             GameContract.ErrorType.CODE_LENGTH,
@@ -361,7 +575,7 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                 val violation = violations?.firstOrNull()
                 val text = when {
                     violation?.markup == Constraint.MarkupType.EXACT && violation.character != null ->
-                        getString(R.string.game_error_word_constraint_exact, word, violation.character, violation.position)
+                        getString(R.string.game_error_word_constraint_exact, word, violation.character, violation.position!! + 1)
                     violation?.markup == Constraint.MarkupType.INCLUDED && violation.character != null ->
                         getString(R.string.game_error_word_constraint_included, word, violation.character)
                     violation?.markup == Constraint.MarkupType.NO && violation.character != null ->

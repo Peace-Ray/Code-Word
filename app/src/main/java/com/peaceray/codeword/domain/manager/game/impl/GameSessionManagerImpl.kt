@@ -45,6 +45,7 @@ class GameSessionManagerImpl @Inject constructor(
     override fun getGame(save: GameSaveData) = Game.atMove(
         save.settings,
         getValidator(save.setup),
+        save.uuid,
         save.constraints,
         save.currentGuess
     )
@@ -76,6 +77,15 @@ class GameSessionManagerImpl @Inject constructor(
 
     override fun getEvaluator(setup: GameSetup): Evaluator {
         // TODO caching
+
+        // Explicit Secret?
+        if (setup.vocabulary.secret != null) {
+            return ModularHonestEvaluator(
+                OneCodeGenerator(setup.vocabulary.secret),
+                UnitScorer(),
+                RandomSelector(solutions = true, seed = setup.randomSeed)
+            )
+        }
 
         return when(setup.evaluator) {
             GameSetup.Evaluator.HONEST -> ModularHonestEvaluator(
@@ -212,6 +222,7 @@ class GameSessionManagerImpl @Inject constructor(
         return if (save == null) null else Pair(save, Game.atMove(
             save.settings,
             getValidator(save.setup),
+            save.uuid,
             save.constraints,
             save.currentGuess
         ))
@@ -321,14 +332,39 @@ class GameSessionManagerImpl @Inject constructor(
                 )
             }
 
-            // TODO modify to CodeCollapsingEnumerationGenerator
-            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> CodeEnumeratingGenerator(
-                getCharRange(setup.vocabulary.characters),
-                setup.vocabulary.length,
-                guessPolicy,
-                solutionPolicy,
-                seed = setup.randomSeed
-            )
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> if (evaluator) {
+                if (setup.evaluator == GameSetup.Evaluator.HONEST) {
+                    // enumerating all valid codes is unnecessarily expensive for honest evaluators;
+                    // just generate one code and be done with it.
+                    OneCodeEnumeratingGenerator(
+                        getCharRange(setup.vocabulary.characters),
+                        setup.vocabulary.length,
+                        seed = setup.randomSeed
+                    )
+                } else {
+                    // dishonest evaluation requires expensive computations at each step to
+                    // generate and examine the solution space. Use truncating generation to ensure
+                    // this comparison does not get prohibitively expensive.
+                    SolutionTruncatedEnumerationCodeGenerator(
+                        getCharRange(setup.vocabulary.characters),
+                        setup.vocabulary.length,
+                        solutionPolicy,
+                        shuffle = true,
+                        truncateAtSize = 10000,
+                        pretruncateAtSize = 100000,
+                        seed = setup.randomSeed
+                    )
+                }
+            } else {
+                // TODO modify to CodeCollapsingEnumerationGenerator for efficiency.
+                CodeEnumeratingGenerator(
+                    getCharRange(setup.vocabulary.characters),
+                    setup.vocabulary.length,
+                    guessPolicy,
+                    solutionPolicy,
+                    seed = setup.randomSeed
+                )
+            }
         }
     }
 
@@ -345,8 +381,8 @@ class GameSessionManagerImpl @Inject constructor(
     // TODO if adding new vocabulary files, e.g. for different languages, consider cache eviction
     private val cachedWordLists = mutableMapOf<String, List<String>>()
 
-    private fun getWordList(length: Int = 5, type: WordListType, truncate: Int? = null, portion: Float? = null, alt: Boolean = false): List<String> {
-        val keyBase = if (alt) "en-US/alt/length-${length}" else "en-US/length-${length}"
+    private fun getWordList(length: Int = 5, type: WordListType, truncate: Int? = null, portion: Float? = null): List<String> {
+        val keyBase = "en-US/standard/length-${length}"
 
         var portionTruncate = 1.0f
         val portionBase = when {

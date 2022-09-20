@@ -21,7 +21,7 @@ enum class ConstraintPolicy {
      * Is a distinct, overlapping set to [POSITIVE].
      */
     AGGREGATED {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == AGGREGATED || policy == ALL
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy == AGGREGATED || policy == ALL || policy == PERFECT
         override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE || policy == AGGREGATED
     },
 
@@ -33,7 +33,7 @@ enum class ConstraintPolicy {
      * Is a distinct, overlapping set to [AGGREGATED].
      */
     POSITIVE {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == POSITIVE || policy == ALL
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy == POSITIVE || policy == ALL || policy == PERFECT
         override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE || policy == POSITIVE
     },
 
@@ -42,7 +42,21 @@ enum class ConstraintPolicy {
      * must not occur in the candidate.
      */
     ALL {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == ALL
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy == ALL || policy == PERFECT
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy != PERFECT
+    },
+
+    /**
+     * Perfectly restricted. Any letters marked [Constraint.MarkupType.EXACT] must occur in those
+     * locations. Any letters marked [Constraint.MarkupType.INCLUDED] must occur, but in different
+     * locations (this is the main difference from [ALL]). Any letters marked [Constraint.MarkupType.NO]
+     * must not occur.
+     *
+     * Note that it is possible for a letter to appear more than once, with different markup; they
+     * are dealt with in the order listed above.
+     */
+    PERFECT {
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy == PERFECT
         override fun isSubsetOf(policy: ConstraintPolicy) = true
     };
 

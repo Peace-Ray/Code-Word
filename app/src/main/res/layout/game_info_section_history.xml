@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/main_layout_margin_vertical_half"
+    android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+    android:orientation="vertical"
+    android:gravity="top|center_horizontal"
+    android:id="@+id/mainViewPuzzleType"
+    >
+
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/game_info_section_history"
+        android:layout_marginBottom="@dimen/guess_container_margin_small"
+        style="@style/Widget.CodeWord.TextView.Header"
+        />
+
+    <TextView
+        android:id="@+id/attemptsAllTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_size"
+        />
+
+    <TextView
+        android:id="@+id/attemptsTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_size"
+        />
+
+    <TextView
+        android:id="@+id/streakTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_size"
+        />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

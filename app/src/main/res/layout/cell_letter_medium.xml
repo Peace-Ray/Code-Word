@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    android:id="@+id/backgroundView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/guess_letter_cell_medium_margin"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="@dimen/guess_letter_cell_medium_corner_radius"
+    app:strokeWidth="@dimen/guess_letter_cell_medium_stroke_width"
+    >
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="@dimen/guess_letter_cell_medium_size"
+        android:layout_height="@dimen/guess_letter_cell_medium_size"
+        app:layout_constraintDimensionRatio="w,1:1"
+        app:layout_constraintHeight_max="75dp"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:gravity="center"
+        android:textAllCaps="true"
+        android:textSize="@dimen/guess_letter_medium_text_size"
+        android:textStyle="bold"
+        />
+
+</com.google.android.material.card.MaterialCardView>

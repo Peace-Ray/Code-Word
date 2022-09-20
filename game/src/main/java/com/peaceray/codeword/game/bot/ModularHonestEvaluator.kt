@@ -17,19 +17,21 @@ class ModularHonestEvaluator(
 ): Evaluator {
     private var code: String = ""
         get() {
-            if (field == "") {
-                synchronized(this) {
+            synchronized(this) {
+                if (field == "") {
                     field = generateCode()
                 }
+                return field
             }
-            return field
         }
     override fun evaluate(candidate: String, constraints: List<Constraint>) = Constraint.create(candidate, code)
 
     override fun peek(constraints: List<Constraint>) = code
 
     override fun reset() {
-        code = generateCode()
+        synchronized(this) {
+            code = generateCode()
+        }
     }
 
     private fun generateCode(): String {

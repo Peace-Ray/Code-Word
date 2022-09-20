@@ -38,6 +38,15 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
         };
 
         abstract fun asKey(): Char
+
+        companion object {
+            fun fromKey(key: Char) = when(key) {
+                'E' -> EXACT
+                'I' -> INCLUDED
+                'N' -> NO
+                else -> throw IllegalArgumentException("No such MarkupType: $key")
+            }
+        }
     }
 
     /**
@@ -82,6 +91,15 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
     val correct = exact == candidate.length
 
     companion object {
+        /**
+         * Construct a Constraint based on the string, as output from [toString]
+         */
+        fun fromString(string: String): Constraint {
+            val parts = string.split(",")
+            val markup = parts[1].map { MarkupType.fromKey(it) }
+            return create(parts[0], markup)
+        }
+
         /**
          * Construct a Constraint based on a candidate guess and its key-by-key markup.
          *
@@ -139,7 +157,7 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
             return when(policy) {
                 ConstraintPolicy.IGNORE -> if (markup.all { it == MarkupType.EXACT }) "CORRECT" else "INCORRECT"
                 ConstraintPolicy.AGGREGATED -> "${markup.count { it == MarkupType.EXACT }},${markup.count { it == MarkupType.INCLUDED }}"
-                ConstraintPolicy.POSITIVE, ConstraintPolicy.ALL -> markup.map { it.asKey() }.joinToString("")
+                ConstraintPolicy.POSITIVE, ConstraintPolicy.ALL, ConstraintPolicy.PERFECT -> markup.map { it.asKey() }.joinToString("")
             }
         }
 
@@ -170,7 +188,7 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                     val iKey = MarkupType.INCLUDED.asKey()
                     "${markupKeys.count { it == eKey }},${markupKeys.count { it == iKey }}"
                 }
-                ConstraintPolicy.POSITIVE, ConstraintPolicy.ALL -> markupKeys.joinToString("")
+                ConstraintPolicy.POSITIVE, ConstraintPolicy.ALL, ConstraintPolicy.PERFECT -> markupKeys.joinToString("")
             }
         }
     }
@@ -183,42 +201,63 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
      *
      * @param guess The guess to check against this constraint
      * @param policy The policy to apply.
+     * @param partial A partial guess is provided. If 'true', will allow guesses that hypothetically
+     * could be _completed_ to match the constraint.
      */
-    fun allows(guess: String, policy: ConstraintPolicy): Boolean {
+    fun allows(guess: String, policy: ConstraintPolicy, partial: Boolean = false): Boolean {
+        // length check
+        val slack = candidate.length - guess.length
+        if (slack < 0 || (!partial && slack > 0)) return false
+
         return when (policy) {
             ConstraintPolicy.IGNORE -> true  // always allowed
             ConstraintPolicy.AGGREGATED -> {
+                // a guess is consistent with an AGGREGATED constraint if the candidate
+                // would receive that markup if attempted as a guess for the provided guess string.
                 val (matchPairs, unmatchedPairs) = candidate.zip(guess).partition { it.first == it.second }
                 val (candidateUnmatched, guessUnmatched) = unmatchedPairs.unzip()
-                val remainingUnmatched = guessUnmatched.toMutableList()
+                val remainingUnmatched = (candidateUnmatched + candidate.slice(guess.length until candidate.length).toList()).toMutableList()
 
                 // check that this matches the constraint's exact and included counts
-                val extraMatches = matchPairs.size - exact
-                val includedAndExtra = candidateUnmatched.count { remainingUnmatched.remove(it) } + extraMatches
-                extraMatches >= 0 && included <= includedAndExtra
+                val exact = matchPairs.size
+                val included = guessUnmatched.count { remainingUnmatched.remove(it) }
+
+                if (!partial) exact == this.exact && included == this.included else {
+                    val slackRequired = (this.exact - exact) + (this.included - included)
+                    exact <= this.exact && included <= this.included && slackRequired <= slack
+                }
             }
             else -> {
                 val zipped = candidate.zip(guess)
 
-                // find an exact match that is not satisfied
-                if (zipped.filterIndexed { index, _ -> markup[index] == MarkupType.EXACT }
-                        .any { it.first != it.second }
-                ) {
+                // find an exact match that is not satisfied (among guess characters)
+                if (zipped.filterIndexed { index, _ -> markup[index] == MarkupType.EXACT }.any { it.first != it.second }) {
                     return false
+                }
+
+                // count exact match characters yet-to-come in partial guess
+                val unsatisfiedExact = candidate.indices.count { it >= guess.length && markup[it] == MarkupType.EXACT }
+
+                // find an included match that appears in the same spot (disallowed by PERFECT)
+                if (policy == ConstraintPolicy.PERFECT) {
+                    if (zipped.filterIndexed { index, _ -> markup[index] == MarkupType.INCLUDED }.any { it.first == it.second }) {
+                        return false
+                    }
                 }
 
                 val available = guess.filterIndexed { index, _ -> markup[index] != MarkupType.EXACT }
                     .toMutableList()
 
                 // all exact matches ok; look for unsatisfied value matches
+                var unsatisfiedIncluded = 0
                 candidate
                     .filterIndexed { index, _ -> markup[index] == MarkupType.INCLUDED }
                     .forEach {
-                        if (it !in available) return false
+                        if (it !in available) unsatisfiedIncluded++
                         available.remove(it)
                     }
 
-                if (policy == ConstraintPolicy.ALL) {
+                if (policy == ConstraintPolicy.ALL || policy == ConstraintPolicy.PERFECT) {
                     // non-included letters must not appear in the remaining string
                     candidate
                         .filterIndexed { index, _ -> markup[index] == MarkupType.NO }
@@ -227,8 +266,9 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                         }
                 }
 
-                // allow
-                true
+                if (!partial) unsatisfiedIncluded == 0 else {
+                    unsatisfiedIncluded + unsatisfiedExact <= slack
+                }
             }
         }
     }
@@ -275,7 +315,16 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                     }
                 }
 
-                // all INCLUDED characters must be accounted for; exclude valid EXACT matches
+                // in PERFECT policy, INCLUDED characters must not occur in the same spot.
+                if (policy == ConstraintPolicy.PERFECT) {
+                    zipped.forEachIndexed { index, pair ->
+                        if (markup[index] == MarkupType.INCLUDED && pair.first == pair.second) {
+                            list.add(Violation(this, guess, index, index))
+                        }
+                    }
+                }
+
+                // all INCLUDED characters must be accounted for; exclude valid EXACT matches.
                 val available = guess.filterIndexed { index, c ->
                     markup[index] != MarkupType.EXACT || c != candidate[index]
                 }.toMutableList()
@@ -290,7 +339,7 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                     }
                 }
 
-                if (policy == ConstraintPolicy.ALL) {
+                if (policy == ConstraintPolicy.ALL || policy == ConstraintPolicy.PERFECT) {
                     // non-included letters must not appear in the remaining string
                     val remaining = guess.toMutableList()
                     val indices = MutableList(remaining.size) { it }
@@ -328,5 +377,9 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
      */
     fun asKey(policy: ConstraintPolicy): String {
         return asKey(candidate, markup, policy)
+    }
+
+    override fun toString(): String {
+        return "$candidate,${markup.map { it.asKey() }.joinToString("")}"
     }
 }

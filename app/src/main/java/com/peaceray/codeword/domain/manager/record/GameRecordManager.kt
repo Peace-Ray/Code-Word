@@ -1,7 +1,101 @@
 package com.peaceray.codeword.domain.manager.record
 
+import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.GameSetup
+import com.peaceray.codeword.data.model.record.GameOutcome
+import com.peaceray.codeword.data.model.record.GameTypePerformanceRecord
+import com.peaceray.codeword.data.model.record.GameTypePlayerStreak
+import com.peaceray.codeword.data.model.record.TotalPerformanceRecord
+import com.peaceray.codeword.game.Game
+import java.util.*
+
 /**
- * A Manager for game "Records": performance
+ * A Manager for game "Records": performance over time in specific game types, a history of games
+ * with guesses, etc.
  */
 interface GameRecordManager {
+
+    //region Database Updates
+    //---------------------------------------------------------------------------------------------
+
+    /**
+     * Record the result of a completed game. This call may make synchronous database updates,
+     * so it is recommended to perform this call off the main thread.
+     *
+     * @param seed The seed used to create this game, if any
+     * @param setup The GameSetup
+     * @param game The Game that just finished
+     * @param secret The secret for this game, if known
+     */
+    fun record(seed: String?, setup: GameSetup, game: Game, secret: String?)
+
+    /**
+     * Record the result of a completed game. The call may make synchronous database updates,
+     * so it is recommended to perform this call off the main thread.
+     */
+    fun record(gameSaveData: GameSaveData, secret: String?)
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Performance Queries
+    //---------------------------------------------------------------------------------------------
+
+    /**
+     * Returns whether a GameOutcome exists for the indicated game UUID.
+     */
+    fun hasOutcome(uuid: UUID): Boolean
+
+    /**
+     * Retrieve a GameOutcome for the indicated game UUID, or 'null' if no such outcome
+     * exists.
+     *
+     * @param uuid The unique game identifier
+     */
+    fun getOutcome(uuid: UUID): GameOutcome?
+
+    /**
+     * Get a PerformanceRecord for all games of all types with the indicated roles
+     */
+    fun getTotalPerformance(solver: GameSetup.Solver, evaluator: GameSetup.Evaluator): TotalPerformanceRecord
+
+    /**
+     * Retrieve a performance record for games of this setup.
+     *
+     * @param setup The GameSetup in question
+     * @param strict Whether to retrieve a record that strictly matches the setup as closely
+     * as possible. For example, for dailies [strict] = false retrieves results of both daily
+     * puzzles and non-dailies with equivalent settings.
+     */
+    fun getPerformance(setup: GameSetup, strict: Boolean): GameTypePerformanceRecord
+
+    /**
+     * Retrieve a performance record for games of this type.
+     *
+     * @param outcome The GameOutcome with the setup in question
+     * @param strict Whether to retrieve a record that strictly matches the setup as closely
+     * as possible. For example, for dailies [strict] = false retrieves results of both daily
+     * puzzles and non-dailies with equivalent settings.
+     */
+    fun getPerformance(outcome: GameOutcome, strict: Boolean): GameTypePerformanceRecord
+
+    /**
+     * Retrieve a record of win streaks for the player on this game type. Not all streaks are
+     * recorded.
+     *
+     * @param setup The GameSetup in question
+     */
+    fun getPlayerStreak(setup: GameSetup): GameTypePlayerStreak
+
+    /**
+     * Retrieve a record of win streaks for the player on this game type. Not all streaks are
+     * recorded.
+     *
+     * @param outcome The GameOutcome with the setup in question
+     */
+    fun getPlayerStreak(outcome: GameOutcome): GameTypePlayerStreak
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
 }

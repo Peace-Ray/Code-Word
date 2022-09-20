@@ -48,7 +48,11 @@ data class Guess private constructor(val length: Int, val candidate: String, val
 }
 
 /**
- * A View-specific wrapper for a single character of a guess, possibly with markup.
+ * A View-specific wrapper for a single character of a guess, possibly with markup. A GuessLetter
+ * includes markup and in-guess positioning, along with the Guess containing it. Comparison
+ * between instances should prefer `isSame...` functions since (e.g.) the equality comparator ==
+ * will check that the containing Guess is identical, and will be false even if this letter and
+ * its markup match.
  *
  * @property character The guess character.
  * @property markup The markup; may be empty.
@@ -73,4 +77,32 @@ data class GuessLetter(val position: Int, val guess: Guess, val character: Char 
         val placeholder = GuessLetter(-1, Guess.placeholder)
         fun placeholders(length: Int) = Guess(length).lettersPadded
     }
+
+    /**
+     * A comparator: checks if this [GuessLetter] is the same as another in character,
+     * position, and markup. Intended for in-place comparison of a partial or complete guess
+     * that has not yet been evaluated.
+     *
+     * Ignores the equality of the underlying guess value, so that
+     * e.g. the letter "I" in "PI___", "PIO__", "PIOU_", and "PIOUS" will pass this check until
+     * evaluation is added, at which point the comparator will return [false].
+     */
+    fun isSameAs(guessLetter: GuessLetter) = (
+            position == guessLetter.position &&
+                    character == guessLetter.character &&
+                    markup == guessLetter.markup
+    )
+
+    /**
+     * A comparator: checks if this [GuessLetter] is the same as another in character and position.
+     * Intended for in-place comparison of a partial or complete guess before or after evaluation.
+     *
+     * Ignores the equality of the underlying guess value and any markup, so that
+     * e.g. the letter "I" in "PI___", "PIO__", "PIOU_", and "PIOUS" will pass this check up to
+     * and including when evaluation has been assigned as markup.
+     */
+    fun isSameCandidateAs(guessLetter: GuessLetter) = (
+            position == guessLetter.position &&
+                    character == guessLetter.character
+    )
 }

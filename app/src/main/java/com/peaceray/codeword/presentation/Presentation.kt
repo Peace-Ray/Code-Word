@@ -5,7 +5,7 @@ import androidx.lifecycle.*
 import com.peaceray.codeword.presentation.contracts.BaseContract
 
 /**
- * An association between a View and a Presentation (both parties in a presentation contract).
+ * An association between a View and a Presenter (both parties in a presentation contract).
  * The association automatically handles the [detachView] operation when appropriate, based
  * an the appropriate LifecycleEvent. You should probably not create a Presentation directly;
  * instead, call [attach] from the instance which is the [LifecycleOwner] and [BaseContract.View].

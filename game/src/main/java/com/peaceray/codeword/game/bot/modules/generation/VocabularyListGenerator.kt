@@ -11,7 +11,7 @@ import kotlin.random.Random
  * [Constraint]s.
  *
  * Appropriate for "find the word" games, which use a [solutionPolicy] of
- * [ConstraintPolicy.ALL] (guessers are presented with explicit markup on each letter) and a
+ * [ConstraintPolicy.PERFECT] (guessers are presented with explicit markup on each letter) and a
  * [guessPolicy] of either [ConstraintPolicy.IGNORE] or [ConstraintPolicy.POSITIVE] depending on
  * whether "hard mode" is active.
  */

@@ -3,15 +3,23 @@
     <declare-styleable name="CodeKey">
         <attr name="keyCodeCharacter" format="string"/>
         <attr name="keyCodeLabel" format="string"/>
+        <attr name="keyCodeGroup" format="integer"/>
         <attr name="keyCodeType" format="enum">
             <enum name="character" value="0"/>
             <enum name="enter" value="1"/>
             <enum name="delete" value="2"/>
-            <enum name="none" value="3"/>
+            <enum name="available" value="3"/>
+            <enum name="none" value="4"/>
         </attr>
 
         <attr name="keyTextViewId" format="integer"/>
         <attr name="keyImageViewId" format="integer"/>
         <attr name="keyBackgroundViewId" format="integer"/>
+    </declare-styleable>
+
+    <declare-styleable name="PipGrid">
+        <attr name="pipLayoutFor2x2" format="reference"/>
+        <attr name="pipLayoutFor3x3" format="reference"/>
+        <attr name="pipLayoutFor4x4" format="reference"/>
     </declare-styleable>
 </resources>

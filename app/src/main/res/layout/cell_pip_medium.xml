@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    android:id="@+id/backgroundView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    >
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/pipView"
+        android:layout_width="@dimen/aggregate_markup_pip_medium_size"
+        android:layout_height="@dimen/aggregate_markup_pip_medium_size"
+        android:layout_margin="@dimen/aggregate_markup_pip_medium_margin"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="@dimen/aggregate_markup_pip_medium_corner_radius"
+        app:strokeWidth="@dimen/aggregate_markup_pip_medium_stroke_width"
+        />
+
+</FrameLayout>

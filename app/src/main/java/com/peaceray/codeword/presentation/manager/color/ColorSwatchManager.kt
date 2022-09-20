@@ -12,6 +12,8 @@ interface ColorSwatchManager {
 
     /**
      * Provide the current ColorSwatch for coloring codes and evaluations.
+     * ColorSwatches are used for view and UI colors beyond those available in an application
+     * theme. Application themes, as supported by
      */
     val colorSwatch: ColorSwatch
 

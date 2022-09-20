@@ -1,4 +1,4 @@
-package com.peaceray.codeword.utils
+package com.peaceray.codeword.utils.extensions
 
 import android.content.res.TypedArray
 

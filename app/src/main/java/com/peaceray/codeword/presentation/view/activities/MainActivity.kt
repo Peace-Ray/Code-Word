@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -11,31 +12,53 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.peaceray.codeword.R
-import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.ActivityMainBinding
 import com.peaceray.codeword.domain.manager.game.GameSessionManager
 import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.genie.GenieSettingsManager
+import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
 import com.peaceray.codeword.presentation.view.fragments.GameFragment
+import com.peaceray.codeword.presentation.view.fragments.GameInfoFragment
+import com.peaceray.codeword.presentation.view.fragments.dialog.CodeWordDialogFragment
+import com.peaceray.codeword.presentation.view.fragments.dialog.GameInfoDialogFragment
+import com.peaceray.codeword.presentation.view.fragments.dialog.GameOutcomeDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 import java.lang.Exception
+import java.util.*
 import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
+class MainActivity : CodeWordActivity(),
+    GameFragment.OnInteractionListener,
+    GameInfoFragment.OnInteractionListener,
+    GameOutcomeDialogFragment.OnInteractionListener,
+    CodeWordDialogFragment.OnLifecycleListener
+{
 
     //region Creation and Setup
     //---------------------------------------------------------------------------------------------
+    companion object {
+        const val NAME = "MainActivity"
+        const val ARG_GAME_SEED = "${NAME}_GAME_SEED"
+        const val ARG_GAME_SETUP = "${NAME}_GAME_SETUP"
+        const val ARG_GAME_UUID = "${NAME}_GAME_UUID"
+        const val ARG_IS_GAME_OVER = "${NAME}_IS_GAME_OVER"
+    }
+
     @Inject lateinit var gameSetupManager: GameSetupManager
     @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var tutorialManager: TutorialManager
+    @Inject lateinit var genieSettingsManager: GenieSettingsManager
     private lateinit var binding: ActivityMainBinding
 
     // Activity Launchers
@@ -44,7 +67,12 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
 
     // State
     private var game: Pair<String?, GameSetup>? = null
+    private var gameUUID: UUID? = null
     private var isGameOver = false
+        set(value) {
+            if (field != value) setNewGameButtonVisible(value)
+            field = value
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,18 +85,26 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
             // open up a "create puzzle" screen
             val intent = GameSetupActivity.getIntentForSetup(this)
             gameSetupLauncher.launch(intent)
-
-            setNewGameButtonVisible(false)
         }
 
         setSupportActionBar(binding.toolbar)
 
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            val seed = savedInstanceState.getString(ARG_GAME_SEED)
+            val setup = savedInstanceState.getParcelable<GameSetup>(ARG_GAME_SETUP)
+            val uuid = savedInstanceState.getString(ARG_GAME_UUID)
+            game = if (setup == null) null else Pair(seed, setup)
+            gameUUID = if (uuid == null) null else UUID.fromString(uuid)
+            isGameOver = savedInstanceState.getBoolean(ARG_IS_GAME_OVER)
+        }
+
+        if (game == null) {
             loadGame()
         }
 
         gameSetupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
+                Timber.v("game setup: OK")
                 // There are no request codes
                 val data: Intent? = result.data
                 val seed = data?.getStringExtra(GameSetupActivity.RESULT_EXTRA_SEED)
@@ -79,13 +115,13 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
                 } else {
                     Timber.e("GameSetupActivity reported RESULT_OK but no GameSetup found. Has seed $seed")
                 }
-            } else if (result.resultCode == Activity.RESULT_CANCELED) {
-                setNewGameButtonVisible(isGameOver)
             }
         }
 
         gameInfoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            Timber.v("gameInfoLauncher: updating game? result code is ${result.resultCode} ok is ${Activity.RESULT_OK}")
             if (result.resultCode == Activity.RESULT_OK) {
+                Timber.v("game info: OK")
                 // There are no request codes
                 val data: Intent? = result.data
                 val seed = data?.getStringExtra(GameSetupActivity.RESULT_EXTRA_SEED)
@@ -96,10 +132,17 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
                 } else {
                     Timber.e("GameSetupActivity reported RESULT_OK but no GameSetup found. Has seed $seed")
                 }
-            } else if (result.resultCode == Activity.RESULT_CANCELED) {
-                setNewGameButtonVisible(isGameOver)
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        outState.putString(ARG_GAME_SEED, game?.first)
+        outState.putParcelable(ARG_GAME_SETUP, game?.second)
+        outState.putString(ARG_GAME_UUID, gameUUID?.toString())
+        outState.putBoolean(ARG_IS_GAME_OVER, isGameOver)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -109,24 +152,71 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when(item.itemId) {
-        R.id.action_puzzle_info -> {
-            if (game != null) {
-                val intent = GameSetupActivity.getIntentForInfo(this, game!!.first, game!!.second)
-                gameInfoLauncher.launch(intent)
+        R.id.action_how_to_play -> {
+            Timber.v("Menu: clicked Help / How To Play")
+            val currentGame = game
+            if (currentGame != null) {
+                showHowToPlay(currentGame.first, currentGame.second)
+            } else {
+                Timber.w("Menu: clicked Help / How To Play but 'game' is null!")
             }
             true
         }
+        R.id.action_puzzle_info -> {
+            Timber.v("Menu: clicked Puzzle Info")
+            showPuzzleInfo()
+            true
+        }
         R.id.action_settings -> {
-            // TODO add Settings
-            Toast.makeText(this, "TODO: add Settings", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, SettingsActivity::class.java))
             true
         }
         R.id.action_app_info -> {
-            // TODO open app info
-            Toast.makeText(this, "Todo: add App Info", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, DocViewerActivity::class.java)
+            intent.putExtras(DocViewerActivity.newBundle(document = DocViewerActivity.Documents.APP_INFO))
+            startActivity(intent)
+            true
+        }
+        R.id.action_credits -> {
+            val intent = Intent(this, DocViewerActivity::class.java)
+            intent.putExtras(DocViewerActivity.newBundle(document = DocViewerActivity.Documents.CREDITS))
+            startActivity(intent)
             true
         }
         else -> super.onOptionsItemSelected(item)
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Game Info
+    //---------------------------------------------------------------------------------------------
+    private fun showHowToPlay(seed: String?, gameSetup: GameSetup) {
+        showGameInfoDialogFragment(seed, gameSetup, arrayOf(GameInfoFragment.Sections.HOW_TO_PLAY))
+
+        // set tutorialized
+        tutorialManager.setExplained(gameSetup)
+    }
+
+    private fun showPuzzleInfo() {
+        if (game != null && !isGameOver) {
+            Timber.v("Puzzle Info: showing setup")
+            showGameInfoDialogFragment(
+                game!!.first,
+                game!!.second,
+                arrayOf(
+                    GameInfoFragment.Sections.SEED,
+                    GameInfoFragment.Sections.PUZZLE_INFO,
+                    GameInfoFragment.Sections.CREATE_PUZZLE,
+                    GameInfoFragment.Sections.DIFFICULTY
+                )
+            )
+        } else if (isGameOver && gameUUID != null) {
+            Timber.v("Puzzle Info: showing outcome")
+            val dialogFragment = GameOutcomeDialogFragment.newInstance(gameUUID!!, game?.first, game?.second)
+            dialogFragment.show(supportFragmentManager, "dialog")
+        } else {
+            Timber.w("Puzzle Info: but no Game to show")
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -161,22 +251,46 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
         Timber.v("Creating GameFragment for seed $seed gameSetup $gameSetup")
         game = Pair(seed, gameSetup)
         isGameOver = false
+
+        // forfeit ongoing game, if any
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
+        if (fragment is GameFragment) fragment.forfeit()
+
+        // genie announcement(s)?
+        if (genieSettingsManager.developerMode) {
+            if (gameSetup.vocabulary.secret != null) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.genie_set_secret_toast, gameSetup.vocabulary.secret),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
         supportFragmentManager.commit {
             setReorderingAllowed(true)
-            add(R.id.fragmentContainerView, GameFragment.newInstance(seed, gameSetup))
+            replace(R.id.fragmentContainerView, GameFragment.newInstance(seed, gameSetup))
         }
     }
 
     private fun updateGame(gameSetup: GameSetup) {
         if (game != null && !isGameOver) {
             Timber.v("Updating GameFragment for seed ${game!!.first} gameSetup ${game!!.second}")
-            supportFragmentManager.commit {
-                setReorderingAllowed(true)
-                add(R.id.fragmentContainerView, GameFragment.newInstance(game!!.first, game!!.second, gameSetup))
-            }
-            game = Pair(game!!.first, gameSetup)
-        }
 
+            if (game!!.second == gameSetup) {
+                Timber.v("Identical gameSetup: nothing to  update")
+            } else {
+                val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
+                val currentGuess = if (fragment is GameFragment) fragment.getCurrentGuess() else null
+
+                supportFragmentManager.commit {
+                    setReorderingAllowed(true)
+                    setCustomAnimations(R.anim.blink_in, R.anim.blink_out)
+                    replace(R.id.fragmentContainerView, GameFragment.newInstance(game!!.first, game!!.second, gameSetup, currentGuess).swapIn())
+                }
+                game = Pair(game!!.first, gameSetup)
+            }
+        }
     }
 
     private fun setNewGameButtonVisible(visible: Boolean) {
@@ -210,17 +324,126 @@ class MainActivity : AppCompatActivity(), GameFragment.OnInteractionListener {
 
     //region GameFragment.OnInteractionListener
     //---------------------------------------------------------------------------------------------
+    override fun onGameStart(fragment: Fragment, seed: String?, gameSetup: GameSetup) {
+        if (!tutorialManager.hasExplained(gameSetup)) {
+            Timber.v("onGameStart: not tutorialized; showing How To Play for $gameSetup")
+            showHowToPlay(seed, gameSetup)
+        }
+    }
+
     override fun onGameOver(
         fragment: GameFragment,
         seed: String?,
         gameSetup: GameSetup,
+        uuid: UUID,
         solution: String?,
         rounds: Int,
         solved: Boolean,
         playerVictory: Boolean
     ) {
-        isGameOver = true
-        setNewGameButtonVisible(true)
+        Timber.v("onGameOver isGameOver $isGameOver uuid $uuid gameUUID $gameUUID isAlive $isAlive solved $solved")
+        // update action button colors
+        // convention: solved puzzles tend to have the EXACT
+        // color near the bottom of the layout, both in the puzzle itself and on the keyboard.
+        // To contrast, use the INCLUDED color for the New Puzzle action button.
+        val colors = colorSwatchManager.colorSwatch.evaluation.let {
+            if (solved) Triple(it.included, it.includedVariant, it.onIncluded)
+            else Triple(it.exact, it.exactVariant, it.onExact)
+        }
+
+        // TODO: replace this constructor, deprecated in API 23
+        binding.newPuzzleButton.backgroundTintList = ColorStateList(arrayOf(
+            intArrayOf(android.R.attr.state_pressed),
+            intArrayOf(0)
+        ), intArrayOf(colors.second, colors.first))
+        binding.newPuzzleButton.imageTintList = ColorStateList.valueOf(colors.third)
+
+        if (!isGameOver || !uuid.equals(gameUUID)) {
+            isGameOver = true
+            gameUUID = uuid
+
+            if (isAlive) {
+                GameOutcomeDialogFragment.newInstance(
+                    uuid,
+                    seed,
+                    gameSetup
+                ).show(supportFragmentManager, "dialog")
+            }
+        }
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region GameInfoFragment: Dialog and Listener
+    //---------------------------------------------------------------------------------------------
+    private var infoDialogSetup: GameSetup? = null
+    private var infoDialogChanged: Boolean = false
+
+    private fun showGameInfoDialogFragment(seed: String?, gameSetup: GameSetup, sections: Array<GameInfoFragment.Sections>) {
+        infoDialogChanged = false
+        GameInfoDialogFragment.newInstance(game!!.first, game!!.second, sections)
+            .show(supportFragmentManager, "dialog")
+    }
+
+    private fun updateGameFromGameInfoDialog() {
+        if (infoDialogChanged && infoDialogSetup != null) {
+            infoDialogChanged = false
+            updateGame(infoDialogSetup!!)
+        }
+    }
+
+    override fun onInfoCreatePuzzleClicked(fragment: GameInfoFragment) {
+        // dismiss dialog
+        (supportFragmentManager.findFragmentByTag("dialog") as? DialogFragment)?.dismiss()
+        // create game
+        val intent = GameSetupActivity.getIntentForSetup(this)
+        gameSetupLauncher.launch(intent)
+    }
+
+    override fun onInfoFinished(fragment: GameInfoFragment, seed: String?, gameSetup: GameSetup) {
+        // dismiss dialog
+        (supportFragmentManager.findFragmentByTag("dialog") as? DialogFragment)?.dismiss()
+        // update game
+        updateGame(gameSetup)
+    }
+
+    override fun onInfoChanged(fragment: GameInfoFragment, seed: String?, gameSetup: GameSetup) {
+        infoDialogChanged = true
+        infoDialogSetup = gameSetup
+    }
+
+    override fun onInfoCanceled(fragment: GameInfoFragment) {
+        // dismiss dialog
+        (supportFragmentManager.findFragmentByTag("dialog") as? DialogFragment)?.dismiss()
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region GameOutcomeDialogFragment: Dialog and Listener
+    //---------------------------------------------------------------------------------------------
+    override fun onOutcomeCreatePuzzleClicked(fragment: GameOutcomeDialogFragment) {
+        // dismiss dialog
+        (supportFragmentManager.findFragmentByTag("dialog") as? DialogFragment)?.dismiss()
+        // create game
+        val intent = GameSetupActivity.getIntentForSetup(this)
+        gameSetupLauncher.launch(intent)
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region CodeWordDialogFragment.OnLifecycleListener
+    //---------------------------------------------------------------------------------------------
+    override fun onCancel(dialogFragment: CodeWordDialogFragment) {
+        // nothing to do; wait for dismiss
+    }
+
+    override fun onDismiss(dialogFragment: CodeWordDialogFragment) {
+        when(dialogFragment) {
+            is GameInfoDialogFragment -> {
+                updateGameFromGameInfoDialog()
+            }
+            else -> Timber.v("onDismiss from $dialogFragment but nothing to do")
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion

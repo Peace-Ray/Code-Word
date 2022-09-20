@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/main_layout_margin_vertical_half"
+    android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+    android:orientation="vertical"
+    android:gravity="top|center_horizontal"
+    android:id="@+id/mainViewPuzzleType"
+    >
+
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/game_info_section_puzzle"
+        android:layout_marginBottom="@dimen/guess_container_margin_small"
+        style="@style/Widget.CodeWord.TextView.Header"
+        />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/playerRoleContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/playerRolePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/game_setup_player_role_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/playerRoleSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/codeLanguageContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/codeLanguagePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/game_setup_language_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/codeLanguageSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/codeLengthContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/codeLengthPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:text="@string/game_setup_code_length_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSeekBar
+            android:id="@+id/codeLengthSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/codeLengthPrompt"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="@dimen/setup_control_spacing_half"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/codeCharactersContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/codeCharactersPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:text="@string/game_setup_code_characters_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSeekBar
+            android:id="@+id/codeCharactersSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/codeCharactersPrompt"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="@dimen/setup_control_spacing_half"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <CheckBox
+        android:id="@+id/evaluatorCheatsCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/game_setup_evaluator_cheats_prompt"
+        android:paddingStart="@dimen/check_box_text_padding"
+        android:paddingEnd="@dimen/check_box_text_padding"
+        android:minHeight="@dimen/setup_control_height"
+        android:theme="@style/Widget.CodeWord.CompoundButton.CheckBox"
+        />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

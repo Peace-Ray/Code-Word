@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/main_layout_margin_vertical_half"
+    android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+    android:orientation="vertical"
+    android:id="@+id/mainViewPuzzleType"
+    >
+
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:text="@string/game_info_section_outcome"
+        android:gravity="center"
+        style="@style/Widget.CodeWord.TextView.Header"
+        />
+
+    <ImageButton
+        android:id="@+id/shareOutcomeButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleTextView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="@dimen/guess_container_margin_small"
+        android:background="#00ffffff"
+        android:src="@drawable/round_share_white_24"
+        />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/buttonBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="start"
+        app:constraint_referenced_ids="shareOutcomeButton"
+        />
+
+    <TextView
+        android:id="@+id/outcomeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/titleTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/buttonBarrier"
+        android:layout_marginTop="@dimen/guess_container_margin_small"
+        android:layout_marginEnd="@dimen/guess_container_margin_small"
+        android:textSize="@dimen/text_size"
+        />
+
+    <TextView
+        android:id="@+id/secretTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/outcomeTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/buttonBarrier"
+        android:layout_marginEnd="@dimen/guess_container_margin_small"
+        android:textSize="@dimen/text_size"
+        />
+
+    <TextView
+        android:id="@+id/roundsTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/secretTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/buttonBarrier"
+        android:layout_marginEnd="@dimen/guess_container_margin_small"
+        android:textSize="@dimen/text_size"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

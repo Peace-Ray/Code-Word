@@ -19,9 +19,7 @@ import com.peaceray.codeword.game.bot.modules.selection.RandomSelector
 import com.peaceray.codeword.game.bot.modules.selection.StochasticThresholdScoreSelector
 import com.peaceray.codeword.game.validators.AlphabetValidator
 import com.peaceray.codeword.game.validators.VocabularyValidator
-import com.peaceray.codeword.play.wordhider.LENGTH
 import java.io.File
-import java.util.*
 import kotlin.IllegalArgumentException
 
 class Environment(
@@ -35,7 +33,7 @@ class Environment(
         evaluator.reset()
     }
 
-    class Builder() {
+    class Builder {
         var length: Int? = null
         var rounds: Int? = null
         var policy: ConstraintPolicy = ConstraintPolicy.IGNORE
@@ -91,13 +89,13 @@ class Environment(
 class ConsoleSolver(private val transform: ((String) -> String)?): Solver {
     override fun generateGuess(constraints: List<Constraint>): String {
         print("> ")
-        val guess = readLine()!!
+        val guess = readln()
         return transform?.invoke(guess) ?: guess
     }
 }
 
-class ConsoleEvaluator(val validator: (String) -> Boolean): Evaluator {
-    var code = ""
+class ConsoleAutomaticEvaluator(val codeTransform: (String) -> String, val validator: (String) -> Boolean): Evaluator {
+    private var code = ""
 
     override fun evaluate(candidate: String, constraints: List<Constraint>): Constraint {
         return Constraint.Companion.create(candidate, code)
@@ -108,8 +106,8 @@ class ConsoleEvaluator(val validator: (String) -> Boolean): Evaluator {
     override fun reset() {
         code = ""
         do {
-            print("Secret: ")
-            code = readLine()!!
+            print("Secret > ")
+            code = codeTransform(readln())
             if (!validator(code)) {
                 code = ""
                 println("Invalid, try again")
@@ -118,7 +116,58 @@ class ConsoleEvaluator(val validator: (String) -> Boolean): Evaluator {
     }
 }
 
-// TODO implement a console evaluator that lets users type in the markup instead of the secret
+class ConsoleManualEvaluator(val validator: (String) -> Boolean): Evaluator {
+    override fun evaluate(candidate: String, constraints: List<Constraint>): Constraint {
+        var constraint: Constraint? = null
+        do {
+            print("> ")
+            val evaluation = readln().lowercase().trim()
+            val markupNulls = evaluation.asSequence()
+                .map { when(it) {
+                    'e', 'o', '!' -> Constraint.MarkupType.EXACT
+                    'i', '?' -> Constraint.MarkupType.INCLUDED
+                    'x', '_' -> Constraint.MarkupType.NO
+                    else -> null
+                } }
+                .toList()
+            val markup = markupNulls.filterNotNull()
+
+            if (markupNulls.size == markup.size && markup.size == candidate.length) {
+                constraint = Constraint.create(candidate, markup)
+            } else {
+                println("Invalid, try again")
+            }
+        } while (constraint == null)
+        return constraint
+    }
+
+    override fun peek(constraints: List<Constraint>): String {
+        var code = ""
+        do {
+            print("Secret: ")
+            code = readln().lowercase()
+            if (!validator(code)) {
+                code = ""
+                println("Invalid, try again")
+            }
+        } while (code.isEmpty())
+        return code
+    }
+
+    override fun reset() {
+        println()
+        println("Think of a secret...")
+        Thread.sleep(2000)
+        println("  ...got one?")
+        Thread.sleep(500)
+        println("  Evaluate guesses with per-letter markup, e.g.")
+        println("  Guess 1: tower")
+        println("  > _OOi_")
+        println("  Exact: OoEe!, Included: Ii?, No: Xx_")
+        Thread.sleep(500)
+        println()
+    }
+}
 
 fun main() {
     while(true) {
@@ -148,7 +197,7 @@ private fun playGame(env: Environment) {
                 env.game.guess(guess)
             } catch (error: Game.IllegalGuessException) {
                 when (error.error) {
-                    Game.GuessError.LENGTH -> println("  (invalid length; use $LENGTH letters)")
+                    Game.GuessError.LENGTH -> println("  (invalid length; use ${env.game.settings.letters} letters)")
                     Game.GuessError.VALIDATION -> println("  (invalid word)")
                     Game.GuessError.CONSTRAINTS -> println("  (already eliminated)")
                 }
@@ -158,12 +207,14 @@ private fun playGame(env: Environment) {
         // evaluate the guess
         val constraint = env.evaluator.evaluate(env.game.currentGuess!!, env.game.constraints)
         if (env.evaluationPolicy == ConstraintPolicy.ALL || env.evaluationPolicy == ConstraintPolicy.POSITIVE) {
-            val markup = constraint.markup.map { when(it) {
-                Constraint.MarkupType.EXACT -> "O"
-                Constraint.MarkupType.INCLUDED -> "i"
-                Constraint.MarkupType.NO -> "_"
-            } }.joinToString("")
-            println("Eval  ${round}: ${markup}")
+            val markup = constraint.markup.joinToString("") {
+                when (it) {
+                    Constraint.MarkupType.EXACT -> "O"
+                    Constraint.MarkupType.INCLUDED -> "i"
+                    Constraint.MarkupType.NO -> "_"
+                }
+            }
+            println("Eval  ${round}: $markup")
         } else if (env.evaluationPolicy == ConstraintPolicy.AGGREGATED) {
             println("Eval  ${round}: ${constraint.exact} Exact,  ${constraint.included} Included")
         }
@@ -194,40 +245,66 @@ private fun getEnvironment(): Environment {
     println("  2) Words, e.g. 'tower', 'reach'")
     println("  3) Words, Hard Mode")
     print("> ")
-    when(readLine()!!.toInt()) {
+    val gameType = readln().toInt()
+    val length: Int
+    val chars: Int
+
+    if (gameType == 1) {
+        print("Code length > ")
+        length = readln().toInt()
+        print("Code chars  > ")
+        chars = readln().toInt()
+    } else {
+        print("Word length > ")
+        length = readln().toInt()
+        chars = 26
+    }
+
+    when(gameType) {
         1 -> {
-            builder.withDimensions(4, 10)
-                .withValidator(AlphabetValidator('A'..'F'))
+            val charList = ('A'..'Z').toList().subList(0, chars)
+            builder.withDimensions(length, 10)
+                .withValidator(AlphabetValidator(charList))
                 .withEvaluationPolicy(ConstraintPolicy.AGGREGATED)
-            guessTransform = { it.toUpperCase(Locale.getDefault()) }
-            generator = CodeEnumeratingGenerator('A'..'F', 4, ConstraintPolicy.IGNORE, ConstraintPolicy.AGGREGATED)
+            guessTransform = { it.uppercase() }
+            generator = CodeEnumeratingGenerator(charList, length, ConstraintPolicy.IGNORE, ConstraintPolicy.AGGREGATED)
             eliminationPolicy = ConstraintPolicy.AGGREGATED
             words = false
         }
         2 -> {
-            builder.withDimensions(5, 6)
-                .withValidator(VocabularyValidator.fromFiles("./app/src/main/assets/words/en_5_1.txt", "./words/en_5_2.txt"))
+            val gp = ConstraintPolicy.IGNORE    // guessPolicy
+            val sp = ConstraintPolicy.ALL       // solutionPolicy
+            builder.withDimensions(length, 6)
+                .withValidator(VocabularyValidator.fromFiles("./app/src/main/assets/words/en-US/standard/length-$length/valid.txt"))
                 .withEvaluationPolicy(ConstraintPolicy.ALL)
-            guessTransform = { it.toLowerCase(Locale.getDefault()) }
+            guessTransform = { it.lowercase() }
             generator = CascadingGenerator(
                 solutions = 100,
                 generators = listOf(
-                    VocabularyFileGenerator("./app/src/main/assets/words/en_5_1.txt", ConstraintPolicy.IGNORE, ConstraintPolicy.ALL),
-                    VocabularyFileGenerator(listOf("./app/src/main/assets/words/en_5_1.txt", "./app/src/main/assets/words/en_5_2.txt"), ConstraintPolicy.IGNORE, ConstraintPolicy.ALL)
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/secrets-90.txt", gp, sp),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/secrets.txt", gp, sp),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/guesses.txt", gp, sp,
+                        solutionFilename = "./app/src/main/assets/words/en-US/standard/length-$length/secrets.txt"),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/guesses.txt", gp, sp)
                 )
             )
         }
         3 -> {
-            builder.withDimensions(5, 6)
-                .withValidator(VocabularyValidator.fromFiles("./app/src/main/assets/words/en_5_1.txt", "./app/src/main/assets/words/en_5_2.txt"))
+            val gp = ConstraintPolicy.ALL       // guessPolicy
+            val sp = ConstraintPolicy.ALL       // solutionPolicy
+            builder.withDimensions(length, 6)
+                .withValidator(VocabularyValidator.fromFiles("./app/src/main/assets/words/en-US/standard/length-$length/valid.txt"))
                 .withConstraintPolicy(ConstraintPolicy.ALL)
                 .withEvaluationPolicy(ConstraintPolicy.ALL)
-            guessTransform = { it.toLowerCase(Locale.getDefault()) }
+            guessTransform = { it.lowercase() }
             generator = CascadingGenerator(
                 solutions = 10,
                 generators = listOf(
-                    VocabularyFileGenerator("./app/src/main/assets/words/en_5_1.txt", ConstraintPolicy.ALL, ConstraintPolicy.ALL),
-                    VocabularyFileGenerator(listOf("./app/src/main/assets/words/en_5_1.txt", "./app/src/main/assets/words/en_5_2.txt"), ConstraintPolicy.ALL, ConstraintPolicy.ALL)
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/secrets-90.txt", gp, sp),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/secrets.txt", gp, sp),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/guesses.txt", gp, sp,
+                        solutionFilename = "./app/src/main/assets/words/en-US/standard/length-$length/secrets.txt"),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/guesses.txt", gp, sp)
                 )
             )
         }
@@ -241,7 +318,7 @@ private fun getEnvironment(): Environment {
     println("  4) Human-like Decision Tree")
     println("  5) Random Draw")
     print("> ")
-    builder.solver = when(readLine()!!.toInt()) {
+    builder.solver = when(readln().toInt()) {
         1 -> ConsoleSolver(guessTransform)
         2 -> ModularSolver(
             generator,
@@ -254,7 +331,7 @@ private fun getEnvironment(): Environment {
             MaximumScoreSelector()
         )
         4 -> {
-            val commonWords = File("./app/src/main/assets/words/en_5_1.txt")
+            val commonWords = File("./app/src/main/assets/words/en-US/standard/length-$length/secrets-90.txt")
                 .readLines()
                 .filter { it.isNotBlank() }
                 .distinct()
@@ -265,29 +342,29 @@ private fun getEnvironment(): Environment {
                 StochasticThresholdScoreSelector(threshold = 0.8, solutionBias = 0.5)
             )
         }
-
-
         5 -> ModularSolver(generator, UnitScorer(), RandomSelector())
         else -> throw IllegalArgumentException("Unrecognized")
     }
 
     val secretGenerator = if (!words) generator else {
-        VocabularyFileGenerator("./app/src/main/assets/words/en_5_1.txt", ConstraintPolicy.IGNORE, ConstraintPolicy.ALL)
+        VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-$length/secrets-995.txt", ConstraintPolicy.IGNORE, ConstraintPolicy.ALL)
     }
 
     println("Secret Keeper Played By")
-    println("  1) Me")
-    println("  2) Honest Bot")
-    println("  3) Cheating Bot")
+    println("  1) Me [Automatic]")
+    println("  2) Me [Manual]")
+    println("  3) Honest Bot")
+    println("  4) Cheating Bot")
     print("> ")
-    builder.evaluator = when(readLine()!!.toInt()) {
-        1 -> ConsoleEvaluator(builder.validator!!)
-        2 -> ModularHonestEvaluator(
+    builder.evaluator = when(readln().toInt()) {
+        1 -> ConsoleAutomaticEvaluator(guessTransform, builder.validator!!)
+        2 -> ConsoleManualEvaluator(builder.validator!!)
+        3 -> ModularHonestEvaluator(
             secretGenerator,
             UnitScorer(),
             RandomSelector()
         )
-        3 -> {
+        4 -> {
             builder.rounds = 100000
             ModularFlexibleEvaluator(
                 secretGenerator,

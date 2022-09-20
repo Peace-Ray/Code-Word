@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/main_layout_margin_vertical_half"
+    android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+    android:id="@+id/mainViewSeed"
+    android:clipToPadding="false"
+    >
+
+    <!-- center the seed view horizontally with space on either side; sometimes a "refresh"
+            button is displayed on the End side, but the seed view should remain consistently
+            positioned regardless -->
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/startGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_begin="48dp"
+        android:orientation="vertical"
+        />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/endGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_end="48dp"
+        android:orientation="vertical"
+        />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/seedBackgroundView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/startGuideline"
+        app:layout_constraintEnd_toStartOf="@id/endGuideline"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="@dimen/guess_letter_cell_stroke_width"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        >
+
+        <TextView
+            android:id="@+id/seed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/guess_container_margin_small"
+            android:layout_marginBottom="@dimen/guess_container_margin_small"
+            android:textSize="@dimen/text_size_big"
+            android:textStyle="bold"
+            android:autoSizeTextType="uniform"
+            />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- refresh button -->
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/seedRandomizeButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/seedBackgroundView"
+        app:layout_constraintBottom_toBottomOf="@id/seedBackgroundView"
+        android:src="@drawable/round_refresh_white_24"
+        android:background="#00ffffff"
+        />
+
+    <!-- seed status: "Resume", etc. -->
+    <TextView
+        android:id="@+id/gameStatusTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        app:layout_constraintStart_toEndOf="@id/startGuideline"
+        app:layout_constraintEnd_toStartOf="@id/endGuideline"
+        app:layout_constraintTop_toBottomOf="@id/seedBackgroundView"
+        android:paddingTop="8dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:theme="@style/Widget.CodeWord.TextView.Information"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

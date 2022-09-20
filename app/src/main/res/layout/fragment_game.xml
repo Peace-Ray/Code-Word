@@ -23,7 +23,7 @@
         android:clipToPadding="false"
         />
 
-    <include layout="@layout/keyboard_qwerty"
+    <FrameLayout
         android:id="@+id/keyboardContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

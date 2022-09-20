@@ -3,30 +3,114 @@
     <!-- App -->
     <dimen name="toolbar_elevation">16dp</dimen>
 
+    <!-- Cell Accents (to contrast with shading) -->
+    <dimen name="elevated_cell_stroke_width">1dp</dimen>
+
     <!-- Keyboard -->
     <dimen name="keyboard_elevation">@dimen/toolbar_elevation</dimen>
     <dimen name="keyboard_row_height">60dp</dimen>
+    <dimen name="keyboard_row_height_tall">60dp</dimen>
+    <dimen name="keyboard_row_height_tall_difference">0dp</dimen>
+    <dimen name="keyboard_margin">4dp</dimen>
+    <dimen name="keyboard_text_size">16sp</dimen>
+    <dimen name="keyboard_text_size_big">27sp</dimen>
+    <!-- Keyboard Keys -->
     <dimen name="keyboard_key_margin">3dp</dimen>
     <dimen name="keyboard_key_elevation">4dp</dimen>
-    <dimen name="keyboard_margin">4dp</dimen>
+    <dimen name="keyboard_key_stroke_width">1dp</dimen>
+    <dimen name="keyboard_key_corner_radius">4dp</dimen>
+
+
+    <!-- Histogram -->
+    <dimen name="histogram_height">12dp</dimen>
+    <dimen name="histogram_margin">6dp</dimen>
+    <dimen name="histogram_minimum_width">22dp</dimen>
+    <dimen name="histogram_label_width">28dp</dimen>
+    <dimen name="histogram_padding">2dp</dimen>
+    <dimen name="histogram_text_size">12sp</dimen>
 
     <!-- Puzzle Container -->
     <dimen name="guess_container_margin">16dp</dimen>
+    <dimen name="guess_container_margin_small">10dp</dimen>
+    <dimen name="guess_container_margin_smaller">6dp</dimen>
     <!-- Puzzle Cells -->
     <dimen name="guess_letter_cell_size">60dp</dimen>
     <dimen name="guess_letter_cell_margin">2.5dp</dimen>
     <dimen name="guess_letter_cell_stroke_width">2dp</dimen>
     <dimen name="guess_letter_cell_corner_radius">6dp</dimen>
     <dimen name="guess_letter_cell_elevation">6dp</dimen>
+    <dimen name="guess_letter_cell_medium_size">45dp</dimen>
+    <dimen name="guess_letter_cell_medium_margin">2.5dp</dimen>
+    <dimen name="guess_letter_cell_medium_stroke_width">2dp</dimen>
+    <dimen name="guess_letter_cell_medium_corner_radius">4.5dp</dimen>
+    <dimen name="guess_letter_cell_medium_elevation">4.5dp</dimen>
     <dimen name="guess_letter_cell_small_size">30dp</dimen>
     <dimen name="guess_letter_cell_small_margin">2.5dp</dimen>
     <dimen name="guess_letter_cell_small_stroke_width">2dp</dimen>
     <dimen name="guess_letter_cell_small_corner_radius">3dp</dimen>
     <dimen name="guess_letter_cell_small_elevation">3dp</dimen>
-    <!-- Puzzle Text -->
-    <dimen name="guess_letter_text_size">36sp</dimen>
-    <dimen name="guess_letter_small_text_size">18sp</dimen>
+    <dimen name="guess_letter_cell_tiny_size">22dp</dimen>
+    <dimen name="guess_letter_cell_tiny_margin">1dp</dimen>
+    <dimen name="guess_letter_cell_tiny_stroke_width">1.3dp</dimen>
+    <dimen name="guess_letter_cell_tiny_corner_radius">2dp</dimen>
+    <dimen name="guess_letter_cell_tiny_elevation">3dp</dimen>
+    <!-- Cell Measurement: sums of values above to quickly estimate total cell size -->
+    <dimen name="guess_letter_cell_size_estimate">65dp</dimen>
+    <dimen name="guess_letter_cell_medium_size_estimate">50dp</dimen>
+    <dimen name="guess_letter_cell_small_size_estimate">35dp</dimen>
+    <dimen name="guess_letter_cell_tiny_size_estimate">24dp</dimen>
+    <!-- Puzzle Text (don't use SP for this; text size must match view size w/o scaling) -->
+    <dimen name="guess_letter_text_size">36dp</dimen>
+    <dimen name="guess_letter_medium_text_size">27dp</dimen>
+    <dimen name="guess_letter_small_text_size">18dp</dimen>
+    <dimen name="guess_letter_tiny_text_size">14dp</dimen>
     <!-- Puzzle Animation -->
     <dimen name="guess_letter_rumble_size">6dp</dimen>
     <dimen name="guess_letter_animation_elevation">0.5dp</dimen>
+    <!-- Code Puzzle Cells -->
+    <dimen name="aggregate_markup_pip_size">14dp</dimen>
+    <dimen name="aggregate_markup_pip_margin">3dp</dimen>
+    <dimen name="aggregate_markup_pip_corner_radius">7dp</dimen>
+    <dimen name="aggregate_markup_pip_stroke_width">1dp</dimen>
+    <dimen name="aggregate_markup_pip_elevation">2dp</dimen>
+    <dimen name="aggregate_markup_pip_medium_size">9dp</dimen>
+    <dimen name="aggregate_markup_pip_medium_margin">1.5dp</dimen>
+    <dimen name="aggregate_markup_pip_medium_corner_radius">4.5dp</dimen>
+    <dimen name="aggregate_markup_pip_medium_stroke_width">1dp</dimen>
+    <dimen name="aggregate_markup_pip_medium_elevation">2dp</dimen>
+    <dimen name="aggregate_markup_pip_small_size">7dp</dimen>
+    <dimen name="aggregate_markup_pip_small_margin">1dp</dimen>
+    <dimen name="aggregate_markup_pip_small_corner_radius">3.5dp</dimen>
+    <dimen name="aggregate_markup_pip_small_stroke_width">1dp</dimen>
+    <dimen name="aggregate_markup_pip_small_elevation">2dp</dimen>
+    <dimen name="aggregate_markup_pip_tiny_size">4dp</dimen>
+    <dimen name="aggregate_markup_pip_tiny_margin">0.5dp</dimen>
+    <dimen name="aggregate_markup_pip_tiny_corner_radius">2dp</dimen>
+    <dimen name="aggregate_markup_pip_tiny_stroke_width">1dp</dimen>
+    <dimen name="aggregate_markup_pip_tiny_elevation">2dp</dimen>
+
+    <!-- space between aggregate markup rows and the next guess -->
+    <dimen name="aggregate_markup_margin_bottom">4dp</dimen>
+
+    <!-- Buttons -->
+    <dimen name="button_icon_padding">8dp</dimen>
+
+    <!-- setup controls -->
+    <dimen name="setup_control_height">48dp</dimen>
+    <dimen name="setup_control_spacing">4dp</dimen>
+    <dimen name="setup_control_spacing_half">2dp</dimen>
+
+    <!-- Info Screens -->
+    <dimen name="text_size">14sp</dimen>
+    <dimen name="text_size_header">18sp</dimen>
+    <dimen name="text_size_subheader">16sp</dimen>
+    <dimen name="text_size_big">24sp</dimen>
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="main_layout_margin">30dp</dimen>
+    <dimen name="main_layout_margin_vertical">24dp</dimen>
+    <dimen name="main_layout_margin_vertical_half">12dp</dimen>
+    <dimen name="main_layout_margin_vertical_third">8dp</dimen>
+    <dimen name="main_layout_margin_horizontal">36dp</dimen>
+
+    <dimen name="check_box_text_padding">8dp</dimen>
 </resources>

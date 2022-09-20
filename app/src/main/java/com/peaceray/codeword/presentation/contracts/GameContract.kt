@@ -48,6 +48,13 @@ interface GameContract: BaseContract {
          */
         fun getUpdatedGameSetup(): GameSetup
 
+        /**
+         * Provide a guess, or partial guess, cached from a previous view display but possibly
+         * not saved as part of an in-progress game (this may happen for partial guesses
+         * especially, which do not represent part of a valid "game state").
+         */
+        fun getCachedGuess(): String
+
         //-----------------------------------------------------------------------------------------
         //endregion
 
@@ -146,8 +153,10 @@ interface GameContract: BaseContract {
         /**
          * Prompt the player to enter a guess (after this is done, the View
          * should call [Presenter.onGuess]).
+         *
+         * @param suggestedGuess A suggestion for the next guess, perhaps partial.
          */
-        fun promptForGuess()
+        fun promptForGuess(suggestedGuess: String?)
 
         /**
          * Prompt the player for an evaluation of the provided guess (after this is done,
@@ -165,6 +174,8 @@ interface GameContract: BaseContract {
         /**
          * The game is over! Show the player.
          *
+         * @param uuid A unique identifier for the game outcome, for retrieving more information
+         * if necessary.
          * @param solution The real code word for the game. If the player was the evaluator,
          * this may not be known (null)
          * @param rounds The number of complete rounds played (i.e. guesses evaluated,
@@ -173,7 +184,7 @@ interface GameContract: BaseContract {
          * @param playerVictory Whether the winner of the game (see [solved]) is the person
          * holding the device.
          */
-        fun showGameOver(solution: String?, rounds: Int, solved: Boolean, playerVictory: Boolean)
+        fun showGameOver(uuid: UUID, solution: String?, rounds: Int, solved: Boolean, playerVictory: Boolean)
 
         /**
          * Display an error to the user.
@@ -209,6 +220,12 @@ interface GameContract: BaseContract {
          * with [View.getUpdatedGameSetup]).
          */
         fun onUpdatedGameSetup(gameSetup: GameSetup)
+
+        /**
+         * The user has forfeit the game, before a win or loss is registered. This decision is
+         * permanent; the game will not proceed from this point and will not be reloaded later.
+         */
+        fun onForfeit()
 
         //-----------------------------------------------------------------------------------------
         //endregion

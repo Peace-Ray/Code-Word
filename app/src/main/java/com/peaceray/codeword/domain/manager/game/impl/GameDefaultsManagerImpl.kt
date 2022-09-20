@@ -101,7 +101,7 @@ class GameDefaultsManagerImpl @Inject constructor(
 
     //region SharedPreferences: Evaluation
     private fun SharedPreferences.getEvaluation() = GameSetup.Evaluation(
-        getEnum(KEY_EVALUATION_TYPE, ConstraintPolicy.ALL),
+        getEnum(KEY_EVALUATION_TYPE, ConstraintPolicy.PERFECT),
         getEnum(KEY_EVALUATION_ENFORCED, ConstraintPolicy.IGNORE)
     )
 
@@ -187,7 +187,9 @@ class GameDefaultsManagerImpl @Inject constructor(
         it.getVocabulary(),
         it.getEnum(KEY_SOLVER, GameSetup.Solver.PLAYER),
         it.getEnum(KEY_EVALUATOR, GameSetup.Evaluator.HONEST),
-        GameSetup.createSeed()
+        GameSetup.createSeed(),
+        daily = false,
+        version = 0
     ) }
 
     override fun getBoard(key: String?) = getPreferences(key).getBoard()

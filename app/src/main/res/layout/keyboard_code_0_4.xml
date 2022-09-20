@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.peaceray.codeword.presentation.view.component.views.CodeKeyboardView
+    android:id="@+id/keyboardView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/keyboard_margin"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    >
+
+    <!-- Enter on the left (start) -->
+    <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
+        android:layout_width="0dp"
+        android:layout_height="@dimen/keyboard_row_height"
+        android:layout_marginTop="@dimen/keyboard_row_height_tall_difference"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:keyCodeType="enter"
+        >
+        <include layout="@layout/keyboard_key_enter"/>
+    </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
+
+    <!-- Delete on the right (end)-->
+    <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
+        android:layout_width="0dp"
+        android:layout_height="@dimen/keyboard_row_height"
+        android:layout_marginTop="@dimen/keyboard_row_height_tall_difference"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:keyCodeType="delete"
+        >
+        <include layout="@layout/keyboard_key_delete"/>
+    </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
+
+    <!-- Up to 6 code keys with the same width as enter / delete -->
+    <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
+        android:id="@+id/key_available_1"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/keyboard_row_height_tall"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/key_available_2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:keyCodeType="available"
+        >
+        <include layout="@layout/keyboard_key_char_big"/>
+    </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
+
+    <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
+        android:id="@+id/key_available_2"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/keyboard_row_height_tall"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintStart_toEndOf="@id/key_available_1"
+        app:layout_constraintEnd_toStartOf="@id/key_available_3"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:keyCodeType="available"
+        >
+        <include layout="@layout/keyboard_key_char_big"/>
+    </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
+
+    <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
+        android:id="@+id/key_available_3"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/keyboard_row_height_tall"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintStart_toEndOf="@id/key_available_2"
+        app:layout_constraintEnd_toStartOf="@id/key_available_4"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:keyCodeType="available"
+        >
+        <include layout="@layout/keyboard_key_char_big"/>
+    </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
+
+    <com.peaceray.codeword.presentation.view.component.views.CodeKeyView
+        android:id="@+id/key_available_4"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/keyboard_row_height_tall"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintStart_toEndOf="@id/key_available_3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:keyCodeType="available"
+        >
+        <include layout="@layout/keyboard_key_char_big"/>
+    </com.peaceray.codeword.presentation.view.component.views.CodeKeyView>
+
+</com.peaceray.codeword.presentation.view.component.views.CodeKeyboardView>

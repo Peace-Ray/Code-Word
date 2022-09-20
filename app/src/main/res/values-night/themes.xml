@@ -1,16 +1,115 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.WordGame" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.CodeWord" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/gray_600</item>
-        <item name="colorPrimaryVariant">@color/gray_800</item>
-<item name="colorOnPrimary">@color/white</item>~
+        <item name="colorPrimary">@color/md_grey_600</item>
+        <item name="colorPrimaryVariant">@color/md_grey_800</item>
+        <item name="colorOnPrimary">@color/white</item>
+
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
+        <item name="colorSecondary">@color/md_teal_200</item>
+        <item name="colorSecondaryVariant">@color/md_teal_200</item>
         <item name="colorOnSecondary">@color/black</item>
+
         <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+
+        <!-- View Styles -->
+        <item name="android:textViewStyle">@style/Widget.CodeWord.TextView</item>
+        <item name="android:checkboxStyle">@style/Widget.CodeWord.CompoundButton.CheckBox</item>
+
+        <!-- Action bar color -->
+        <item name="android:actionBarTheme">@style/ThemeOverlay.CodeWord.ActionBar</item>
+        <item name="android:popupTheme">@style/ThemeOverlay.CodeWord.Popup</item>
+
+        <!-- Tab color -->
+        <item name="tabStyle">@style/Widget.CodeWord.TabLayout</item>
+    </style>
+
+    <!-- TextView -->
+    <style name="Widget.CodeWord.TextView" parent="@style/Widget.AppCompat.TextView">
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">@dimen/text_size_subheader</item>
+    </style>
+
+    <style name="Widget.CodeWord.TextView.Information" parent="@style/Widget.AppCompat.TextView">
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">@dimen/text_size</item>
+    </style>
+
+    <style name="Widget.CodeWord.TextView.Header" parent="@style/Widget.AppCompat.TextView">
+        <item name="android:textColor">@color/text_header</item>
+        <item name="android:textSize">@dimen/text_size_header</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.CodeWord.TextView.Tip" parent="@style/Widget.AppCompat.TextView">
+        <item name="android:textColor">@color/text_tip</item>
+        <item name="android:textSize">@dimen/text_size</item>
+    </style>
+    
+    <!-- Check Box Text -->
+    <style name="Widget.CodeWord.CompoundButton.CheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:textColor">@color/text</item>
+    </style>
+
+    <!-- Overlays -->
+    <style name="ThemeOverlay.CodeWord.Popup" parent="@style/ThemeOverlay.AppCompat.Dark">
+
+    </style>
+
+    <style name="ThemeOverlay.CodeWord.AlertDialog" parent="@style/ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <!-- Button Text Color -->
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.CodeWord.AlertDialog.NegativeButtonStyle</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.CodeWord.AlertDialog.NeutralButtonStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.CodeWord.AlertDialog.PositiveButtonStyle</item>
+    </style>
+
+    <style name="Widget.CodeWord.AlertDialog.NegativeButtonStyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="Widget.CodeWord.AlertDialog.NeutralButtonStyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="Widget.CodeWord.AlertDialog.PositiveButtonStyle" parent="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">?attr/colorSecondary</item>
+    </style>
+
+    <style name="Widget.CodeWord.TabLayout" parent="@style/Widget.Design.TabLayout">
+        <item name="tabBackground">@color/md_grey_900</item>
+        <item name="tabTextColor">@color/white</item>
+        <item name="tabIndicatorColor">?attr/colorSecondary</item>
+        <item name="tabSelectedTextColor">?attr/colorSecondary</item>
+    </style>
+
+    <!-- Sky Theme -->
+    <style name="Theme.CodeWord.Sky" parent="Theme.CodeWord">
+        <item name="colorSecondary">@color/md_light_blue_300</item>
+        <item name="colorSecondaryVariant">@color/md_light_blue_500</item>
+        <item name="colorOnSecondary">@color/white</item>
+    </style>
+
+    <!-- Semaphore Theme -->
+    <style name="Theme.CodeWord.Semaphore" parent="Theme.CodeWord">
+        <item name="colorSecondary">@color/md_green_500</item>
+        <item name="colorSecondaryVariant">@color/md_green_700</item>
+        <item name="colorOnSecondary">@color/white</item>
+    </style>
+
+    <!-- Contrast Theme -->
+    <style name="Theme.CodeWord.Contrast" parent="Theme.CodeWord">
+        <item name="colorSecondary">@color/md_deep_orange_500</item>
+        <item name="colorSecondaryVariant">@color/md_deep_orange_700</item>
+        <item name="colorOnSecondary">@color/white</item>
+    </style>
+
+    <!-- Blaze Theme (not available) -->
+    <style name="Theme.CodeWord.Blaze" parent="Theme.CodeWord">
+        <item name="colorSecondary">@color/md_amber_700</item>
+        <item name="colorSecondaryVariant">@color/md_amber_900</item>
+        <item name="colorOnSecondary">@color/black</item>
     </style>
 </resources>

@@ -26,6 +26,7 @@
         android:gravity="center"
         android:textAllCaps="true"
         android:textSize="@dimen/guess_letter_text_size"
+        android:textStyle="bold"
         />
 
 </com.google.android.material.card.MaterialCardView>

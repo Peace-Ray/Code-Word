@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="CompilerConfiguration">
-    <bytecodeTargetLevel target="1.7">
-      <module name="Code_Word.app" target="11" />
-      <module name="Word_Game.app" target="11" />
-    </bytecodeTargetLevel>
-  </component>
-</project>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ui theme colors: keep consistent with ColorManager -->
+    <!-- information types: warn, error, fatal are color-scheme dependent -->
+    <color name="text">@color/white</color>
+    <color name="text_info">@color/white</color>
+    <color name="text_tip">@color/md_grey_200</color>
+    <color name="text_warn">@color/md_amber_500</color>
+    <color name="text_error">@color/md_orange_500</color>
+    <color name="text_fatal">@color/md_red_500</color>
+
+    <color name="text_subheader">@color/white</color>
+    <color name="text_header">@color/white</color>
+
+</resources>

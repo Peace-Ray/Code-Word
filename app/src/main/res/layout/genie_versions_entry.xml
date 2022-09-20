@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    >
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/dailyAvailabilityContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/dailyAvailabilityPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/genie_set_version_daily_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/dailyAvailabilitySpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/seedAvailabilityContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/dailyAvailabilityContainer"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/seedAvailabilityPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/genie_set_version_seed_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/seedAvailabilitySpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/delayContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/seedAvailabilityContainer"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:minHeight="@dimen/setup_control_height"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/delayPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/genie_set_version_delay_prompt"
+            />
+
+        <EditText
+            android:id="@+id/delay"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal|textNoSuggestions"
+            android:hint="@string/genie_set_version_delay_hint"
+            android:layout_margin="30dp"
+            android:textSize="@dimen/text_size_big"
+            android:maxLines="1"
+            android:background="@color/md_grey_400"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

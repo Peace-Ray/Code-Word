@@ -17,7 +17,7 @@
         android:layout_width="@dimen/guess_letter_cell_small_size"
         android:layout_height="@dimen/guess_letter_cell_small_size"
         app:layout_constraintDimensionRatio="w,1:1"
-        app:layout_constraintHeight_max="100dp"
+        app:layout_constraintHeight_max="50dp"
         app:layout_constrainedHeight="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -26,6 +26,7 @@
         android:gravity="center"
         android:textAllCaps="true"
         android:textSize="@dimen/guess_letter_small_text_size"
+        android:textStyle="bold"
         />
 
 </com.google.android.material.card.MaterialCardView>

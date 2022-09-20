@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/main_layout_margin_vertical_half"
+    android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+    android:orientation="vertical"
+    android:gravity="top|center_horizontal"
+    android:id="@+id/mainViewDifficulty"
+    >
+
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/game_info_section_difficulty"
+        android:layout_marginBottom="@dimen/guess_container_margin_smaller"
+        style="@style/Widget.CodeWord.TextView.Header"
+        />
+
+    <CheckBox
+        android:id="@+id/hardModeCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/game_setup_hard_mode_prompt"
+        style="@style/Widget.CodeWord.CompoundButton.CheckBox"
+        />
+
+    <CheckBox
+        android:id="@+id/limitedRoundsCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/game_setup_limited_rounds_prompt"
+        style="@style/Widget.CodeWord.CompoundButton.CheckBox"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/roundsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+
+        <TextView
+            android:id="@+id/roundsPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:text="@string/game_setup_rounds_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSeekBar
+            android:id="@+id/roundsSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/roundsPrompt"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="@dimen/setup_control_spacing_half"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

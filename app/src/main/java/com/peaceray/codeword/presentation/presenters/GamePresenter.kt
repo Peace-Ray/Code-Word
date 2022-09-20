@@ -3,6 +3,7 @@ package com.peaceray.codeword.presentation.presenters
 import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.domain.manager.game.GameSessionManager
+import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.bot.Solver
@@ -10,6 +11,7 @@ import com.peaceray.codeword.game.bot.Evaluator
 import com.peaceray.codeword.game.bot.ModularSolver
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
+import com.peaceray.codeword.utils.wrappers.WrappedNullable
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
@@ -30,15 +32,18 @@ import javax.inject.Inject
  */
 class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter<GameContract.View>() {
     @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gameRecordManager: GameRecordManager
 
     var gameSeed: String? = null
     lateinit var gameSetup: GameSetup
     lateinit var game: Game
     private var ready = false
+    private var forfeit = false
+    private var cachedPartialGuess: String? = null
     private val readyForPlayerGuess
-        get() = ready && game.state == Game.State.GUESSING && gameSetup.solver == GameSetup.Solver.PLAYER
+        get() = ready && !forfeit && game.state == Game.State.GUESSING && gameSetup.solver == GameSetup.Solver.PLAYER
     private val readyForPlayerEvaluation
-        get() = ready && game.state == Game.State.EVALUATING && gameSetup.evaluator == GameSetup.Evaluator.PLAYER
+        get() = ready && !forfeit && game.state == Game.State.EVALUATING && gameSetup.evaluator == GameSetup.Evaluator.PLAYER
 
     private val locale: Locale = Locale.getDefault()
 
@@ -75,6 +80,17 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         } else {
             view?.setGameFieldSize(gameSetup.vocabulary.length, gameSetup.board.rounds)
         }
+        when (gameSetup.vocabulary.type) {
+            GameSetup.Vocabulary.VocabularyType.LIST -> {
+                view?.setCodeLanguage(
+                    gameSessionManager.getCodeCharacters(gameSetup),
+                    gameSetup.vocabulary.language.locale!!
+                )
+            }
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> {
+                view?.setCodeComposition(gameSessionManager.getCodeCharacters(gameSetup))
+            }
+        }
 
         // preload Solver and Evaluator (as needed)
         if (gameSetup.solver != GameSetup.Solver.PLAYER) {
@@ -97,15 +113,25 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     Timber.v("Game loaded at round ${game.round} with currentGuess ${game.currentGuess}")
                     this.game = game
 
-                    // apply updated settings
-                    val update = view?.getUpdatedGameSetup()
-                    if (update != null) applyGameSetupUpdate(update)
+                    // if forfeit, apply immediately; otherwise prompt a user action
+                    if (forfeit) {
+                        recordGameOutcome(false)
+                    } else {
+                        // apply updated settings
+                        val update = view?.getUpdatedGameSetup()
+                        if (update != null) applyGameSetupUpdate(update)
 
-                    // begin game
-                    this.ready = true
-                    view?.setConstraints(game.constraints, true)
-                    if (game.currentGuess != null) view?.setGuess(game.currentGuess!!, true)
-                    advanceGameCharacterEvaluations(false)
+                        // begin game
+                        this.ready = true
+                        view?.setConstraints(game.constraints, true)
+                        if (game.currentGuess != null) {
+                            view?.setGuess(game.currentGuess!!, true)
+                        } else {
+                            cachedPartialGuess = view?.getCachedGuess()
+                            if ((cachedPartialGuess?.length ?: 0) > 0) view?.setGuess(cachedPartialGuess!!, true)
+                        }
+                        advanceGameCharacterEvaluations(false)
+                    }
                 },
                 { error ->
                     Timber.e(error, "Error loading game session; attempting a fresh start")
@@ -127,6 +153,19 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     override fun onUpdatedGameSetup(gameSetup: GameSetup) {
         Timber.v("onUpdatedGameSetup")
         applyGameSetupUpdate(gameSetup)
+    }
+
+    override fun onForfeit() {
+        // forfeits are potentially generated outside of the Contract, meaning they may be input
+        // before the game is loaded and ready. In such a case, note that a forfeit has occurred;
+        // it is applied once the game is loaded.
+        // (note a potential race condition here, which is resolved under the assumption that
+        // the View layer calls this function only from the Android main thread).
+        forfeit = true
+        if (ready) {
+            ready = false
+            recordGameOutcome(false)
+        }
     }
 
     override fun onGuessUpdated(before: String, after: String) {
@@ -224,7 +263,8 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
     private fun advanceGameGuessing() {
         if (gameSetup.solver == GameSetup.Solver.PLAYER) {
-            view?.promptForGuess()
+            view?.promptForGuess(cachedPartialGuess)
+            cachedPartialGuess = null
         } else {
             Timber.v("About to compute a solution")
             val time = System.currentTimeMillis()
@@ -252,6 +292,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     private fun advanceGameEvaluating() {
         if (gameSetup.evaluator == GameSetup.Evaluator.PLAYER) {
             view?.promptForEvaluation(game.currentGuess!!)
+            cachedPartialGuess = null
         } else {
             view?.promptForWait()
             disposable.dispose()
@@ -262,6 +303,15 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                         game.evaluate(constraint)
                         view?.replaceGuessWithConstraint(constraint, true)
                         advanceGameCharacterEvaluations(true)
+
+                        // TODO remove
+                        computePeek(game.constraints)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(
+                                { secret -> Timber.d("Peeked secret is $secret") },
+                                { error -> Timber.e(error, "An error occurred peeking for a solution") }
+                            )
                     },
                     { cause ->
                         Timber.e(cause, "Error computing guess evaluation")
@@ -272,38 +322,12 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     }
 
     private fun advanceGameOver() {
-        // TODO register game result with permanent record
-        Timber.v("Game Over: ${game.state}. TODO: record result")
-        if (gameSetup.evaluator == GameSetup.Evaluator.PLAYER) {
-            val solved = game.state == Game.State.WON
-            view?.showGameOver(
-                solution = null,
-                rounds = game.constraints.size,
-                solved = solved,
-                playerVictory = !solved || gameSetup.solver == GameSetup.Solver.PLAYER
-            )
-        } else {
-            disposable.dispose()
-            disposable = computePeek(game.constraints)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { solution ->
-                        val solved = game.state == Game.State.WON
-                        val playerWon = (gameSetup.solver == GameSetup.Solver.PLAYER && solved)
-                                || (gameSetup.evaluator == GameSetup.Evaluator.PLAYER && !solved)
-                        view?.showGameOver(
-                            solution = solution,
-                            rounds = game.constraints.size,
-                            solved = solved,
-                            playerVictory = playerWon
-                        )
-                    },
-                    { cause ->
-                        Timber.e(cause, "Error computing peeked solution")
-                        // TODO display error to user?
-                    }
-                )
-        }
+        Timber.v("Game Over: ${game.state}")
+        // no longer ready to receive moves
+        ready = false
+        // register game result with permanent record.
+        // should be done before notifying presenter.
+        recordGameOutcome(true)
     }
 
     private fun applyGameSetupUpdate(updatedGameSetup: GameSetup) {
@@ -334,6 +358,63 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     )
             }
         }
+    }
+
+    private fun recordGameOutcome(showOutcome: Boolean) {
+        // record via a save (might be a forfeit or end-of-game)
+        val save = GameSaveData(gameSeed, gameSetup, game)
+
+        if (!showOutcome) {
+            // simple; record in the background, don't notify View
+            computePeekWrappedNullable(save.constraints)
+                .subscribeOn(Schedulers.io())
+                .subscribe( // stay on IO thread for database update
+                    { wrappedSecret ->
+                        Timber.v("recording the game result with secret ${wrappedSecret.value}")
+                        gameRecordManager.record(save, wrappedSecret.value)
+                        Timber.v("recorded")
+                    },
+                    { error -> Timber.e(error, "An error occurred computing game solution for a forfeit") }
+                )
+        } else {
+            // calculate secret (if applicable), record the result, then inform the view -- passing
+            // along the calculated secret. This operation is not disposable; even if the view
+            // becomes detached, the outcome must still be recorded.
+            Single.create<WrappedNullable<String>> { emitter ->
+                computePeekWrappedNullable(save.constraints)
+                    .subscribeOn(Schedulers.computation())
+                    .observeOn(Schedulers.io())
+                    .subscribe(
+                        { solution ->
+                            gameRecordManager.record(save, solution.value)
+                            emitter.onSuccess(solution)
+                        },
+                        { cause -> emitter.onError(cause) }
+                    )
+            }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { solution ->
+                        val solved = game.state == Game.State.WON
+                        val playerWon = (gameSetup.solver == GameSetup.Solver.PLAYER && solved)
+                                || (gameSetup.evaluator == GameSetup.Evaluator.PLAYER && !solved)
+                        view?.showGameOver(
+                            save.uuid,
+                            solution = solution.value,
+                            rounds = game.constraints.size,
+                            solved = solved,
+                            playerVictory = playerWon
+                        )
+                    },
+                    { cause ->
+                        Timber.e(cause, "Error computing peeked solution")
+                        // TODO display error to user?
+                    }
+                )
+        }
+
+        // secret may or may not be known
+
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -404,6 +485,14 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 )
 
             emitter.setCancellable { disposable.dispose() }
+        }
+    }
+
+
+    private fun computePeekWrappedNullable(constraints: List<Constraint>): Single<WrappedNullable<String>> {
+        // When solved by the Player, no solution will be available
+        return if (gameSetup.evaluator == GameSetup.Evaluator.PLAYER) Single.just(WrappedNullable()) else {
+            computePeek(constraints).map { WrappedNullable(it) }
         }
     }
 

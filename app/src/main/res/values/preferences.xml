@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- KEYS -->
+    <string name="pref_key_dark_mode">dark_mode</string>
+    <string name="pref_key_color_scheme">color_scheme</string>
+    <string name="pref_key_color_scheme_invert">color_scheme_invert</string>
+    <string name="pref_key_code_colors">code_color_scheme</string>
+    <string name="pref_key_code_colors_invert">code_color_invert</string>
+    <string name="pref_key_code_characters">code_characters</string>
+
+    <!-- VALUES -->
+
+    <!-- VALUES: dark_mode -->
+    <string name="pref_entry_value_dark_mode_system">system</string>
+    <string name="pref_entry_value_dark_mode_off">off</string>
+    <string name="pref_entry_value_dark_mode_on">on</string>
+
+    <string-array name="pref_entry_values_dark_mode">
+        <item>@string/pref_entry_value_dark_mode_system</item>
+        <item>@string/pref_entry_value_dark_mode_off</item>
+        <item>@string/pref_entry_value_dark_mode_on</item>
+    </string-array>
+
+    <string-array name="pref_entries_dark_mode">
+        <item>@string/pref_entry_dark_mode_system</item>
+        <item>@string/pref_entry_dark_mode_off</item>
+        <item>@string/pref_entry_dark_mode_on</item>
+    </string-array>
+
+    <!-- VALUES: color_scheme -->
+    <string name="pref_entry_value_color_scheme_sky">sky</string>
+    <string name="pref_entry_value_color_scheme_semaphore">semaphore</string>
+    <string name="pref_entry_value_color_scheme_contrast">contrast</string>
+    <string name="pref_entry_value_color_scheme_blaze">blaze</string>
+
+    <string-array name="pref_entry_values_color_scheme">
+        <item>@string/pref_entry_value_color_scheme_sky</item>
+        <item>@string/pref_entry_value_color_scheme_semaphore</item>
+        <item>@string/pref_entry_value_color_scheme_contrast</item>
+    </string-array>
+
+    <string-array name="pref_entries_color_scheme">
+        <item>@string/pref_entry_color_scheme_sky</item>
+        <item>@string/pref_entry_color_scheme_semaphore</item>
+        <item>@string/pref_entry_color_scheme_contrast</item>
+    </string-array>
+
+    <!-- VALUES: code_color -->
+    <string name="pref_entry_value_code_colors_sunrise">sunrise</string>
+    <string name="pref_entry_value_code_colors_sunset">sunset</string>
+    <string name="pref_entry_value_code_colors_horizon">horizon</string>
+    <string name="pref_entry_value_code_colors_playroom">playroom</string>
+    <string name="pref_entry_value_code_colors_primary">primary</string>
+    <string name="pref_entry_value_code_colors_quantro">quantro</string>
+    <string name="pref_entry_value_code_colors_retro">retro</string>
+
+    <string-array name="pref_entry_values_code_colors">
+        <item>@string/pref_entry_value_code_colors_sunrise</item>
+        <item>@string/pref_entry_value_code_colors_sunset</item>
+        <item>@string/pref_entry_value_code_colors_horizon</item>
+        <item>@string/pref_entry_value_code_colors_playroom</item>
+        <item>@string/pref_entry_value_code_colors_primary</item>
+        <item>@string/pref_entry_value_code_colors_quantro</item>
+        <item>@string/pref_entry_value_code_colors_retro</item>
+    </string-array>
+
+    <string-array name="pref_entries_code_colors">
+        <item>@string/pref_entry_code_colors_sunrise</item>
+        <item>@string/pref_entry_code_colors_sunset</item>
+        <item>@string/pref_entry_code_colors_horizon</item>
+        <item>@string/pref_entry_code_colors_playroom</item>
+        <item>@string/pref_entry_code_colors_primary</item>
+        <item>@string/pref_entry_code_colors_quantro</item>
+        <item>@string/pref_entry_code_colors_retro</item>
+    </string-array>
+</resources>

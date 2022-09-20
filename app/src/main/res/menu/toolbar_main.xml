@@ -3,6 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
 
+    <!-- "Help / How to Play", should appear as action button if possible -->
+    <item
+        android:id="@+id/action_how_to_play"
+        android:icon="@drawable/round_help_white_48"
+        android:title="@string/action_how_to_play"
+        app:showAsAction="ifRoom"
+        />
+
     <!-- "Puzzle Info", should appear as action button if possible -->
     <item
         android:id="@+id/action_puzzle_info"
@@ -21,6 +29,12 @@
     <item android:id="@+id/action_app_info"
         android:icon="@drawable/round_info_white_48"
         android:title="@string/action_app_info"
+        app:showAsAction="never"/>
+
+    <!-- App InfoCredits, should always be in the overflow -->
+    <item android:id="@+id/action_credits"
+        android:icon="@drawable/round_info_white_48"
+        android:title="@string/action_credits"
         app:showAsAction="never"/>
 
 

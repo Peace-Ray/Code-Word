@@ -1,6 +1,5 @@
 package com.peaceray.codeword.utils.extensions
 
-import timber.log.Timber
 import java.lang.Exception
 import java.lang.NumberFormatException
 

@@ -18,6 +18,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_margin="30dp"
+        android:textSize="@dimen/text_size_big"
+        android:maxLines="1"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

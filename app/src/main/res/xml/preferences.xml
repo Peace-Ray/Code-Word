@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+
+    <PreferenceCategory android:title="@string/pref_appearance">
+        <ListPreference
+            android:defaultValue="@string/pref_entry_value_dark_mode_system"
+            android:dialogTitle="@string/pref_dark_mode"
+            android:entries="@array/pref_entries_dark_mode"
+            android:entryValues="@array/pref_entry_values_dark_mode"
+            android:key="@string/pref_key_dark_mode"
+            android:title="@string/pref_dark_mode"
+            android:summary="%s"
+            />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_evaluation_appearance">
+        <ListPreference
+            android:defaultValue="@string/pref_entry_value_color_scheme_sky"
+            android:dialogTitle="@string/pref_color_scheme"
+            android:entries="@array/pref_entries_color_scheme"
+            android:entryValues="@array/pref_entry_values_color_scheme"
+            android:key="@string/pref_key_color_scheme"
+            android:title="@string/pref_color_scheme"
+            android:summary="%s"
+            />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_key_color_scheme_invert"
+            android:title="@string/pref_invert_color_scheme"
+            />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_code_appearance">
+        <ListPreference
+            android:defaultValue="@string/pref_entry_value_code_colors_primary"
+            android:dialogTitle="@string/pref_code_colors"
+            android:entries="@array/pref_entries_code_colors"
+            android:entryValues="@array/pref_entry_values_code_colors"
+            android:key="@string/pref_key_code_colors"
+            android:title="@string/pref_code_colors"
+            android:summary="%s"
+            />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_key_code_colors_invert"
+            android:title="@string/pref_invert_code_colors"
+            />
+    </PreferenceCategory>
+
+</PreferenceScreen>

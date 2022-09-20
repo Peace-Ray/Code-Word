@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/constraintLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="@dimen/histogram_padding"
+    android:paddingEnd="@dimen/histogram_margin"
+    android:paddingTop="@dimen/histogram_padding"
+    android:paddingBottom="@dimen/histogram_padding"
+    >
+
+    <TextView
+        android:id="@+id/roundTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/histogram_label_width"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:paddingStart="@dimen/histogram_margin"
+        android:paddingEnd="@dimen/histogram_margin"
+        android:layout_marginEnd="@dimen/histogram_margin"
+        android:gravity="center_vertical|end"
+        android:textAllCaps="true"
+        android:textSize="@dimen/histogram_text_size"
+        />
+
+    <View
+        android:id="@+id/histogramBiasView"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        app:layout_constraintStart_toEndOf="@id/roundTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="@dimen/histogram_minimum_width"
+        />
+
+    <View
+        android:id="@+id/histogramBackgroundView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toEndOf="@id/roundTextView"
+        app:layout_constraintEnd_toEndOf="@id/countTextView"
+        app:layout_constraintTop_toTopOf="@id/countTextView"
+        app:layout_constraintBottom_toBottomOf="@id/countTextView"
+        />
+
+    <TextView
+        android:id="@+id/countTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintWidth_min="@dimen/histogram_minimum_width"
+        app:layout_constraintHeight_min="@dimen/histogram_height"
+        app:layout_constraintStart_toEndOf="@id/roundTextView"
+        app:layout_constraintEnd_toEndOf="@id/histogramBiasView"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="1"
+        android:gravity="center"
+        android:paddingStart="@dimen/histogram_padding"
+        android:paddingEnd="@dimen/histogram_padding"
+        android:textSize="@dimen/histogram_text_size"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

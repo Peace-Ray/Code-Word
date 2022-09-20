@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.peaceray.codeword">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:name="com.peaceray.codeword.CodeWordApplication"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.WordGame">
+        android:theme="@style/Theme.CodeWord">
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.HelloWorldActivity"
             android:exported="true"
@@ -26,9 +27,20 @@
             />
 
         <activity
+            android:name="com.peaceray.codeword.presentation.view.activities.SettingsActivity"
+            android:exported="false"
+            />
+
+        <activity
             android:name="com.peaceray.codeword.presentation.view.activities.GameSetupActivity"
             android:exported="false"
             />
+
+        <activity
+            android:name="com.peaceray.codeword.presentation.view.activities.DocViewerActivity"
+            android:exported="false"
+            />
+
     </application>
 
 </manifest>

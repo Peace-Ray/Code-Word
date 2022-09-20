@@ -1,7 +1,7 @@
 package com.peaceray.codeword.game.bot.modules.shared
 
-import kotlin.random.Random
+import com.peaceray.codeword.random.ConsistentRandom
 
 abstract class Seeded(seed: Long) {
-    protected val random = Random(seed)
+    protected val random = ConsistentRandom(seed)
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Colors provided by SchemeColor at https://www.schemecolor.com/ in published color schemes -->
+
+    <!--reds-->
+    <color name="cs_red_red_salsa">#f93644</color>
+
+    <!-- pinks -->
+
+    <!-- purples -->
+    <color name="cs_purple_dark_orchid">#9032d1</color>
+
+    <!-- deep purples -->
+
+    <!-- indigo -->
+
+    <!--blue-->
+    <color name="cs_blue_rich_electric_blue">#1299e2</color>
+
+    <!-- light blue-->
+
+    <!-- cyan -->
+
+    <!-- teal -->
+
+    <!-- green -->
+
+    <!--light green-->
+    <color name="cs_light_green_kiwi">#97d151</color>
+
+    <!-- lime-->
+
+    <!--yellow -->
+
+    <!--amber-->
+    <color name="cs_yellow_lemon_yellow">#ffeb48</color>
+
+    <!--orange-->
+
+    <!--deep orange-->
+    <color name="cs_deep_orange_deep_saffron">#ff9230</color>
+
+    <!--brown -->
+
+    <!--grey-->
+
+    <!--blue grey-->
+
+</resources>

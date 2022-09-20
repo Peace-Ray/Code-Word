@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical|start"
+    android:paddingBottom="@dimen/aggregate_markup_margin_bottom"
+    >
+
+    <include layout="@layout/cell_pip"/>
+    <include layout="@layout/cell_pip"/>
+    <include layout="@layout/cell_pip"/>
+    <include layout="@layout/cell_pip"/>
+    <include layout="@layout/cell_pip"/>
+
+</LinearLayout>

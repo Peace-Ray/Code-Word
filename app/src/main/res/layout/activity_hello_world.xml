@@ -18,23 +18,25 @@
         tools:text="Hello World" />
 
     <Button
-        android:id="@+id/stackButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stack"
-        app:layout_constraintTop_toBottomOf="@id/textView"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        />
-
-    <Button
         android:id="@+id/gameButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Game"
-        app:layout_constraintTop_toBottomOf="@id/stackButton"
+        app:layout_constraintTop_toBottomOf="@id/textView"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginBottom="@dimen/setup_control_height"
+        />
+
+    <CheckBox
+        android:id="@+id/genieCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Genie 🧞"
+        app:layout_constraintTop_toBottomOf="@id/gameButton"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:minHeight="@dimen/setup_control_height"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

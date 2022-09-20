@@ -3,31 +3,38 @@ package com.peaceray.codeword.presentation.view.component.views
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
+import android.view.ViewPropertyAnimator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.AttrRes
 import androidx.annotation.IdRes
 import androidx.core.content.withStyledAttributes
-import androidx.core.view.isVisible
 import com.peaceray.codeword.R
 import com.peaceray.codeword.utils.extensions.isVisibleToUser
-import com.peaceray.codeword.utils.getEnum
+import com.peaceray.codeword.utils.extensions.getEnum
 import timber.log.Timber
+import java.lang.IllegalStateException
 
 class CodeKeyView: FrameLayout {
 
     //region KeyTypes, Codes, Values
     //---------------------------------------------------------------------------------------------
-    enum class KeyType { CHARACTER, ENTER, DELETE, NONE }
+    enum class KeyType { CHARACTER, ENTER, DELETE, AVAILABLE, NONE }
 
+    lateinit var label: String private set
+    lateinit var type: KeyType private set
     var character: Char? = null
-    lateinit var label: String
-    lateinit var type: KeyType
+        private set
+    var group: Int = 0
+        private set
 
     var textView: TextView? = null
+        private set
     var imageView: ImageView? = null
+        private set
     var backgroundView: View? = null
+        private set
 
     @IdRes private var textViewId: Int = R.id.keyTextView
     @IdRes private var imageViewId: Int = R.id.keyImageView
@@ -70,16 +77,18 @@ class CodeKeyView: FrameLayout {
             val characterStr = getString(R.styleable.CodeKey_keyCodeCharacter)
             if (characterStr != null) character = characterStr[0]
 
-            val defaultType = if (character == null) KeyType.NONE else KeyType.CHARACTER
+            val defaultType = if (character == null) KeyType.AVAILABLE else KeyType.CHARACTER
             type = getEnum(R.styleable.CodeKey_keyCodeType, defaultType)
 
             val defaultLabel = when(type) {
                 KeyType.CHARACTER -> "$character"
                 KeyType.ENTER -> context.getString(R.string.key_label_enter)
                 KeyType.DELETE -> context.getString(R.string.key_label_delete)
+                KeyType.AVAILABLE -> "_"
                 KeyType.NONE -> ""
             }
             label = getString(R.styleable.CodeKey_keyCodeLabel) ?: defaultLabel
+            group = getInt(R.styleable.CodeKey_keyCodeGroup, 0)
 
             textViewId = getInt(R.styleable.CodeKey_keyTextViewId, textViewId)
             imageViewId = getInt(R.styleable.CodeKey_keyImageViewId, imageViewId)
@@ -95,8 +104,30 @@ class CodeKeyView: FrameLayout {
         imageView = findViewById(imageViewId)
         backgroundView = findViewById(backgroundViewId)
 
+        updateViewContent()
+    }
+
+    private fun updateViewContent() {
         textView?.text = label
         // TODO set image src?
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Content Controls
+    //---------------------------------------------------------------------------------------------
+    fun setCharacter(character: Char?, label: String? = null) {
+        when (type) {
+            KeyType.CHARACTER, KeyType.AVAILABLE -> {
+                if (type == KeyType.CHARACTER && character == null) {
+                    throw IllegalStateException("Can't setCharacter to 'null' for CHARACTER type")
+                }
+                this.character = character
+                this.label = label ?: if (character != null) "$character" else "_"
+                updateViewContent()
+            }
+            else -> throw IllegalStateException("Can't setCharacter for key type $type")
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -104,24 +135,25 @@ class CodeKeyView: FrameLayout {
     //region Property Overrides
     //---------------------------------------------------------------------------------------------
     private var lastSetEnabled: Boolean? = null
+    private var lastSetEnabledAnimator: ViewPropertyAnimator? = null
 
     override fun setEnabled(enabled: Boolean) {
         super.setEnabled(enabled)
 
         if (enabled != lastSetEnabled) {
             lastSetEnabled = enabled
+            lastSetEnabledAnimator?.cancel()
             val zValue = if (enabled) resources.getDimension(R.dimen.keyboard_key_elevation) else 0.0f
             val alphaValue = if (enabled) 1.0f else 0.7f
             if (isVisibleToUser()) {
-                Timber.v("animating Keyboard change")
-                backgroundView?.animate()
+                lastSetEnabledAnimator = backgroundView?.animate()
                     ?.z(zValue)
                     ?.alpha(alphaValue)
                     ?.setDuration(resources.getInteger(android.R.integer.config_shortAnimTime).toLong())
+                    ?.setStartDelay(300L)
             } else {
-                Timber.v("setting keyboard change")
-                z = zValue
-                alpha = alphaValue
+                backgroundView?.z = zValue
+                backgroundView?.alpha = alphaValue
             }
         }
     }

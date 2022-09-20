@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Colors used in Quantro -->
+
+    <!-- Quantro Standard -->
+    <color name="quantro_standard_red">#ffff3333</color>
+    <color name="quantro_standard_blue">#ff00ccff</color>
+    <color name="quantro_standard_gold">#ffffd500</color>
+    <color name="quantro_standard_green">#ff66ff33</color>
+    <color name="quantro_standard_nile_fuschia">#ffff23d3</color>
+    <color name="quantro_standard_nile_ice">#ff56aaf1</color>
+    <color name="quantro_standard_nile_fire">#fff86d02</color>
+    <color name="quantro_standard_dawn_purple">#ffba4f83</color>
+    <color name="quantro_standard_dawn_orange">#fff8c56a</color>
+    <color name="quantro_standard_dawn_green">#ff3bf6b2</color>
+    <color name="quantro_standard_dawn_red">#ffff0000</color>
+
+    <!-- Quantro "Retro" Scheme -->
+    <color name="quantro_retro_red_blush">#ffff0042</color>
+    <color name="quantro_retro_red_fiery">#ffff3600</color>
+    <color name="quantro_retro_yellow_gold">#ffffd500</color>
+    <color name="quantro_retro_green_light">#ff7bf69d</color>
+    <color name="quantro_retro_blue">#ff1b8ef9</color>
+    <color name="quantro_retro_purple">#ff9f6fed</color>
+    <color name="quantro_retro_pink">#ffff6ec7</color>
+    <color name="quantro_retro_blue_deep">#ff3442e3</color>
+    <color name="quantro_retro_orange_burnt">#ffe34234</color>
+
+</resources>

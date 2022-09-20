@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/main_layout_margin_vertical_third"
+    android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+    android:id="@+id/mainViewWarnings"
+    android:clipToPadding="false"
+    >
+
+    <!-- center the seed view horizontally with space on either side; sometimes a "refresh"
+            button is displayed on the End side, but the seed view should remain consistently
+            positioned regardless -->
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/startGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_begin="48dp"
+        android:orientation="vertical"
+        />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/endGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_end="48dp"
+        android:orientation="vertical"
+        />
+
+    <!-- Warning -->
+    <TextView
+        android:id="@+id/warningsTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="@id/startGuideline"
+        app:layout_constraintEnd_toStartOf="@id/endGuideline"
+        app:layout_constraintTop_toTopOf="parent"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:theme="@style/Widget.CodeWord.TextView.Information"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

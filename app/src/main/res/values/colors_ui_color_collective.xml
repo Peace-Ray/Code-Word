@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Colors from UI Color Collective https://colorui.blogspot.com/2020/01/sunrise-color-scheme.html
+            https://colorui.blogspot.com/
+            -->
+
+    <!-- Sunrise -->
+    <!-- Standard -->
+    <color name="cc_sunrise_pink">#fc7174</color>
+    <color name="cc_sunrise_red">#eb6859</color>
+    <color name="cc_sunrise_peach">#fc8862</color>
+    <color name="cc_sunrise_orange">#fda26b</color>
+    <color name="cc_sunrise_yellow">#fdbb63</color>
+    <!-- Light -->
+    <color name="cc_sunrise_light_pink">#fc9799 </color>
+    <color name="cc_sunrise_light_red">#eb887c</color>
+    <color name="cc_sunrise_light_peach">#fca488</color>
+    <color name="cc_sunrise_light_orange">#fdba91</color>
+    <color name="cc_sunrise_light_yellow">#fdcb89</color>
+    <!-- Dark -->
+    <color name="cc_sunrise_dark_pink">#fc4b4f</color>
+    <color name="cc_sunrise_dark_red">#eb4836</color>
+    <color name="cc_sunrise_dark_peach">#fc6c3c </color>
+    <color name="cc_sunrise_dark_orange">#fd8a45</color>
+    <color name="cc_sunrise_dark_yellow">#fdab3d</color>
+
+
+    <!-- Sunset Ocean -->
+    <!-- Standard -->
+    <color name="cc_sunset_blush">#fd87c2</color>
+    <color name="cc_sunset_pink">#ff69cb</color>
+    <color name="cc_sunset_magenta">#ea46ff</color>
+    <color name="cc_sunset_purple">#ad00fa</color>
+    <color name="cc_sunset_deep_purple">#5f00e0</color>
+    <!-- Light -->
+    <color name="cc_sunset_light_blush">#fdadd5</color>
+    <color name="cc_sunset_light_pink">#ff8fd8</color>
+    <color name="cc_sunset_light_magenta">#ee6cff</color>
+    <color name="cc_sunset_light_purple">#b926fa</color>
+    <color name="cc_sunset_light_deep_purple">#7222e0</color>
+    <!-- Dark -->
+    <color name="cc_sunset_dark_blush">#fd61af</color>
+    <color name="cc_sunset_dark_pink">#ff43be</color>
+    <color name="cc_sunset_dark_magenta">#e620ff</color>
+    <color name="cc_sunset_dark_purple">#9c20d4</color>
+    <color name="cc_sunset_dark_deep_purple">#5f1cba</color>
+
+    <!-- Playroom -->
+    <!-- Standard -->
+    <color name="cc_playroom_teal">#33a9ac</color>
+    <color name="cc_playroom_yellow">#ffa646</color>
+    <color name="cc_playroom_orange">#f86041</color>
+    <color name="cc_playroom_purple">#982062</color>
+    <color name="cc_playroom_blue">#343779</color>
+
+    <!-- Light -->
+    <color name="cc_playroom_light_teal">#58c3c6</color>
+    <color name="cc_playroom_light_yellow">#ffbf79</color>
+    <color name="cc_playroom_light_orange">#f87f66</color>
+    <color name="cc_playroom_light_purple">#b1407e</color>
+    <color name="cc_playroom_light_blue">#555893</color>
+
+    <!-- Dark -->
+    <color name="cc_playroom_dark_teal">#169093</color>
+    <color name="cc_playroom_dark_yellow">#e6851d</color>
+    <color name="cc_playroom_dark_orange">#df3a19</color>
+    <color name="cc_playroom_dark_purple">#7e0849</color>
+    <color name="cc_playroom_dark_blue">#292e93</color>
+
+</resources>

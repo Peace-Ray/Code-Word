@@ -1,15 +1,32 @@
 <resources>
-    <string name="app_name">code/WORD</string>
+    <string name="app_name">Code Word</string>
 
+    <string name="share_outcome_template_seed">%1$s\n%2$s\n%3$s</string>
+    <string name="share_outcome_template_no_seed">%1$s\n%2$s</string>
+    <string name="share_outcome_rounds">%1$s/%2$s</string>
+    <string name="share_outcome_rounds_hard">*%1$s/%2$s</string>
+    <string name="share_outcome_rounds_lost">L</string>
+    <string name="share_outcome_rounds_loading">\?</string>
+    <string name="share_outcome_etc">…</string>
+
+    <string name="action_how_to_play">How to Play</string>
     <string name="action_puzzle_info">Puzzle Info</string>
     <string name="action_new_puzzle">New Puzzle</string>
     <string name="action_start_puzzle">Start Puzzle</string>
     <string name="action_settings">Settings</string>
-    <string name="action_app_info">App Info</string>
+    <string name="action_app_info">About</string>
+    <string name="action_credits">Credits</string>
+
+    <!-- documentation -->
+    <string name="document_viewer_name">Viewer</string>
+    <string name="document_viewer_send_email_chooser">Send email…</string>
+    <string name="document_viewer_send_email_subject">Code Word</string>
 
     <!-- clip data -->
-    <string name="clip_seed_label">code/WORD game seed</string>
+    <string name="clip_seed_label">Code Word game seed</string>
     <string name="clip_seed_toast">Copied to clipboard</string>
+    <string name="clip_outcome_label">Code Word game outcome</string>
+    <string name="clip_outcome_toast">Copied to clipboard</string>
 
     <!-- game controls -->
     <string name="key_label_enter">Enter</string>
@@ -30,6 +47,22 @@
     <string name="game_error_unknown">Something went wrong</string>
 
     <!-- game setup -->
+    <string name="game_setup_title">New Puzzle</string>
+    <string name="game_setup_tab_daily">Daily</string>
+    <string name="game_setup_tab_seeded">Seeded</string>
+    <string name="game_setup_tab_custom">Custom</string>
+
+    <string name="game_setup_error_game_expired">This game has expired</string>
+    <string name="game_setup_error_game_forthcoming">This game is forthcoming</string>
+    <string name="game_setup_error_game_complete">This game is already complete</string>
+    <string name="game_setup_error_feature_not_allowed">Not allowed</string>
+    <string name="game_setup_error_feature_value_invalid_seed">Couldn\'t process Seed value; it may be invalid, or Code Word may need to be updated</string>
+    <string name="game_setup_error_feature_value_invalid">Invalid value</string>
+    <string name="game_setup_error_feature_value_not_allowed_seed">Seed value could not be used to start a game</string>
+    <string name="game_setup_error_feature_value_not_allowed">Value not allowed</string>
+    <string name="game_setup_error_unknown">Error</string>
+
+
     <string name="game_setup_launch_new">Start</string>
     <string name="game_setup_launch_resume">Resume</string>
     <string name="game_setup_launch_view">View</string>
@@ -39,12 +72,46 @@
     <string name="game_setup_seed_prompt_detail">Use game seeds to share a puzzle with friends</string>
     <string name="game_setup_seed_cancel">Cancel</string>
     <string name="game_setup_seed_confirm">Enter</string>
+    <string name="game_setup_daily_seed">Daily %1$s</string>
 
-    <string name="game_setup_player_role_prompt">I want to</string>
+    <string name="game_setup_status_ongoing_daily">Resume the Daily Puzzle</string>
+    <string name="game_setup_status_new_daily">Today\'s Puzzle: %1$d-letter %2$s</string>
+    <string name="game_setup_status_new_daily_no_specs">Today\'s Puzzle</string>
+    <string name="game_setup_status_won_daily">You solved the Daily Puzzle! See you tomorrow</string>
+    <string name="game_setup_status_lost_daily">See you tomorrow for a new Daily Puzzle</string>
+    <string name="game_setup_status_loading_daily">Loading puzzle progress…</string>
+
+    <string name="game_setup_status_ongoing_seeded">Resume this puzzle</string>
+    <string name="game_setup_status_new_seeded">Start a new puzzle from this seed</string>
+    <string name="game_setup_status_won_seeded">You solved this puzzle! Try a different seed</string>
+    <string name="game_setup_status_lost_seeded">You were stumped by this puzzle. Try a different seed</string>
+    <string name="game_setup_status_loading_seeded">Loading puzzle progress…</string>
+
+    <string name="game_setup_note_seed_legacy">This is a legacy seed; not all settings may be available</string>
+    <string name="game_setup_note_seed_retired">This is a retired seed; the puzzle may not match expectations</string>
+    <string name="game_setup_note_seed_futuristic">An app update is required to play this puzzle</string>
+    <string name="game_setup_note_seed_undetermined">Checking puzzle availability…</string>
+    <string name="game_setup_note_game_expired">This game has expired</string>
+    <string name="game_setup_note_game_forthcoming">This game is forthcoming</string>
+
+    <string name="game_setup_qualifier_version_pending_seeded">Checking for updates…</string>
+    <string name="game_setup_qualifier_version_failed_seeded">No connection; couldn\'t check current version</string>
+    <string name="game_setup_qualifier_version_update_available_seeded">An update is available; it may introduce new puzzles or features</string>
+    <string name="game_setup_qualifier_version_update_recommended_seeded">An update is urgent to support new seeds</string>
+    <string name="game_setup_qualifier_version_update_required_seeded">An update is required</string>
+
+    <string name="game_setup_qualifier_version_pending_daily">Checking for updates…</string>
+    <string name="game_setup_qualifier_version_failed_daily">No connection; couldn\'t check current Daily</string>
+    <string name="game_setup_qualifier_version_update_available_daily">An update is available; install soon to keep playing the Daily puzzle</string>
+    <string name="game_setup_qualifier_version_update_recommended_daily">Update Code Word soon to keep playing the Daily puzzle</string>
+    <string name="game_setup_qualifier_version_update_required_daily">Update Code Word to play the Daily puzzle</string>
+
+
+    <string name="game_setup_player_role_prompt">Player Role:</string>
     <string name="game_setup_player_role_value_solver">Guess</string>
     <string name="game_setup_player_role_value_evaluator">Know</string>
-    <string name="game_setup_player_role_value_none">Spectate on</string>
-    <string name="game_setup_player_role_value_both">Practice for</string>
+    <string name="game_setup_player_role_value_none">Spectate</string>
+    <string name="game_setup_player_role_value_both">Practice</string>
 
     <string-array name="game_setup_player_role_values">
         <item>@string/game_setup_player_role_value_solver</item>
@@ -53,40 +120,64 @@
         <item>@string/game_setup_player_role_value_both</item>
     </string-array>
 
-
-    <string name="game_setup_language_prompt">Guess the secret:</string>
-    <string name="game_setup_language_prompt_with_player_role">A secret:</string>
+    <string name="game_setup_language_prompt">Secret:</string>
     <string name="game_setup_language_english">@string/template_english_secret</string>
     <string name="game_setup_language_code">@string/template_code_secret</string>
 
-    <string name="game_setup_code_length_prompt">of length</string>
+    <string-array name="game_setup_language_values">
+        <item>@string/game_setup_language_english</item>
+        <item>@string/game_setup_language_code</item>
+    </string-array>
 
-    <string name="game_setup_code_characters_prompt_start">using</string>
-    <string name="game_setup_code_characters_prompt_end">letters</string>
+    <string name="game_setup_code_length_prompt">Length: %1$d</string>
+
+    <string name="game_setup_code_characters_prompt">Symbols: %1$d</string>
 
     <string name="game_setup_hard_mode_prompt">Hard mode</string>
-    <string name="game_setup_hard_mode_description">Each guess must use all previously revealed hints</string>
+    <string name="game_setup_hard_mode_description">Each guess must use all previous hints</string>
 
-    <string name="game_setup_evaluator_cheats_prompt">Opponent cheats</string>
-    <string name="game_setup_evaluator_cheats_hint">Secret word changes as you guess</string>
+    <string name="game_setup_evaluator_cheats_prompt">Bad luck!</string>
+    <string name="game_setup_evaluator_cheats_hint">Guesses tend to be wrong</string>
 
     <string name="game_setup_limited_rounds_prompt">Limited guesses</string>
-    <string name="game_setup_rounds_prompt">Guesses:</string>
+    <string name="game_setup_rounds_prompt">Guesses: %1$d</string>
 
     <!-- Game Info / Ongoing Game Setup -->
-    <string name="game_info_rounds">Guess the %1$s in %2$s tries.</string>
-    <string name="game_info_guess">Type a guess (%2$d-letter %1$s) and press the Enter button.</string>
+    <string name="game_info_title">Puzzle Info</string>
+    <string name="game_info_section_puzzle">Puzzle Type</string>
+    <string name="game_info_section_outcome">Outcome</string>
+    <string name="game_info_section_history">History</string>
+    <string name="game_info_section_dailies">Dailies</string>
+    <string name="game_info_section_performance">Performance</string>
+    <string name="game_info_section_explanation">How to Play</string>
+    <string name="game_info_section_difficulty">Difficulty</string>
+    <string name="game_info_daily_seed">Daily %1$s</string>
+    <string name="game_info_puzzle_language">Secret: %2$d-letter %1$s</string>
+    <string name="game_info_puzzle_characters">Code symbols: %1$d</string>
+    <string name="game_info_puzzle_cheater">Bad luck!</string>
+    <string name="game_info_puzzle_new_button">New Puzzle</string>
+    <string name="game_info_explanation_unlimited">Guess the secret %1$s: type a %3$d-letter %2$s and press the ✔ button.</string>
+    <string name="game_info_explanation">Guess the secret %1$s in %4$d tries: type a %3$d-letter %2$s and press the ✔ button.</string>
 
     <string name="game_info_legend_guess">@string/template_code</string>
     <string name="game_info_legend_secret">@string/template_word</string>
-    <string name="game_info_legend_correct_letter">O</string>
-    <string name="game_info_legend_present_letter">D</string>
-    <string name="game_info_legend_no_letter_1">C</string>
-    <string name="game_info_legend_no_letter_2">E</string>
+    <string name="game_info_legend_correct_letter">o</string>
+    <string name="game_info_legend_present_letter">d</string>
+    <string name="game_info_legend_no_letter_1">c</string>
+    <string name="game_info_legend_no_letter_2">e</string>
     <string name="game_info_legend_intro">For the guess \"CODE\":</string>
     <string name="game_info_legend_correct">is in the right place.</string>
     <string name="game_info_legend_present">is used somewhere else.</string>
     <string name="game_info_legend_no">are not in the word.</string>
+
+    <string name="game_info_legend_code_guess">abcd</string>
+    <string name="game_info_legend_code_secret">cdbd</string>
+    <string name="game_info_legend_code_correct_letter">d</string>
+    <string name="game_info_legend_code_present_letter_1">b</string>
+    <string name="game_info_legend_code_present_letter_2">c</string>
+    <string name="game_info_legend_code_intro">For the guess \"ABCD\":</string>
+    <string name="game_info_legend_code_correct">one in the right place.</string>
+    <string name="game_info_legend_code_present">two used somewhere else.</string>
 
     <string name="game_info_hard_mode_prompt">Hard mode</string>
     <string name="game_info_hard_mode_description">Each guess must use all previously revealed hints</string>
@@ -94,6 +185,50 @@
 
     <string name="game_info_limited_rounds_prompt">Limited guesses</string>
     <string name="game_info_rounds_prompt">Guesses: %1$d (%2$d used)</string>
+
+    <!-- Game Outcome -->
+    <string name="game_outcome_header_outcome_win">Secret Found</string>
+    <string name="game_outcome_header_outcome_lost">Secret Kept</string>
+    <string name="game_outcome_header_outcome_forfeit">Secret Kept</string>
+
+    <string name="game_outcome_outcome_win">You Won!</string>
+    <string name="game_outcome_outcome_lost">Stumped…</string>
+    <string name="game_outcome_outcome_loading">Loading…</string>
+    <string name="game_outcome_secret">Secret: &#8220;%1$s&#8221;</string>
+    <string name="game_outcome_secret_null">Secret: Unknown!</string>
+
+    <string name="game_outcome_history_attempts_all">Puzzles: %1$d (%2$d\%% solved)</string>
+    <string name="game_outcome_history_attempts_type">This Type: %1$d (%2$d\%% solved)</string>
+    <string name="game_outcome_history_attempts_daily">Attempts: %1$d (%2$d\%% solved)</string>
+    <string name="game_outcome_history_streak">Streak: %1$d (All-Time: %2$d)</string>
+
+    <string name="game_outcome_button_share">Share</string>
+    <string name="game_outcome_button_copy">Copy</string>
+
+    <string name="game_outcome_secret_format">&#8220;%1$s&#8221;</string>
+
+    <string name="game_outcome_language_english">@string/template_english_secret</string>
+    <string name="game_outcome_language_code">@string/template_code_secret</string>
+    <string name="game_outcome_language_length_word">%1$d letters</string>
+    <string name="game_outcome_language_length_code">Length %1$d</string>
+    <string name="game_outcome_language_letters">%1$d symbols</string>
+    <string name="game_outcome_rounds_unlimited">Guesses: %1$d</string>
+    <string name="game_outcome_rounds_won">Guesses: %1$d / %2$d</string>
+    <string name="game_outcome_rounds_lost">Guesses: %1$d</string>
+    <string name="game_outcome_rounds_forfeit">Guesses: %1$d / %2$d</string>
+    <string name="game_outcome_rounds_loading">Guesses: %1$d</string>
+    <string name="game_outcome_seed">Seed: %1$s</string>
+
+
+    <string name="game_outcome_header_performance">Performance</string>
+
+    <string name="game_outcome_round_histogram_eq">%1$d</string>
+    <string name="game_outcome_round_histogram_neq">🚫%1$d</string>
+    <string name="game_outcome_round_histogram_lt">&lt;%1$d</string>
+    <string name="game_outcome_round_histogram_lte">&#x2264;%1$d</string>
+    <string name="game_outcome_round_histogram_gt">&gt;%1$d</string>
+    <string name="game_outcome_round_histogram_gte">&#8805;%1$d</string>
+
 
     <!-- Template Values -->
     <string name="template_english_secret">English Word</string>
@@ -131,6 +266,72 @@
         <item>@string/template_number_ten</item>
         <item>@string/template_number_eleven</item>
         <item>@string/template_number_twelve</item>
+    </string-array>
+
+    <!-- Human-Readable settings titles, descriptions, etc. -->
+    <string name="pref_title">Settings</string>
+
+    <string name="pref_appearance">Appearance</string>
+    <string name="pref_dark_mode">Dark mode</string>
+
+    <string name="pref_evaluation_appearance">Feedback</string>
+    <string name="pref_color_scheme">Color scheme</string>
+    <string name="pref_invert_color_scheme">Swap feedback colors</string>
+
+    <string name="pref_entry_dark_mode_system">System default</string>
+    <string name="pref_entry_dark_mode_off">Off</string>
+    <string name="pref_entry_dark_mode_on">On</string>
+
+    <string name="pref_entry_color_scheme_sky">Sky</string>
+    <string name="pref_entry_color_scheme_semaphore">Semaphore</string>
+    <string name="pref_entry_color_scheme_blaze">Blaze</string>
+    <string name="pref_entry_color_scheme_contrast">High contrast</string>
+
+    <string name="pref_code_appearance">Code Appearance</string>
+    <string name="pref_code_colors">Code color scheme</string>
+    <string name="pref_invert_code_colors">Invert code colors</string>
+    <string name="pref_show_code_characters">Code characters</string>
+
+    <string name="pref_entry_code_colors_sunrise">Sunrise</string>
+    <string name="pref_entry_code_colors_sunset">Sunset</string>
+    <string name="pref_entry_code_colors_horizon">Horizon</string>
+    <string name="pref_entry_code_colors_playroom">Playroom</string>
+    <string name="pref_entry_code_colors_primary">Primary</string>
+    <string name="pref_entry_code_colors_quantro">Quantro</string>
+    <string name="pref_entry_code_colors_retro">Retro</string>
+
+    <!-- GAME GENIE -->
+    <!-- genie: custom secret -->
+    <string name="genie_set_secret_hint">Secret</string>
+    <string name="genie_set_secret_prompt">🧞 Enter a Secret?</string>
+    <string name="genie_set_secret_prompt_detail">Set the secret: a %2$d-letter %1$s.</string>
+    <string name="genie_set_secret_cancel">Cancel</string>
+    <string name="genie_set_secret_confirm">Enter</string>
+    <string name="genie_set_secret_toast">🧞 Secret set to \"%1$s\"</string>
+
+    <!-- genie: custom feature availability / version check -->
+    <string name="genie_set_version_prompt">🧞 Update Available?</string>
+    <string name="genie_set_version_prompt_detail">Enter a custom response for the update check, potentially disabling Daily puzzles</string>
+    <string name="genie_set_version_cancel">Cancel</string>
+    <string name="genie_set_version_confirm">Enter</string>
+    <string name="genie_set_version_daily_prompt">Daily</string>
+    <string name="genie_set_version_seed_prompt">Seed</string>
+    <string name="genie_set_version_delay_prompt">Delay</string>
+    <string name="genie_set_version_delay_hint">Seconds</string>
+    <string name="genie_set_version_availability_available">Current</string>
+    <string name="genie_set_version_availability_update_available">Update Available</string>
+    <string name="genie_set_version_availability_update_urgent">Update Urgent</string>
+    <string name="genie_set_version_availability_update_required">Update Required</string>
+    <string name="genie_set_version_availability_retired">Retired</string>
+    <string name="genie_set_version_availability_unknown">Unknown</string>
+
+    <string-array name="genie_set_version_availabilities">
+        <item>@string/genie_set_version_availability_available</item>
+        <item>@string/genie_set_version_availability_update_available</item>
+        <item>@string/genie_set_version_availability_update_urgent</item>
+        <item>@string/genie_set_version_availability_update_required</item>
+        <item>@string/genie_set_version_availability_retired</item>
+        <item>@string/genie_set_version_availability_unknown</item>
     </string-array>
 
 </resources>

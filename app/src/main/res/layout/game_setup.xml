@@ -1,230 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.appcompat.widget.LinearLayoutCompat
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mainView"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:layout_height="match_parent"
+    android:id="@+id/mainView"
     >
 
-    <EditText
-        android:id="@+id/seed"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="none"
-        android:focusable="false"
-        />
-
     <androidx.appcompat.widget.LinearLayoutCompat
-        android:id="@+id/playerRoleContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="start"
+        android:orientation="vertical"
+        android:gravity="top|center_horizontal"
+        android:paddingTop="@dimen/main_layout_margin_vertical_half"
+        android:paddingBottom="@dimen/main_layout_margin_vertical_half"
+        android:paddingStart="@dimen/main_layout_margin_horizontal"
+        android:paddingEnd="@dimen/main_layout_margin_horizontal"
         >
 
-        <TextView
-            android:id="@+id/playerRolePrompt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/game_setup_player_role_prompt"
+        <include
+            layout="@layout/game_setup_section_seed_wide"
+            android:id="@+id/sectionSeed"
             />
 
-        <androidx.appcompat.widget.AppCompatSpinner
-            android:id="@+id/playerRoleSpinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:spinnerMode="dropdown"
+        <include
+            layout="@layout/game_setup_section_puzzle_type"
+            android:id="@+id/sectionPuzzleType"
+            />
+
+        <include
+            layout="@layout/game_setup_section_difficulty"
+            android:id="@+id/sectionDifficulty"
+            />
+
+        <include
+            layout="@layout/game_setup_section_warnings"
+            android:id="@+id/sectionWarnings"
             />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
-    <RadioGroup
-        android:id="@+id/codeLanguageContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        >
+</ScrollView>
 
-        <TextView
-            android:id="@+id/codeLanguagePrompt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/game_setup_language_prompt"
-            />
-
-        <RadioButton
-            android:id="@+id/codeLanguageButtonEnglish"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/game_setup_language_english"
-            />
-
-        <RadioButton
-            android:id="@+id/codeLanguageButtonCode"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/game_setup_language_code"
-            />
-
-    </RadioGroup>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/codeLengthContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        >
-
-        <TextView
-            android:id="@+id/codeLengthPrompt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:text="@string/game_setup_code_length_prompt"
-            />
-
-        <TextView
-            android:id="@+id/codeLengthValue"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/codeLengthPrompt"
-            />
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/codeLengthBarrier"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:barrierDirection="bottom"
-            app:constraint_referenced_ids="codeLengthPrompt,codeLengthValue"
-            />
-
-        <androidx.appcompat.widget.AppCompatSeekBar
-            android:id="@+id/codeLengthSeekBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/codeLengthBarrier"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/codeCharactersContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        >
-
-        <TextView
-            android:id="@+id/codeCharactersPromptStart"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:text="@string/game_setup_code_characters_prompt_start"
-            />
-
-        <TextView
-            android:id="@+id/codeCharactersValue"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/codeCharactersPromptStart"
-            />
-
-        <TextView
-            android:id="@+id/codeCharactersPromptEnd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/codeCharactersValue"
-            android:text="@string/game_setup_code_characters_prompt_end"
-            />
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/codeCharactersBarrier"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:barrierDirection="bottom"
-            app:constraint_referenced_ids="codeCharactersPromptStart, codeCharactersPromptEnd,codeCharactersValue"
-            />
-
-        <androidx.appcompat.widget.AppCompatSeekBar
-            android:id="@+id/codeCharactersSeekBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/codeCharactersBarrier"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <CheckBox
-        android:id="@+id/evaluatorCheatsCheckBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/game_setup_evaluator_cheats_prompt"
-        />
-
-    <CheckBox
-        android:id="@+id/hardModeCheckBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/game_setup_hard_mode_prompt"
-        />
-
-    <CheckBox
-        android:id="@+id/limitedRoundsCheckBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/game_setup_limited_rounds_prompt"
-        />
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/roundsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        >
-
-        <TextView
-            android:id="@+id/roundsPrompt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:text="@string/game_setup_rounds_prompt"
-            />
-
-        <TextView
-            android:id="@+id/roundsValue"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/roundsPrompt"
-            />
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/roundsBarrier"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:barrierDirection="bottom"
-            app:constraint_referenced_ids="roundsPrompt,roundsValue"
-            />
-
-        <androidx.appcompat.widget.AppCompatSeekBar
-            android:id="@+id/roundsSeekBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/roundsBarrier"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-</androidx.appcompat.widget.LinearLayoutCompat>

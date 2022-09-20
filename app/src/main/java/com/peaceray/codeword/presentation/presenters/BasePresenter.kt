@@ -28,8 +28,8 @@ open class BasePresenter<T: BaseContract.View>: BaseContract.Presenter<T> {
     final override fun detachView(view: T) {
         Timber.v("detachView $view")
         if (this.view == view) {
-            this.view = null
             onDetached()
+            this.view = null
         } else {
             Timber.w("detachView called for unattached $view")
         }
