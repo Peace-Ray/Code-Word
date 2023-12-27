@@ -13,6 +13,12 @@
         android:theme="@style/Theme.CodeWord">
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.HelloWorldActivity"
+            android:exported="false"
+            >
+        </activity>
+
+        <activity
+            android:name="com.peaceray.codeword.presentation.view.activities.MainActivity"
             android:exported="true"
             >
             <intent-filter>
@@ -20,11 +26,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name="com.peaceray.codeword.presentation.view.activities.MainActivity"
-            android:exported="false"
-            />
 
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.SettingsActivity"

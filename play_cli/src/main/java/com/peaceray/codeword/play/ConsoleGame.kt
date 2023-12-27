@@ -94,7 +94,7 @@ class ConsoleSolver(private val transform: ((String) -> String)?): Solver {
     }
 }
 
-class ConsoleAutomaticEvaluator(val codeTransform: (String) -> String, val validator: (String) -> Boolean): Evaluator {
+class ConsoleAutomaticEvaluator(private val transform: (String) -> String, private val validator: (String) -> Boolean): Evaluator {
     private var code = ""
 
     override fun evaluate(candidate: String, constraints: List<Constraint>): Constraint {
@@ -107,7 +107,7 @@ class ConsoleAutomaticEvaluator(val codeTransform: (String) -> String, val valid
         code = ""
         do {
             print("Secret > ")
-            code = codeTransform(readln())
+            code = transform(readln())
             if (!validator(code)) {
                 code = ""
                 println("Invalid, try again")
@@ -116,7 +116,7 @@ class ConsoleAutomaticEvaluator(val codeTransform: (String) -> String, val valid
     }
 }
 
-class ConsoleManualEvaluator(val validator: (String) -> Boolean): Evaluator {
+class ConsoleManualEvaluator(private val transform: (String) -> String, private val validator: (String) -> Boolean): Evaluator {
     override fun evaluate(candidate: String, constraints: List<Constraint>): Constraint {
         var constraint: Constraint? = null
         do {
@@ -145,7 +145,7 @@ class ConsoleManualEvaluator(val validator: (String) -> Boolean): Evaluator {
         var code = ""
         do {
             print("Secret: ")
-            code = readln().lowercase()
+            code = transform(readln())
             if (!validator(code)) {
                 code = ""
                 println("Invalid, try again")
@@ -358,7 +358,7 @@ private fun getEnvironment(): Environment {
     print("> ")
     builder.evaluator = when(readln().toInt()) {
         1 -> ConsoleAutomaticEvaluator(guessTransform, builder.validator!!)
-        2 -> ConsoleManualEvaluator(builder.validator!!)
+        2 -> ConsoleManualEvaluator(guessTransform, builder.validator!!)
         3 -> ModularHonestEvaluator(
             secretGenerator,
             UnitScorer(),
