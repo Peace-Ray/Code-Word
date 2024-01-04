@@ -1,8 +1,10 @@
 # Code-Word
 
-A code-breaking game for Android
-by Jake Rosin
-(c) 2023 Peace Ray LLC
+A code-breaking game for Android  
+by Jake Rosin  
+(c) 2023 Peace Ray LLC  
+
+https://www.peaceray.com/codeword
 
 ## License
 

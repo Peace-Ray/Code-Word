@@ -245,8 +245,8 @@ fun ConsistentRandom(seed: Int): ConsistentRandom = XorWowRandom(seed, seed.shr(
  *
  * Two generators with the same seed produce the same sequence of values within the same version of Kotlin runtime.
  *
- * *Note:* Future versions of Kotlin may change the algorithm of this seeded number generator so that it will return
- * a sequence of values different from the current one for a given seed.
+ * *Note:* This class reproduces the functionality of a built-in Kotlin feature, but should not change its
+ * behavior across different Kotlin versions.
  *
  * On JVM the returned generator is NOT thread-safe. Do not invoke it from multiple threads without proper synchronization.
  */

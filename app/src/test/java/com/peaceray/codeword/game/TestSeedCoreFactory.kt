@@ -287,7 +287,7 @@ class TestSeedCoreFactory {
 
     init {
         // Remember that months begin at 0 = January
-        firstDaily.set(2023, 10, 1)     // November 1, 2023
+        firstDaily.set(2024, 0, 10)     // January 10, 2024
     }
 
     //region SeedCoreFactory: Test Helpers

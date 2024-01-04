@@ -357,10 +357,14 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         status: GameStatusReview.Status?
     ): GameStatusReview {
         // determine purpose
+        // consider current game status for type != ONGOING? This might interfere with
+        // Seed status display.
+        // E.g. could use "status in setOf(null, GameStatusReview.Status.NEW, GameStatusReview.Status.ONGOING, GameStatusReview.Status.LOADING)"
+        // but this will hide current status text in GameReviewSeedViewHolder.
         val forLaunching = when (type) {
             GameSetupContract.Type.DAILY,
             GameSetupContract.Type.SEEDED,
-            GameSetupContract.Type.CUSTOM -> status in setOf(null, GameStatusReview.Status.NEW, GameStatusReview.Status.ONGOING, GameStatusReview.Status.LOADING)
+            GameSetupContract.Type.CUSTOM -> true
             GameSetupContract.Type.ONGOING -> status == GameStatusReview.Status.ONGOING
         }
         val purpose = if (forLaunching) GameStatusReview.Purpose.LAUNCH else GameStatusReview.Purpose.EXAMINE

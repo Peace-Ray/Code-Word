@@ -12,7 +12,7 @@ data class Versions(
 
 @Parcelize
 data class SupportedVersions(
-    val minimum: Versions,
-    val current: Versions,
-    val lifespan: Long
+    @SerializedName("minimum") val minimum: Versions,
+    @SerializedName("current") val current: Versions,
+    @SerializedName("lifespan") val lifespan: Long = 604800000L
 ): Parcelable

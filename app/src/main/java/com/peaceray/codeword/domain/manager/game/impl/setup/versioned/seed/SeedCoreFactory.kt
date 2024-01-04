@@ -40,9 +40,8 @@ class SeedCoreFactory {
     private val dailyRandomSeedB = 487145950223L
 
     init {
-        // TODO: set the actual date of the first daily.
         // Remember that months begin at 0 = January
-        firstDaily.set(2023, 10, 1)     // October 1, 2023
+        firstDaily.set(2024, 0, 10)     // January 10, 2024
     }
 
     fun isDaily(seedCore: String? = null) = seedCore != null && seedCore.firstOrNull() == '#'
