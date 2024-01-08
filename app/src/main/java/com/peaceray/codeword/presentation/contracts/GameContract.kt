@@ -2,7 +2,7 @@ package com.peaceray.codeword.presentation.contracts
 
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.data.Constraint
-import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
+import com.peaceray.codeword.game.feedback.CharacterFeedback
 import java.util.*
 
 /**
@@ -139,9 +139,9 @@ interface GameContract: BaseContract {
         /**
          * Provide per-character evaluations for display, such as in a keyboard format with colored
          * keys. The mapping may be incomplete; treat any omitted character as having no evaluation,
-         * i.e. having markup "null" and maxCount of the code length.
+         * i.e. having markup "null" and occurrences of 0..codeLength.
          */
-        fun setCharacterEvaluations(evaluations: Map<Char, CharacterEvaluation>)
+        fun setCharacterFeedback(evaluations: Map<Char, CharacterFeedback>)
 
         //-----------------------------------------------------------------------------------------
         //endregion

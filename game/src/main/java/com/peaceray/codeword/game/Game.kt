@@ -2,6 +2,7 @@ package com.peaceray.codeword.game
 
 import com.peaceray.codeword.game.data.*
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.validators.Validator
 import java.util.*
 
 /**
@@ -30,7 +31,7 @@ import java.util.*
  * Use [Game.atMove] to restore the game to the previous state (require repeating move
  * logic).
  */
-class Game(settings: Settings, val validator: (String) -> Boolean, uuid: UUID? = null) {
+class Game(settings: Settings, val validator: Validator, uuid: UUID? = null) {
 
     /**
      * Creates a game and quickly plays through the specified moves, returning the
@@ -46,7 +47,7 @@ class Game(settings: Settings, val validator: (String) -> Boolean, uuid: UUID? =
         )
         fun atMove(
             settings: Settings,
-            validator: (String) -> Boolean,
+            validator: Validator,
             uuid: UUID,
             constraints: List<Constraint>,
             currentGuess: String? = null

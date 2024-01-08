@@ -14,9 +14,9 @@ import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.FragmentGameBinding
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameContract
-import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
@@ -478,9 +478,9 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         if (animate) onPresenterPrompting()
     }
 
-    override fun setCharacterEvaluations(evaluations: Map<Char, CharacterEvaluation>) {
-        Timber.v("setCharacterEvaluations ${evaluations.size}")
-        keyboardView?.setCharacterEvaluations(evaluations)
+    override fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
+        Timber.v("setCharacterFeedback ${feedback.size}")
+        keyboardView?.setCharacterFeedback(feedback)
     }
 
     override fun promptForGuess(suggestedGuess: String?) {

@@ -1,8 +1,12 @@
-package com.peaceray.codeword.game.bot.modules.generation
+package com.peaceray.codeword.game.bot.modules.generation.vocabulary
 
+import com.peaceray.codeword.game.bot.modules.generation.MonotonicCachingGenerationModule
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import com.peaceray.codeword.game.validators.Validator
+import com.peaceray.codeword.game.validators.Validators
+import java.io.File
 import kotlin.random.Random
 
 /**
@@ -15,16 +19,54 @@ import kotlin.random.Random
  * [guessPolicy] of either [ConstraintPolicy.IGNORE] or [ConstraintPolicy.POSITIVE] depending on
  * whether "hard mode" is active.
  */
-class VocabularyListGenerator(
-    vocabulary: List<String>,
+class VocabularyFileGenerator(
+    filenames: List<String>,
     val guessPolicy: ConstraintPolicy,
     val solutionPolicy: ConstraintPolicy,
-    guessVocabulary: List<String>? = null,
-    solutionVocabulary: List<String>? = null,
+    guessFilenames: List<String>? = null,
+    solutionFilenames: List<String>? = null,
+    filter: Validator = Validators.pass(),
     seed: Long? = null
 ): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
-    val guessVocabulary = guessVocabulary ?: vocabulary
-    val solutionVocabulary = solutionVocabulary ?: vocabulary
+
+    constructor(
+        filename: String,
+        guessPolicy: ConstraintPolicy,
+        solutionPolicy: ConstraintPolicy,
+        guessFilename: String? = null,
+        solutionFilename: String? = null
+    ) : this(
+        listOf(filename),
+        guessPolicy,
+        solutionPolicy,
+        if (guessFilename == null) null else listOf(guessFilename),
+        if (solutionFilename == null) null else listOf(solutionFilename)
+    ) {
+
+    }
+
+    private val guessFilenames = guessFilenames ?: filenames
+    private val solutionFilenames = solutionFilenames ?: filenames
+
+    private val guessVocabulary: List<String> by lazy {
+        val wordList = mutableListOf<String>()
+        this.guessFilenames.forEach { wordList.addAll(File(it).readLines()) }
+        wordList.filter { it.isNotBlank() }
+            .filter(filter)
+            .distinct()
+    }
+
+    private val solutionVocabulary: List<String> by lazy {
+        if (this.guessFilenames == this.solutionFilenames) {
+            this.guessVocabulary
+        } else {
+            val wordList = mutableListOf<String>()
+            this.solutionFilenames.forEach { wordList.addAll(File(it).readLines()) }
+            wordList.filter { it.isNotBlank() }
+                .filter(filter)
+                .distinct()
+        }
+    }
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
         val guesses = guessVocabulary.asSequence()

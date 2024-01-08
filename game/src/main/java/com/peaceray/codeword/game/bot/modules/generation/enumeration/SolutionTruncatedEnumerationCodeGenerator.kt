@@ -1,5 +1,6 @@
-package com.peaceray.codeword.game.bot.modules.generation
+package com.peaceray.codeword.game.bot.modules.generation.enumeration
 
+import com.peaceray.codeword.game.bot.modules.generation.CandidateGenerationModule
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates

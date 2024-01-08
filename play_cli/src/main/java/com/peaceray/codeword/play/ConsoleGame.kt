@@ -7,8 +7,8 @@ import com.peaceray.codeword.game.data.Settings
 import com.peaceray.codeword.game.bot.*
 import com.peaceray.codeword.game.bot.modules.generation.CandidateGenerationModule
 import com.peaceray.codeword.game.bot.modules.generation.CascadingGenerator
-import com.peaceray.codeword.game.bot.modules.generation.CodeEnumeratingGenerator
-import com.peaceray.codeword.game.bot.modules.generation.VocabularyFileGenerator
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.CodeEnumeratingGenerator
+import com.peaceray.codeword.game.bot.modules.generation.vocabulary.VocabularyFileGenerator
 import com.peaceray.codeword.game.bot.modules.scoring.InformationGainScorer
 import com.peaceray.codeword.game.bot.modules.scoring.KnuthMinimumInvertedScorer
 import com.peaceray.codeword.game.bot.modules.scoring.KnuthMinimumScorer
@@ -17,8 +17,8 @@ import com.peaceray.codeword.game.bot.modules.selection.MaximumScoreSelector
 import com.peaceray.codeword.game.bot.modules.selection.MinimumScoreSelector
 import com.peaceray.codeword.game.bot.modules.selection.RandomSelector
 import com.peaceray.codeword.game.bot.modules.selection.StochasticThresholdScoreSelector
-import com.peaceray.codeword.game.validators.AlphabetValidator
-import com.peaceray.codeword.game.validators.VocabularyValidator
+import com.peaceray.codeword.game.validators.Validator
+import com.peaceray.codeword.game.validators.Validators
 import java.io.File
 import kotlin.IllegalArgumentException
 
@@ -37,7 +37,7 @@ class Environment(
         var length: Int? = null
         var rounds: Int? = null
         var policy: ConstraintPolicy = ConstraintPolicy.IGNORE
-        var validator: ((String) -> Boolean)? = null
+        var validator: Validator? = null
 
         var solver: Solver? = null
         var evaluator: Evaluator? = null
@@ -55,7 +55,7 @@ class Environment(
             return this
         }
 
-        fun withValidator(validator: (String) -> Boolean): Builder {
+        fun withValidator(validator: Validator): Builder {
             this.validator = validator
             return this
         }
@@ -264,7 +264,7 @@ private fun getEnvironment(): Environment {
         1 -> {
             val charList = ('A'..'Z').toList().subList(0, chars)
             builder.withDimensions(length, 10)
-                .withValidator(AlphabetValidator(charList))
+                .withValidator(Validators.alphabet(charList))
                 .withEvaluationPolicy(ConstraintPolicy.AGGREGATED)
             guessTransform = { it.uppercase() }
             generator = CodeEnumeratingGenerator(charList, length, ConstraintPolicy.IGNORE, ConstraintPolicy.AGGREGATED)
@@ -275,7 +275,7 @@ private fun getEnvironment(): Environment {
             val gp = ConstraintPolicy.IGNORE    // guessPolicy
             val sp = ConstraintPolicy.ALL       // solutionPolicy
             builder.withDimensions(length, 6)
-                .withValidator(VocabularyValidator.fromFiles("./app/src/main/assets/words/en-US/standard/length-$length/valid.txt"))
+                .withValidator(Validators.vocabulary("./app/src/main/assets/words/en-US/standard/length-$length/valid.txt"))
                 .withEvaluationPolicy(ConstraintPolicy.ALL)
             guessTransform = { it.lowercase() }
             generator = CascadingGenerator(
@@ -293,7 +293,7 @@ private fun getEnvironment(): Environment {
             val gp = ConstraintPolicy.ALL       // guessPolicy
             val sp = ConstraintPolicy.ALL       // solutionPolicy
             builder.withDimensions(length, 6)
-                .withValidator(VocabularyValidator.fromFiles("./app/src/main/assets/words/en-US/standard/length-$length/valid.txt"))
+                .withValidator(Validators.vocabulary("./app/src/main/assets/words/en-US/standard/length-$length/valid.txt"))
                 .withConstraintPolicy(ConstraintPolicy.ALL)
                 .withEvaluationPolicy(ConstraintPolicy.ALL)
             guessTransform = { it.lowercase() }

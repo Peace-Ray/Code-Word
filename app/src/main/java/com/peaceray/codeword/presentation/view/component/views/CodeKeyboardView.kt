@@ -11,7 +11,7 @@ import androidx.annotation.ColorInt
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
 import com.google.android.material.card.MaterialCardView
-import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
+import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.utils.extensions.toLifecycleOwner
@@ -103,7 +103,7 @@ class CodeKeyboardView: ConstraintLayout {
     @Inject
     lateinit var colorSwatchManager: ColorSwatchManager
     private val keys = mutableListOf<CodeKeyView>()
-    private var characterEvaluations: Map<Char, CharacterEvaluation> = mapOf()
+    private var characterFeedback: Map<Char, CharacterFeedback> = mapOf()
     private var codeCharacters: List<Char> = listOf()
 
     private var _keyStyle: KeyStyle = KeyStyle.MARKUP
@@ -137,8 +137,8 @@ class CodeKeyboardView: ConstraintLayout {
         updateKeyColors(keyStyle, colorSwatchManager.colorSwatch)
     }
 
-    fun setCharacterEvaluations(evaluations: Map<Char, CharacterEvaluation>) {
-        characterEvaluations = evaluations
+    fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
+        characterFeedback = feedback
         updateKeyColors(keyStyle, colorSwatchManager.colorSwatch)
     }
 
@@ -201,7 +201,7 @@ class CodeKeyboardView: ConstraintLayout {
             @ColorInt val colorPop: Int = swatch.container.onBackgroundAccent
             when(keyStyle) {
                 KeyStyle.MARKUP -> {
-                    val markup = characterEvaluations[view.character]?.markup
+                    val markup = characterFeedback[view.character]?.markup
                     onColor = swatch.evaluation.onColor(markup)
                     color = swatch.evaluation.color(markup)
                 }

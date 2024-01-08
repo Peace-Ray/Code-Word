@@ -11,14 +11,15 @@ import com.peaceray.codeword.domain.manager.settings.BotSettingsManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.bot.*
 import com.peaceray.codeword.game.bot.modules.generation.*
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.*
+import com.peaceray.codeword.game.bot.modules.generation.vocabulary.*
 import com.peaceray.codeword.game.bot.modules.scoring.InformationGainScorer
 import com.peaceray.codeword.game.bot.modules.scoring.KnuthMinimumInvertedScorer
 import com.peaceray.codeword.game.bot.modules.scoring.UnitScorer
 import com.peaceray.codeword.game.bot.modules.selection.RandomSelector
 import com.peaceray.codeword.game.bot.modules.selection.StochasticThresholdScoreSelector
 import com.peaceray.codeword.game.data.Settings
-import com.peaceray.codeword.game.validators.AlphabetValidator
-import com.peaceray.codeword.game.validators.VocabularyValidator
+import com.peaceray.codeword.game.validators.Validators
 import com.peaceray.codeword.glue.ForApplication
 import timber.log.Timber
 import java.io.File
@@ -277,10 +278,10 @@ class GameSessionManagerImpl @Inject constructor(
     //region Intermediate Object Creation
     //-----------------------------------------------------------------------------------------
     private fun getValidator(setup: GameSetup) = when(setup.vocabulary.type) {
-        GameSetup.Vocabulary.VocabularyType.LIST -> VocabularyValidator(
+        GameSetup.Vocabulary.VocabularyType.LIST -> Validators.words(
             getWordList(setup.vocabulary.length, WordListType.VALID)
         )
-        GameSetup.Vocabulary.VocabularyType.ENUMERATED -> AlphabetValidator(
+        GameSetup.Vocabulary.VocabularyType.ENUMERATED -> Validators.alphabet(
             getCharRange(setup.vocabulary.characters)
         )
     }
