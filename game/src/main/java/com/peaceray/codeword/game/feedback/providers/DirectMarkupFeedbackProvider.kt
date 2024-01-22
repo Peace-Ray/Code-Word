@@ -88,6 +88,7 @@ class DirectMarkupFeedbackProvider(
                 c,
                 occurrences[c] ?: 0..0,
                 positions = (0 until length).filter { candidates[it].size == 1 && c in candidates[it] }.toSet(),
+                absences = (0 until length).filter { c !in candidates[it] }.toSet(),
                 markup[c]
             ) }
         )

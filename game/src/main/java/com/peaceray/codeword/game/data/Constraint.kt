@@ -156,6 +156,8 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
 
             return when(policy) {
                 ConstraintPolicy.IGNORE -> if (markup.all { it == MarkupType.EXACT }) "CORRECT" else "INCORRECT"
+                ConstraintPolicy.AGGREGATED_EXACT -> "${markup.count { it == MarkupType.EXACT }}"
+                ConstraintPolicy.AGGREGATED_INCLUDED -> "${markup.count { it == MarkupType.EXACT || it == MarkupType.INCLUDED }}"
                 ConstraintPolicy.AGGREGATED -> "${markup.count { it == MarkupType.EXACT }},${markup.count { it == MarkupType.INCLUDED }}"
                 ConstraintPolicy.POSITIVE, ConstraintPolicy.ALL, ConstraintPolicy.PERFECT -> markup.map { it.asKey() }.joinToString("")
             }
@@ -183,6 +185,15 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
 
             return when(policy) {
                 ConstraintPolicy.IGNORE -> if (guess == secret) "CORRECT" else "INCORRECT"
+                ConstraintPolicy.AGGREGATED_EXACT -> {
+                    val eKey = MarkupType.EXACT.asKey()
+                    "${markupKeys.count { it == eKey }}"
+                }
+                ConstraintPolicy.AGGREGATED_INCLUDED -> {
+                    val eKey = MarkupType.EXACT.asKey()
+                    val iKey = MarkupType.INCLUDED.asKey()
+                    "${markupKeys.count { it == eKey || it == iKey }}"
+                }
                 ConstraintPolicy.AGGREGATED -> {
                     val eKey = MarkupType.EXACT.asKey()
                     val iKey = MarkupType.INCLUDED.asKey()
@@ -211,8 +222,8 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
 
         return when (policy) {
             ConstraintPolicy.IGNORE -> true  // always allowed
-            ConstraintPolicy.AGGREGATED -> {
-                // a guess is consistent with an AGGREGATED constraint if the candidate
+            ConstraintPolicy.AGGREGATED_EXACT, ConstraintPolicy.AGGREGATED_INCLUDED, ConstraintPolicy.AGGREGATED -> {
+                // a guess is consistent with an AGGREGATED_* constraint if the candidate
                 // would receive that markup if attempted as a guess for the provided guess string.
                 val (matchPairs, unmatchedPairs) = candidate.zip(guess).partition { it.first == it.second }
                 val (candidateUnmatched, guessUnmatched) = unmatchedPairs.unzip()
@@ -222,9 +233,29 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                 val exact = matchPairs.size
                 val included = guessUnmatched.count { remainingUnmatched.remove(it) }
 
-                if (!partial) exact == this.exact && included == this.included else {
-                    val slackRequired = (this.exact - exact) + (this.included - included)
-                    exact <= this.exact && included <= this.included && slackRequired <= slack
+
+                when (policy) {
+                    ConstraintPolicy.AGGREGATED_EXACT -> {
+                        if (!partial) exact == this.exact else {
+                            val slackRequired = this.exact - exact
+                            exact <= this.exact && slackRequired <= slack
+                        }
+                    }
+                    ConstraintPolicy.AGGREGATED_INCLUDED -> {
+                        val thisEiCount = this.exact + this.included
+                        val eiCount = exact + included
+                        if (!partial) eiCount == thisEiCount else {
+                            val slackRequired = thisEiCount - eiCount
+                            eiCount <= thisEiCount && slackRequired <= slack
+                        }
+                    }
+                    ConstraintPolicy.AGGREGATED -> {
+                        if (!partial) exact == this.exact && included == this.included else {
+                            val slackRequired = (this.exact - exact) + (this.included - included)
+                            exact <= this.exact && included <= this.included && slackRequired <= slack
+                        }
+                    }
+                    else -> false   // unreachable
                 }
             }
             else -> {
@@ -296,17 +327,22 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
         val list = mutableListOf<Violation>()
         return when (policy) {
             ConstraintPolicy.IGNORE -> list.toList()  // always allowed
-            ConstraintPolicy.AGGREGATED -> {
+            ConstraintPolicy.AGGREGATED_EXACT, ConstraintPolicy.AGGREGATED_INCLUDED, ConstraintPolicy.AGGREGATED -> {
                 val (matchPairs, unmatchedPairs) = candidate.zip(guess).partition { it.first == it.second }
                 val (candidateUnmatched, guessUnmatched) = unmatchedPairs.unzip()
                 val remainingUnmatched = guessUnmatched.toMutableList()
 
                 // check that this matches the constraint's exact and included counts
                 val extraMatches = matchPairs.size - exact
-                val includedAndExtra = candidateUnmatched.count { remainingUnmatched.remove(it) } + extraMatches
+                val includedNotExact = candidateUnmatched.count { remainingUnmatched.remove(it) }
+                val includedAndExtra = includedNotExact + extraMatches
 
-                if (extraMatches < 0) list.add(Violation(this, guess, MarkupType.EXACT))
-                if (included > includedAndExtra) list.add(Violation(this, guess, MarkupType.INCLUDED))
+                if (policy == ConstraintPolicy.AGGREGATED_EXACT || policy == ConstraintPolicy.AGGREGATED) {
+                    if (extraMatches < 0) list.add(Violation(this, guess, MarkupType.EXACT))
+                }
+                if (policy == ConstraintPolicy.AGGREGATED || policy == ConstraintPolicy.AGGREGATED_INCLUDED) {
+                    if (included > includedAndExtra) list.add(Violation(this, guess, MarkupType.INCLUDED))
+                }
                 list.toList()
             }
             else -> {

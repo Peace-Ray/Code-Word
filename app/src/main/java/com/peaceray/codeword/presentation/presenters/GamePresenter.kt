@@ -9,10 +9,12 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.bot.Solver
 import com.peaceray.codeword.game.bot.Evaluator
 import com.peaceray.codeword.game.bot.ModularSolver
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.FeedbackProvider
 import com.peaceray.codeword.game.feedback.providers.DirectMarkupFeedbackProvider
+import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvider
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.utils.wrappers.WrappedNullable
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -68,13 +70,27 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             .cache()
     }
 
-
+    // TODO move FeedbackProvider instantiation to the appropriate Manager, and ConstraintFeedbackPolicy, to an appropriate Manager
+    private val constraintFeedbackPolicy: ConstraintFeedbackPolicy by lazy {
+        when (gameSetup.vocabulary.type) {
+            GameSetup.Vocabulary.VocabularyType.LIST -> ConstraintFeedbackPolicy.CHARACTER_MARKUP
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> ConstraintFeedbackPolicy.AGGREGATED_MARKUP
+        }
+    }
     private val feedbackProviderObservable: Single<FeedbackProvider> by lazy {
         Single.defer {
-            // TODO move FeedbackProvider instantiation to the appropriate Manager
             Timber.v("Creating FeedbackProvider")
             val characters = gameSessionManager.getCodeCharacters(gameSetup)
-            val provider: FeedbackProvider = DirectMarkupFeedbackProvider(characters.toSet(), gameSetup.vocabulary.length, gameSetup.vocabulary.length)
+            val markupPolicies = when (gameSetup.vocabulary.type) {
+                GameSetup.Vocabulary.VocabularyType.LIST -> setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
+                GameSetup.Vocabulary.VocabularyType.ENUMERATED -> setOf(InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED_ELIMINATION)
+            }
+            val provider: FeedbackProvider = InferredMarkupFeedbackProvider(
+                characters.toSet(),
+                gameSetup.vocabulary.length,
+                gameSetup.vocabulary.length,
+                markupPolicies
+            )
             Single.just(provider)
         }.subscribeOn(Schedulers.io())
             .cache()
@@ -480,7 +496,13 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         return Single.create {emitter ->
             val disposable = feedbackProviderObservable.observeOn(Schedulers.computation())
                 .subscribe(
-                    { provider -> emitter.onSuccess(provider.getCharacterFeedback(ConstraintFeedbackPolicy.CHARACTER_MARKUP, constraints)) },
+                    { provider ->
+                        val feedback = provider.getFeedback(constraintFeedbackPolicy, constraints)
+                        val characterFeedback = provider.getCharacterFeedback(constraintFeedbackPolicy, constraints)
+                        Timber.v("FeedbackProvider gave feedback: $feedback")
+                        Timber.v("FeedbackProvider gave character feedback: ${characterFeedback.values}")
+                        emitter.onSuccess(characterFeedback)
+                    },
                     { cause -> emitter.onError(cause) }
                 )
 

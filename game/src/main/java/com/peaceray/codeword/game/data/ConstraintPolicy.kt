@@ -14,6 +14,29 @@ enum class ConstraintPolicy {
     },
 
     /**
+     * Require that the [Constraint.exact] aggregated totals match the new candidates; i.e. the total
+     * number of [Constraint.exact] letters must be consistent.
+     *
+     * Is a superset of [AGGREGATED], as [Constraint.included] is ignored entirely.
+     */
+    AGGREGATED_EXACT {
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(AGGREGATED_EXACT, AGGREGATED, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, AGGREGATED_EXACT)
+    },
+
+    /**
+     * Require that the sum of [Constraint.exact] and [Constraint.included] aggregated totals
+     * match the new candidates; i.e. the total number of letters that occur in the word
+     * (whether in their exact positions or not) must be consistent.
+     *
+     * Is a superset of [AGGREGATED], as the position of [Constraint.exact] matches is ignored.
+     */
+    AGGREGATED_INCLUDED {
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(AGGREGATED_INCLUDED, AGGREGATED, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, AGGREGATED_INCLUDED)
+    },
+
+    /**
      * Require that aggregated constraint totals match the new candidates; i.e. the total number
      * of [Constraint.exact] and [Constraint.included] letters must be consistent. This necessarily
      * implies that all remaining characters are different.
@@ -21,8 +44,8 @@ enum class ConstraintPolicy {
      * Is a distinct, overlapping set to [POSITIVE].
      */
     AGGREGATED {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == AGGREGATED || policy == ALL || policy == PERFECT
-        override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE || policy == AGGREGATED
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(AGGREGATED, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, AGGREGATED_EXACT, AGGREGATED_INCLUDED, AGGREGATED)
     },
 
     /**
@@ -33,8 +56,8 @@ enum class ConstraintPolicy {
      * Is a distinct, overlapping set to [AGGREGATED].
      */
     POSITIVE {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == POSITIVE || policy == ALL || policy == PERFECT
-        override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE || policy == POSITIVE
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(POSITIVE, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, POSITIVE)
     },
 
     /**
@@ -42,7 +65,7 @@ enum class ConstraintPolicy {
      * must not occur in the candidate.
      */
     ALL {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == ALL || policy == PERFECT
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(ALL, PERFECT)
         override fun isSubsetOf(policy: ConstraintPolicy) = policy != PERFECT
     },
 

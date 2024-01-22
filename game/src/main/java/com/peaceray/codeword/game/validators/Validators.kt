@@ -102,10 +102,14 @@ class Validators {
         }
 
         /**
-         * A Validator that passes if all characters in the word are distinct (only occur once).
+         * A Validator that passes if no character occurs more than 'max' times.
          */
-        fun distinctCharacters(): Validator = object: Validator {
-            override fun invoke(code: String) = code.toCharArray().distinct().size == code.length
+        fun characterOccurrences(max: Int): Validator = object: Validator {
+            override fun invoke(code: String): Boolean {
+                val occurrences = mutableMapOf<Char, Int>()
+                code.forEach { char -> occurrences[char] = (occurrences[char] ?: 0) + 1 }
+                return (occurrences.values.maxOrNull() ?: 0) <= max
+            }
         }
 
         /**

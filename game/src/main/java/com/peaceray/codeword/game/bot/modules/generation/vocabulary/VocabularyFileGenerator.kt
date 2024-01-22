@@ -34,13 +34,17 @@ class VocabularyFileGenerator(
         guessPolicy: ConstraintPolicy,
         solutionPolicy: ConstraintPolicy,
         guessFilename: String? = null,
-        solutionFilename: String? = null
+        solutionFilename: String? = null,
+        filter: Validator = Validators.pass(),
+        seed: Long? = null
     ) : this(
         listOf(filename),
         guessPolicy,
         solutionPolicy,
         if (guessFilename == null) null else listOf(guessFilename),
-        if (solutionFilename == null) null else listOf(solutionFilename)
+        if (solutionFilename == null) null else listOf(solutionFilename),
+        filter,
+        seed
     ) {
 
     }
