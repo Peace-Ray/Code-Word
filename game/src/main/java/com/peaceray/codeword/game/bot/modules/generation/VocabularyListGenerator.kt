@@ -32,7 +32,7 @@ class VocabularyListGenerator(
             .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
 
         val solutions = solutionVocabulary.asSequence()
-            .filter { code -> constraints.all { it.candidate != code } }
+            .filter { code -> constraints.all { it.correct || it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, solutionPolicy) } }
 
         return Candidates(guesses.toList(), solutions.toList())
@@ -48,7 +48,7 @@ class VocabularyListGenerator(
             .filter { code -> freshConstraints.all { it.allows(code, guessPolicy) } }
 
         val solutions = candidates.solutions.asSequence()
-            .filter { code -> freshConstraints.all { it.candidate != code } }
+            .filter { code -> freshConstraints.all { it.correct || it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, solutionPolicy) } }
 
         return Candidates(guesses.toList(), solutions.toList())

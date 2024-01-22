@@ -53,7 +53,7 @@ class CodeCollapsedEnumerationGenerator(
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
         val solutions = codeSequence()
-            .filter { code -> constraints.all { it.candidate != code } }
+            .filter { code -> constraints.all { it.correct || it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, solutionPolicy) } }
             .toList()
 
@@ -78,7 +78,7 @@ class CodeCollapsedEnumerationGenerator(
         freshConstraints: List<Constraint>
     ): Candidates {
         val solutions = candidates.solutions.asSequence()
-            .filter { code -> freshConstraints.all { it.candidate != code } }
+            .filter { code -> freshConstraints.all { it.correct || it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, solutionPolicy) } }
             .toList()
 
