@@ -230,8 +230,12 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
             else -> {
                 val zipped = candidate.zip(guess)
 
-                // find an exact match that is not satisfied (among guess characters)
-                if (zipped.filterIndexed { index, _ -> markup[index] == MarkupType.EXACT }.any { it.first != it.second }) {
+                // find an exact markup that is not satisfied, or an exact match that is not marked up
+                if (zipped.withIndex().any {
+                        val markedExact = markup[it.index] == MarkupType.EXACT
+                        val isExact = it.value.first == it.value.second
+                        markedExact != isExact
+                    }) {
                     return false
                 }
 
@@ -308,9 +312,11 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
             else -> {
                 val zipped = candidate.zip(guess)
 
-                // find exact matches that are not satisfied
+                // find an exact markup that is not satisfied, or an exact match that is not marked up
                 zipped.forEachIndexed { index, pair ->
-                    if (markup[index] == MarkupType.EXACT && pair.first != pair.second) {
+                    val markedExact = markup[index] == MarkupType.EXACT
+                    val isExact = pair.first == pair.second
+                    if (markedExact != isExact) {
                         list.add(Violation(this, guess, index, index))
                     }
                 }

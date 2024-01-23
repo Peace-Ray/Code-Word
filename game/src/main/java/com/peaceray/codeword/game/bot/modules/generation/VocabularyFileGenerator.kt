@@ -64,12 +64,12 @@ class VocabularyFileGenerator(
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
         val guesses = guessVocabulary.asSequence()
-            .filter { code -> constraints.all { it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code } }
 
         val solutions = solutionVocabulary.asSequence()
-            .filter { code -> constraints.all { it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code || it.correct } }
 
         return Candidates(guesses.toList(), solutions.toList())
     }
@@ -80,12 +80,12 @@ class VocabularyFileGenerator(
         freshConstraints: List<Constraint>
     ): Candidates {
         val guesses = candidates.guesses.asSequence()
-            .filter { code -> freshConstraints.all { it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, guessPolicy) } }
+            .filter { code -> freshConstraints.all { it.candidate != code } }
 
         val solutions = candidates.solutions.asSequence()
-            .filter { code -> freshConstraints.all { it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> freshConstraints.all { it.candidate != code || it.correct } }
 
         return Candidates(guesses.toList(), solutions.toList())
     }
