@@ -53,8 +53,8 @@ class CodeCollapsedEnumerationGenerator(
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
         val solutions = codeSequence()
-            .filter { code -> constraints.all { it.correct || it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code || it.correct } }
             .toList()
 
         val characterHistory = constraints.flatMap { it.candidate.asIterable() }.distinct()
@@ -66,8 +66,8 @@ class CodeCollapsedEnumerationGenerator(
         }
 
         val guesses = guessSource
-            .filter { code -> constraints.all { it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code } }
 
         return Candidates(guesses.toList(), solutions)
     }
@@ -78,8 +78,8 @@ class CodeCollapsedEnumerationGenerator(
         freshConstraints: List<Constraint>
     ): Candidates {
         val solutions = candidates.solutions.asSequence()
-            .filter { code -> freshConstraints.all { it.correct || it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> freshConstraints.all { it.candidate != code || it.correct } }
             .toList()
 
         // TODO attempt to filter the cached guesses. Requires that BOTH of the following are true:
@@ -94,8 +94,8 @@ class CodeCollapsedEnumerationGenerator(
         }
 
         val guesses = guessSource
-            .filter { code -> constraints.all { it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code } }
 
         return Candidates(guesses.toList(), solutions)
     }

@@ -41,8 +41,8 @@ class CodeEnumeratingGenerator(
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
         val solutions = codeSequence()
-            .filter { code -> constraints.all { it.correct || it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code || it.correct } }
             .toList()
 
         val guessSource = if (truncateAtProduct == 0 || solutions.isEmpty()) {
@@ -52,8 +52,8 @@ class CodeEnumeratingGenerator(
         }
 
         val guesses = guessSource
-            .filter { code -> constraints.all { it.candidate != code } }
             .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
+            .filter { code -> constraints.all { it.candidate != code } }
 
         return Candidates(guesses.toList(), solutions)
     }
@@ -64,8 +64,8 @@ class CodeEnumeratingGenerator(
         freshConstraints: List<Constraint>
     ): Candidates {
         val solutions = candidates.solutions.asSequence()
-            .filter { code -> freshConstraints.all { it.correct || it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> freshConstraints.all { it.candidate != code || it.correct } }
             .toList()
 
         // TODO attempt to filter the cached guesses; requires determining if they
@@ -77,8 +77,8 @@ class CodeEnumeratingGenerator(
         }
 
         val guesses = guessSource
-            .filter { code -> freshConstraints.all { it.candidate != code } }
             .filter { code -> freshConstraints.all { it.allows(code, guessPolicy) } }
+            .filter { code -> freshConstraints.all { it.candidate != code } }
 
         return Candidates(guesses.toList(), solutions)
     }
