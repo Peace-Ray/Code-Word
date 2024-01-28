@@ -170,9 +170,10 @@ interface GameSetupManager {
      * Retrieve recommendations for the number of rounds a gome with this vocabulary should be played.
      *
      * @param vocabulary The game Vocabulary
+     * @param evaluation The game Evaluation
      * @return A 2-tuple of the recommended rounds, and the recommended maximum number of rounds.
      */
-    fun getRecommendedRounds(vocabulary: GameSetup.Vocabulary): Pair<Int, Int>
+    fun getRecommendedRounds(vocabulary: GameSetup.Vocabulary, evaluation: GameSetup.Evaluation? = null): Pair<Int, Int>
 
     //---------------------------------------------------------------------------------------------
     //endregion

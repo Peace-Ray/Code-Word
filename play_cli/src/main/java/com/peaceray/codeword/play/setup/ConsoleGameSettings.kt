@@ -1,6 +1,5 @@
 package com.peaceray.codeword.play.setup
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
-import java.util.stream.Collectors.toSet
+import com.peaceray.codeword.game.data.ConstraintPolicy
 
 data class ConsoleGameSettings(
     val vocabulary: Vocabulary = Vocabulary(),
@@ -12,17 +11,11 @@ data class ConsoleGameSettings(
         val length: Int = 5,
         val characterCount: Int = if (words) 26 else 6,
         val repetitions: Boolean = true
-    ) {
-        init {
-            if (!words && !repetitions) {
-                throw IllegalArgumentException("Can't currently support enumerated codes w/o repetitions")
-            }
-        }
-    }
+    )
 
     data class Difficulty (
         val hard: Boolean = false,
-        val constraintFeedbackPolicy: ConstraintFeedbackPolicy = ConstraintFeedbackPolicy.CHARACTER_MARKUP,
+        val feedbackPolicy: ConstraintPolicy = ConstraintPolicy.POSITIVE,
         val letterFeedback: LetterFeedback = LetterFeedback.NONE
     ) {
 
@@ -34,7 +27,7 @@ data class ConsoleGameSettings(
 
         constructor(vocabulary: Vocabulary): this(
             hard = false,
-            constraintFeedbackPolicy = if (vocabulary.words) ConstraintFeedbackPolicy.CHARACTER_MARKUP else ConstraintFeedbackPolicy.AGGREGATED_MARKUP,
+            feedbackPolicy = if (vocabulary.words) ConstraintPolicy.POSITIVE else ConstraintPolicy.AGGREGATED,
             letterFeedback = LetterFeedback.NONE
         )
     }
@@ -67,15 +60,14 @@ data class ConsoleGameSettings(
                 this.difficulty
 
             // went from words to non-words, or vice-versa
-            this.vocabulary.words != vocabulary.words ->
-                Difficulty(vocabulary)
+            this.vocabulary.words != vocabulary.words -> Difficulty(vocabulary)
 
             // repetitions: YES -> NO
             this.vocabulary.repetitions && !vocabulary.repetitions -> {
-                val feedbackPolicy = if (this.difficulty.constraintFeedbackPolicy != ConstraintFeedbackPolicy.CHARACTER_MARKUP) {
-                    this.difficulty.constraintFeedbackPolicy
+                val feedbackPolicy = if (!this.difficulty.feedbackPolicy.isByLetter()) {
+                    this.difficulty.feedbackPolicy
                 } else {
-                    ConstraintFeedbackPolicy.COUNT_INCLUDED
+                    ConstraintPolicy.AGGREGATED_INCLUDED
                 }
 
                 val letterFeedback = if (this.difficulty.letterFeedback == Difficulty.LetterFeedback.DIRECT) {
@@ -89,13 +81,13 @@ data class ConsoleGameSettings(
 
             // repetitions: NO -> YES
             else -> {
-                val letterFeedback = if (this.difficulty.constraintFeedbackPolicy == ConstraintFeedbackPolicy.CHARACTER_MARKUP) {
+                val letterFeedback = if (this.difficulty.feedbackPolicy.isByLetter()) {
                     Difficulty.LetterFeedback.DIRECT
                 } else {
                     this.difficulty.letterFeedback
                 }
 
-                Difficulty(this.difficulty.hard, this.difficulty.constraintFeedbackPolicy, letterFeedback)
+                Difficulty(this.difficulty.hard, this.difficulty.feedbackPolicy, letterFeedback)
             }
         }
 

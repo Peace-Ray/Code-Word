@@ -67,24 +67,41 @@ class ShareManagerImpl @Inject constructor(
         // constraints
         val maxLength = 160
         val constraintStart = length
-        val aggregated = gameSetupManager.getCodeLanguageDetails(outcome.type.language).evaluation == ConstraintPolicy.AGGREGATED
+        val aggregated = outcome.type.feedback.isByWord()
         val emojiSwatch = if (aggregated) {
             colorSwatchManager.colorSwatch.emoji.aggregated
         } else {
             colorSwatchManager.colorSwatch.emoji.positioned
         }
         val toEmojiString: Constraint.() -> String = {
-            val sorted = if (!aggregated) this.markup else this.markup.sortedBy { when(it) {
-                Constraint.MarkupType.EXACT -> 0
-                Constraint.MarkupType.INCLUDED -> 1
-                Constraint.MarkupType.NO -> 2
-            } }
+            val reduced = when (outcome.type.feedback) {
+                ConstraintPolicy.IGNORE -> emptyList()
+                ConstraintPolicy.AGGREGATED_EXACT -> this.markup.map { if (it == Constraint.MarkupType.EXACT) it else Constraint.MarkupType.NO }
+                ConstraintPolicy.AGGREGATED_INCLUDED -> this.markup.map { if (it != Constraint.MarkupType.NO) Constraint.MarkupType.INCLUDED else Constraint.MarkupType.NO }
+                ConstraintPolicy.AGGREGATED,
+                ConstraintPolicy.POSITIVE,
+                ConstraintPolicy.ALL,
+                ConstraintPolicy.PERFECT -> this.markup
+            }
+            val sorted = when (outcome.type.feedback) {
+                ConstraintPolicy.IGNORE -> reduced
+                ConstraintPolicy.AGGREGATED_EXACT,
+                ConstraintPolicy.AGGREGATED_INCLUDED,
+                ConstraintPolicy.AGGREGATED -> reduced.sortedBy { when(it) {
+                    Constraint.MarkupType.EXACT -> 0
+                    Constraint.MarkupType.INCLUDED -> 1
+                    Constraint.MarkupType.NO -> 2
+                } }
+                ConstraintPolicy.POSITIVE,
+                ConstraintPolicy.ALL,
+                ConstraintPolicy.PERFECT -> reduced
+            }
 
             sorted.joinToString("") { emojiSwatch.emoji(it) }
         }
 
         val etc = resources.getString(R.string.share_outcome_etc)
-        val lines = outcome.constraints.reversed().map { it.toEmojiString() }
+        val lines = outcome.constraints.reversed().map { it.toEmojiString() }.filter { it.isNotBlank() }
         for (index in lines.indices) {
             // last constraint first
             val line = lines[index]

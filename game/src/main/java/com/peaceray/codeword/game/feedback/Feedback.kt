@@ -68,14 +68,4 @@ data class Feedback(
             }
         }
     }
-
-    val characterFeedback: Map<Char, CharacterFeedback> by lazy {
-        characters.associateWith { char ->
-            CharacterFeedback(
-                char,
-                occurrences[char] ?: 0..0,
-                candidates.indices.filter { candidates[it].size == 1 && char in candidates[it] }.toSet()
-            )
-        }
-    }
 }

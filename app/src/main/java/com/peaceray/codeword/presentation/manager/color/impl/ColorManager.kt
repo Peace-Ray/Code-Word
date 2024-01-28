@@ -408,8 +408,8 @@ class ColorManager @Inject constructor(
                     includedVariant = getColor(R.color.md_amber_500),
                     onIncluded = getColor(R.color.white),
 
-                    no = getColor(R.color.md_grey_100),
-                    noVariant = getColor(R.color.md_grey_100),
+                    no = getColor(R.color.md_grey_200),
+                    noVariant = getColor(R.color.md_grey_200),
                     onNo = getColor(R.color.md_grey_400)
                 )
             }

@@ -11,9 +11,7 @@ import com.peaceray.codeword.game.bot.Evaluator
 import com.peaceray.codeword.game.bot.ModularSolver
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.FeedbackProvider
-import com.peaceray.codeword.game.feedback.providers.DirectMarkupFeedbackProvider
 import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvider
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.utils.wrappers.WrappedNullable
@@ -70,20 +68,21 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             .cache()
     }
 
-    // TODO move FeedbackProvider instantiation to the appropriate Manager, and ConstraintFeedbackPolicy, to an appropriate Manager
-    private val constraintFeedbackPolicy: ConstraintFeedbackPolicy by lazy {
-        when (gameSetup.vocabulary.type) {
-            GameSetup.Vocabulary.VocabularyType.LIST -> ConstraintFeedbackPolicy.CHARACTER_MARKUP
-            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> ConstraintFeedbackPolicy.AGGREGATED_MARKUP
-        }
-    }
+    // TODO move FeedbackProvider instantiation to the appropriate Manager
+    // allow the user to set "Hint" settings which determine both MarkupPolicy and
+    // UI display.
     private val feedbackProviderObservable: Single<FeedbackProvider> by lazy {
         Single.defer {
             Timber.v("Creating FeedbackProvider")
             val characters = gameSessionManager.getCodeCharacters(gameSetup)
-            val markupPolicies = when (gameSetup.vocabulary.type) {
-                GameSetup.Vocabulary.VocabularyType.LIST -> setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
-                GameSetup.Vocabulary.VocabularyType.ENUMERATED -> setOf(InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED_ELIMINATION)
+            val markupPolicies = when (gameSetup.evaluation.type) {
+                ConstraintPolicy.IGNORE -> setOf()
+                ConstraintPolicy.AGGREGATED_EXACT,
+                ConstraintPolicy.AGGREGATED_INCLUDED,
+                ConstraintPolicy.AGGREGATED -> setOf()
+                ConstraintPolicy.POSITIVE,
+                ConstraintPolicy.ALL,
+                ConstraintPolicy.PERFECT -> setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
             }
             val provider: FeedbackProvider = InferredMarkupFeedbackProvider(
                 characters.toSet(),
@@ -111,17 +110,15 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         } else {
             view?.setGameFieldSize(gameSetup.vocabulary.length, gameSetup.board.rounds)
         }
-        when (gameSetup.vocabulary.type) {
-            GameSetup.Vocabulary.VocabularyType.LIST -> {
-                view?.setCodeLanguage(
-                    gameSessionManager.getCodeCharacters(gameSetup),
-                    gameSetup.vocabulary.language.locale!!
-                )
-            }
-            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> {
-                view?.setCodeComposition(gameSessionManager.getCodeCharacters(gameSetup))
-            }
+        val locale = when (gameSetup.vocabulary.type) {
+            GameSetup.Vocabulary.VocabularyType.LIST -> gameSetup.vocabulary.language.locale!!
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> null
         }
+        view?.setCodeType(
+            gameSessionManager.getCodeCharacters(gameSetup),
+            locale,
+            gameSetup.evaluation.type
+        )
 
         // preload Solver, Evaluator, and FeedbackProvider (as needed)
         if (gameSetup.solver != GameSetup.Solver.PLAYER) {
@@ -271,7 +268,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     }
 
     private fun advanceGameWithoutSaving() {
-        Timber.v("advanceGameWithoutSaving")
         when (game.state) {
             Game.State.GUESSING -> advanceGameGuessing()
             Game.State.EVALUATING -> advanceGameEvaluating()
@@ -284,8 +280,9 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         disposable = computeCharacterFeedback(game.constraints)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
-                { solution ->
-                    view?.setCharacterFeedback(solution)
+                { feedback ->
+                    Timber.v("advanceGameCharacterFeedback has feedback $feedback")
+                    view?.setCharacterFeedback(feedback)
                     advanceGame(saveAfter)
                 },
                 { cause ->
@@ -300,7 +297,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             view?.promptForGuess(cachedPartialGuess)
             cachedPartialGuess = null
         } else {
-            Timber.v("About to compute a solution")
             val time = System.currentTimeMillis()
             view?.promptForWait()
             disposable.dispose()
@@ -334,6 +330,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { constraint ->
+                        Timber.v("advanceGameEvaluating: computed evaluation $constraint")
                         game.evaluate(constraint)
                         view?.replaceGuessWithConstraint(constraint, true)
                         advanceGameCharacterFeedback(true)
@@ -368,11 +365,9 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         if (gameSetup != updatedGameSetup) {
             val settings = gameSessionManager.getSettings(updatedGameSetup)
             if (game.canUpdateSettings(settings)) {
-                Timber.v("Updating game settings")
                 game.updateSettings(settings)
                 gameSetup = updatedGameSetup
 
-                Timber.v("Updating new game settings to view")
                 // set board size
                 if (gameSetup.board.rounds == 0) {
                     view?.setGameFieldUnlimited(gameSetup.vocabulary.length)
@@ -482,7 +477,10 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         return Single.create { emitter ->
             val disposable = evaluatorObservable.observeOn(Schedulers.computation())
                 .subscribe(
-                    { evaluator -> emitter.onSuccess(evaluator.evaluate(candidate, constraints)) },
+                    { evaluator ->
+                        Timber.d("computeEvaluation has evaluator $evaluator")
+                        emitter.onSuccess(evaluator.evaluate(candidate, constraints))
+                    },
                     { cause -> emitter.onError(cause) }
                 )
 
@@ -497,10 +495,10 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             val disposable = feedbackProviderObservable.observeOn(Schedulers.computation())
                 .subscribe(
                     { provider ->
-                        val feedback = provider.getFeedback(constraintFeedbackPolicy, constraints)
-                        val characterFeedback = provider.getCharacterFeedback(constraintFeedbackPolicy, constraints)
-                        Timber.v("FeedbackProvider gave feedback: $feedback")
-                        Timber.v("FeedbackProvider gave character feedback: ${characterFeedback.values}")
+                        val feedback = provider.getFeedback(gameSetup.evaluation.type, constraints)
+                        val characterFeedback = provider.getCharacterFeedback(gameSetup.evaluation.type, constraints)
+                        Timber.v("FeedbackProvider for ${gameSetup.evaluation.type} gave feedback: $feedback")
+                        Timber.v("FeedbackProvider for ${gameSetup.evaluation.type} gave character feedback: ${characterFeedback.values}")
                         emitter.onSuccess(characterFeedback)
                     },
                     { cause -> emitter.onError(cause) }
@@ -542,28 +540,29 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     //region Error Handling
     //---------------------------------------------------------------------------------------------
     private fun reportGuessError(guess: String, err: Game.IllegalGuessException) {
+        var violations = err.violations
         val type = when(err.error) {
             Game.GuessError.LENGTH ->
-                if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    if (guess.isEmpty()) GameContract.ErrorType.WORD_EMPTY else GameContract.ErrorType.WORD_LENGTH
+                if (guess.isEmpty()) GameContract.ErrorType.GUESS_EMPTY else GameContract.ErrorType.GUESS_LENGTH
+            Game.GuessError.VALIDATION -> {
+                // check for letter repetitions; this error type is not labeled by the Game
+                // as a Violation.
+                val repeatedLetter = guess.toSet().associateWith { char -> guess.count { char == it } }.maxByOrNull { it.value }
+                if (repeatedLetter != null && repeatedLetter.value > gameSetup.vocabulary.characterOccurrences) {
+                    violations = listOf(Constraint.Violation(
+                        Constraint.create(guess, guess),
+                        guess,
+                        guess.indexOf(repeatedLetter.key)
+                    ))
+                    GameContract.ErrorType.GUESS_LETTER_REPETITIONS
                 } else {
-                    if (guess.isEmpty()) GameContract.ErrorType.CODE_EMPTY else GameContract.ErrorType.CODE_LENGTH
+                    GameContract.ErrorType.GUESS_INVALID
                 }
-            Game.GuessError.VALIDATION ->
-                if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    GameContract.ErrorType.WORD_NOT_RECOGNIZED
-                } else {
-                    GameContract.ErrorType.CODE_INVALID
-                }
-            Game.GuessError.CONSTRAINTS ->
-                if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    GameContract.ErrorType.WORD_NOT_CONSTRAINED
-                } else {
-                    GameContract.ErrorType.CODE_NOT_CONSTRAINED
-                }
+            }
+            Game.GuessError.CONSTRAINTS -> GameContract.ErrorType.GUESS_NOT_CONSTRAINED
             else -> GameContract.ErrorType.UNKNOWN
         }
-        view?.showError(type, err.violations)
+        view?.showError(type, violations)
     }
     //---------------------------------------------------------------------------------------------
     //endregion

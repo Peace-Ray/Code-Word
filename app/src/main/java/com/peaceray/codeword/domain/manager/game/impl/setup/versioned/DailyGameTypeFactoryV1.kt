@@ -3,6 +3,7 @@ package com.peaceray.codeword.domain.manager.game.impl.setup.versioned
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.random.ConsistentRandom
 import java.lang.IllegalArgumentException
 
@@ -36,13 +37,13 @@ internal class DailyGameTypeFactoryV1: DailyGameTypeFactory(SeedVersion.V1) {
         // pick a game mode
         val a = random.nextFloat()
         return when {
-            a < 0.10 -> GameType(CodeLanguage.ENGLISH, 3, 26)
-            a < 0.35 -> GameType(CodeLanguage.ENGLISH, 4, 26)
-            a < 0.60 -> GameType(CodeLanguage.ENGLISH, 5, 26)
-            a < 0.70 -> GameType(CodeLanguage.ENGLISH, 6, 26)
-            a < 0.80 -> GameType(CodeLanguage.CODE, 3, 8)
-            a < 0.90 -> GameType(CodeLanguage.CODE, 4, 6)
-            else -> GameType(CodeLanguage.CODE, 5, 6)
+            a < 0.10 -> GameType(CodeLanguage.ENGLISH, 3, 26, 3, ConstraintPolicy.PERFECT)
+            a < 0.35 -> GameType(CodeLanguage.ENGLISH, 4, 26, 4, ConstraintPolicy.PERFECT)
+            a < 0.60 -> GameType(CodeLanguage.ENGLISH, 5, 26, 5, ConstraintPolicy.PERFECT)
+            a < 0.70 -> GameType(CodeLanguage.ENGLISH, 6, 26, 6, ConstraintPolicy.PERFECT)
+            a < 0.80 -> GameType(CodeLanguage.CODE, 3, 8, 3, ConstraintPolicy.AGGREGATED)
+            a < 0.90 -> GameType(CodeLanguage.CODE, 4, 6, 4, ConstraintPolicy.AGGREGATED)
+            else -> GameType(CodeLanguage.CODE, 5, 6, 5, ConstraintPolicy.AGGREGATED)
         }
     }
 }

@@ -16,15 +16,17 @@ abstract class CachingGenerationModule(seed: Long): CandidateGenerationModule, S
     private var cachedConstraints = listOf<Constraint>()
 
     override fun generateCandidates(constraints: List<Constraint>): Candidates {
-        if (cachedCandidates != null && constraints == cachedConstraints) {
-            return cachedCandidates!!
+        synchronized(this) {
+            if (cachedCandidates != null && constraints == cachedConstraints) {
+                return cachedCandidates!!
+            }
+
+            val candidates = onCacheMiss(cachedCandidates, cachedConstraints, constraints)
+            cachedCandidates = candidates
+            cachedConstraints = constraints
+
+            return candidates
         }
-
-        val candidates = onCacheMiss(cachedCandidates, cachedConstraints, constraints)
-        cachedCandidates = candidates
-        cachedConstraints = constraints
-
-        return candidates
     }
 
     abstract fun onCacheMiss(previousCandidates: Candidates?, previousConstraints: List<Constraint>, constraints: List<Constraint>): Candidates

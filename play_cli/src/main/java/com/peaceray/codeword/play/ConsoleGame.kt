@@ -4,7 +4,6 @@ import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.bot.*
 import com.peaceray.codeword.game.data.ConstraintPolicy
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.play.setup.ConsoleGameEnvironmentProvider
 
 class ConsoleSolver(private val transform: ((String) -> String)?): Solver {
@@ -133,11 +132,14 @@ fun printEvaluation(constraint: Constraint?, env: ConsoleGameEnvironment) {
         val mkExact = applyMarkup("${constraint.exact}", Constraint.MarkupType.EXACT)
         val mkInclude = applyMarkup("${constraint.included}", Constraint.MarkupType.INCLUDED)
         val mkBoth = applyMarkup("${constraint.exact + constraint.included}", Constraint.MarkupType.INCLUDED)
-        markupGuess = when (env.constraintFeedbackPolicy) {
-            ConstraintFeedbackPolicy.CHARACTER_MARKUP -> applyMarkup(constraint.candidate.uppercase(), constraint.markup)
-            ConstraintFeedbackPolicy.AGGREGATED_MARKUP -> "${constraint.candidate} $mkExact $mkInclude"
-            ConstraintFeedbackPolicy.COUNT_INCLUDED -> "${constraint.candidate} $mkBoth"
-            ConstraintFeedbackPolicy.COUNT_EXACT -> "${constraint.candidate} $mkExact"
+        markupGuess = when (env.feedbackPolicy) {
+            ConstraintPolicy.PERFECT,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.POSITIVE -> applyMarkup(constraint.candidate.uppercase(), constraint.markup)
+            ConstraintPolicy.AGGREGATED -> "${constraint.candidate} $mkExact $mkInclude"
+            ConstraintPolicy.AGGREGATED_INCLUDED -> "${constraint.candidate} $mkBoth"
+            ConstraintPolicy.AGGREGATED_EXACT -> "${constraint.candidate} $mkExact"
+            ConstraintPolicy.IGNORE -> constraint.candidate.uppercase()
         }
     } else {
         round = 0
@@ -153,7 +155,7 @@ fun printEvaluation(constraint: Constraint?, env: ConsoleGameEnvironment) {
 fun getCharacterFeedback(env: ConsoleGameEnvironment): String? {
     var feedbackText: String? = null
     env.feedbackProvider
-        ?.getCharacterFeedback(env.constraintFeedbackPolicy, env.game.constraints)
+        ?.getCharacterFeedback(env.feedbackPolicy, env.game.constraints)
         ?.let { feedback ->
             feedbackText = applyMarkup(
                 feedback.keys.sorted().joinToString("").uppercase(),
@@ -203,10 +205,6 @@ private fun playGame(env: ConsoleGameEnvironment) {
 
         // print guess with markup and markup
         printEvaluation(constraint, env)
-
-        // peek solution
-        println("constraint ${constraint}")
-        println("peek... ${env.evaluator.peek(env.game.constraints)}")
     }
 
     if (env.game.won) {

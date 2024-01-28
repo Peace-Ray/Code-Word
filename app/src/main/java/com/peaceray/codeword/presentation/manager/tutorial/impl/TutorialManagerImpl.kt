@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.peaceray.codeword.data.model.game.GameSetup
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.glue.ForApplication
 import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
 import javax.inject.Inject
@@ -33,6 +34,7 @@ class TutorialManagerImpl @Inject constructor(
         // keys
         private const val KEY_COMP_GAME = "game"
         private const val KEY_COMP_VOCABULARY_TYPE = "vocabulary_type"
+        private const val KEY_COMP_FEEDBACK_TYPE = "feedback_type"
 
         private fun getKey() = KEY_COMP_GAME
 
@@ -45,11 +47,22 @@ class TutorialManagerImpl @Inject constructor(
                 GameSetup.Vocabulary.VocabularyType.ENUMERATED -> "ENUMERATED"
             }
 
+            val feedback = when (gameSetup.evaluation.type) {
+                ConstraintPolicy.AGGREGATED_EXACT -> "EXACT_AGGREGATION"
+                ConstraintPolicy.AGGREGATED_INCLUDED -> "INCLUDED_AGGREGATION"
+                ConstraintPolicy.AGGREGATED -> "AGGREGATION"
+                ConstraintPolicy.POSITIVE,
+                ConstraintPolicy.ALL,
+                ConstraintPolicy.PERFECT -> "BY_LETTER"
+                else -> null
+            }
+
             // note: if this list grows, update get/setExplained to consider the appropriate keys.
             return listOf(
                 KEY_COMP_GAME,
-                "${KEY_COMP_GAME}_${KEY_COMP_VOCABULARY_TYPE}_${vocab}"
-            )
+                "${KEY_COMP_GAME}_${KEY_COMP_VOCABULARY_TYPE}_${vocab}",
+                if (feedback == null) null else "${KEY_COMP_GAME}_${KEY_COMP_FEEDBACK_TYPE}_${feedback}"
+            ).filterNotNull()
         }
     }
 

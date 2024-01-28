@@ -97,6 +97,7 @@
 
     <!-- setup controls -->
     <dimen name="setup_control_height">48dp</dimen>
+    <dimen name="setup_control_height_short">38dp</dimen>
     <dimen name="setup_control_spacing">4dp</dimen>
     <dimen name="setup_control_spacing_half">2dp</dimen>
 

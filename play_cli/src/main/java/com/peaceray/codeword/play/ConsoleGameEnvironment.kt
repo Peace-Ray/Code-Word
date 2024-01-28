@@ -5,7 +5,6 @@ import com.peaceray.codeword.game.bot.Evaluator
 import com.peaceray.codeword.game.bot.Solver
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.data.Settings
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.FeedbackProvider
 import com.peaceray.codeword.game.validators.Validator
 
@@ -13,7 +12,7 @@ class ConsoleGameEnvironment(
     val game: Game,
     val solver: Solver,
     val evaluator: Evaluator,
-    val constraintFeedbackPolicy: ConstraintFeedbackPolicy,
+    val feedbackPolicy: ConstraintPolicy,
     val feedbackProvider: FeedbackProvider? = null,
 ) {
     fun reset() {
@@ -31,7 +30,7 @@ class ConsoleGameEnvironment(
         var evaluator: Evaluator? = null
 
         var feedbackProvider: FeedbackProvider? = null
-        var constraintFeedbackPolicy: ConstraintFeedbackPolicy? = null
+        var feedbackPolicy: ConstraintPolicy? = null
 
         fun withDimensions(length: Int, rounds: Int): Builder {
             this.length = length
@@ -64,8 +63,8 @@ class ConsoleGameEnvironment(
             return this
         }
 
-        fun withConstraintFeedbackPolicy(feedbackPolicy: ConstraintFeedbackPolicy): Builder {
-            this.constraintFeedbackPolicy = feedbackPolicy
+        fun withFeedbackPolicy(feedbackPolicy: ConstraintPolicy): Builder {
+            this.feedbackPolicy = feedbackPolicy
             return this
         }
 
@@ -74,7 +73,7 @@ class ConsoleGameEnvironment(
                 Game(Settings(length!!, rounds!!, policy), validator!!),
                 solver!!,
                 evaluator!!,
-                constraintFeedbackPolicy!!,
+                feedbackPolicy!!,
                 feedbackProvider
             )
         }

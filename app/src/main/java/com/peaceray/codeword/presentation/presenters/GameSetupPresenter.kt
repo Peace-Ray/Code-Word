@@ -109,7 +109,8 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
                     gameSetupManager.modifyGameSetup(
                         baseSetup,
                         board = gameDefaultsManager.board,
-                        vocabulary = gameDefaultsManager.vocabulary
+                        vocabulary = gameDefaultsManager.vocabulary,
+                        evaluation = gameDefaultsManager.evaluation
                     )
                 }
                 GameSetupContract.Type.CUSTOM -> {
@@ -215,7 +216,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
     private fun updateFeatureSupport() {
         // some metadata
         val langDeets = gameSetupManager.getCodeLanguageDetails(gameSetup.vocabulary.language)
-        val roundRec = gameSetupManager.getRecommendedRounds(gameSetup.vocabulary)
+        val roundRec = gameSetupManager.getRecommendedRounds(gameSetup.vocabulary, gameSetup.evaluation)
 
         val availabilityMap: MutableMap<GameSetupContract.Feature, GameSetupContract.Availability> = mutableMapOf()
         val qualifierMap: MutableMap<GameSetupContract.Feature, GameSetupContract.Qualifier> = mutableMapOf()
@@ -233,7 +234,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         // hard mode is disabled for some game types. For the rest, it should be locked if the game
         // is in-progress and not already set to hard (can be disabled, but not enabled).
         availabilityMap[GameSetupContract.Feature.HARD_MODE] = when {
-            !langDeets.hardModeSupported -> GameSetupContract.Availability.DISABLED
+            langDeets.hardModeConstraint[gameSetup.evaluation.type] == null -> GameSetupContract.Availability.DISABLED
             game != null && game!!.started && (!gameSetupManager.isHard(gameSetup) || game!!.over) -> GameSetupContract.Availability.LOCKED
             else -> GameSetupContract.Availability.AVAILABLE
         }
@@ -258,6 +259,21 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             languageAvailability
         } else {
             GameSetupContract.Availability.DISABLED
+        }
+        availabilityMap[GameSetupContract.Feature.CODE_CHARACTER_REPETITION] = when (languageAvailability) {
+            GameSetupContract.Availability.AVAILABLE -> {
+                if (gameSetup.vocabulary.length <= gameSetup.vocabulary.characters) {
+                    GameSetupContract.Availability.AVAILABLE
+                } else {
+                    GameSetupContract.Availability.LOCKED
+                }
+            }
+            else -> languageAvailability
+        }
+        availabilityMap[GameSetupContract.Feature.CODE_EVALUATION_POLICY] = if (langDeets.evaluationsSupported.size > 1) {
+            languageAvailability
+        } else {
+            GameSetupContract.Availability.LOCKED
         }
 
         availabilityMap[GameSetupContract.Feature.SEED] = when(type) {
@@ -287,13 +303,20 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
     }
 
     private fun updateFeatureRanges() {
+        // available languages
+        view?.setLanguagesAllowed(listOf(
+            CodeLanguage.ENGLISH,
+            CodeLanguage.CODE
+        ))
+
         val languageDetails = gameSetupManager.getCodeLanguageDetails(gameSetup.vocabulary.language)
         view?.setFeatureValuesAllowed(GameSetupContract.Feature.CODE_LENGTH, languageDetails.codeLengthsSupported)
         view?.setFeatureValuesAllowed(GameSetupContract.Feature.CODE_CHARACTERS, languageDetails.codeCharactersSupported)
+        view?.setEvaluationPoliciesAllowed(languageDetails.evaluationsSupported)
 
         // TODO recommend number of rounds based on vocabulary
         val round = game?.round ?: 1
-        val roundRec = gameSetupManager.getRecommendedRounds(gameSetup.vocabulary)
+        val roundRec = gameSetupManager.getRecommendedRounds(gameSetup.vocabulary, gameSetup.evaluation)
         view?.setFeatureValuesAllowed(
             GameSetupContract.Feature.ROUNDS,
             listOf(0) + (round..(roundRec.second)).toList()
@@ -365,7 +388,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             GameSetupContract.Type.DAILY,
             GameSetupContract.Type.SEEDED,
             GameSetupContract.Type.CUSTOM -> true
-            GameSetupContract.Type.ONGOING -> status == GameStatusReview.Status.ONGOING
+            GameSetupContract.Type.ONGOING -> false // status == GameStatusReview.Status.ONGOING
         }
         val purpose = if (forLaunching) GameStatusReview.Purpose.LAUNCH else GameStatusReview.Purpose.EXAMINE
 
@@ -555,11 +578,17 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
     }
 
     override fun onLanguageEntered(language: CodeLanguage): Boolean {
-        if (type != GameSetupContract.Type.DAILY) {
+        // accept current
+        if (language == gameSetup.vocabulary.language) return true
+
+        if (type !in setOf(GameSetupContract.Type.DAILY, GameSetupContract.Type.ONGOING)) {
             if (language != gameSetup.vocabulary.language) {
                 // update the vocabulary using language defaults
                 val modifiedSetup = gameSetupManager.modifyGameSetup(gameSetup, language = language)
-                val roundsRecommendation = gameSetupManager.getRecommendedRounds(modifiedSetup.vocabulary)
+                val roundsRecommendation = gameSetupManager.getRecommendedRounds(
+                    modifiedSetup.vocabulary,
+                    modifiedSetup.evaluation
+                )
 
                 updateGameSetupAndView(gameSetupManager.modifyGameSetup(
                     gameSetup,
@@ -569,23 +598,86 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
                 return true
             }
         } else {
-            Timber.w("Language entered for Daily type $type")
+            Timber.w("Language entered for type $type")
             view?.showError(GameSetupContract.Feature.CODE_LANGUAGE, GameSetupContract.Error.FEATURE_NOT_ALLOWED, null)
         }
 
         return false
     }
 
+    override fun onConstraintPolicyEntered(policy: ConstraintPolicy): Boolean {
+        // accept current
+        if (policy == gameSetup.evaluation.type) return true
+
+        if (type !in setOf(GameSetupContract.Type.DAILY, GameSetupContract.Type.ONGOING)) {
+            val languageDetails = gameSetupManager.getCodeLanguageDetails(gameSetup.vocabulary.language)
+
+            if (policy !in languageDetails.evaluationsSupported) {
+                Timber.w("Policy $policy entered, but not supported for language ${gameSetup.vocabulary.language}")
+                view?.showError(GameSetupContract.Feature.CODE_EVALUATION_POLICY, GameSetupContract.Error.FEATURE_VALUE_NOT_ALLOWED, null)
+            } else if (policy != gameSetup.evaluation.type) {
+                // update the policy using language defaults
+                val hardMode = gameSetup.evaluation.enforced == languageDetails.hardModeConstraint[gameSetup.evaluation.type]
+                val enforced = if (hardMode) languageDetails.hardModeConstraint[policy] ?: ConstraintPolicy.IGNORE else ConstraintPolicy.IGNORE
+                val evaluation = GameSetup.Evaluation(policy, enforced)
+
+                val modifiedSetup = gameSetupManager.modifyGameSetup(gameSetup, evaluation = evaluation)
+
+                val roundsRecommendation = gameSetupManager.getRecommendedRounds(
+                    modifiedSetup.vocabulary,
+                    modifiedSetup.evaluation
+                )
+
+                updateGameSetupAndView(gameSetupManager.modifyGameSetup(
+                    gameSetup,
+                    evaluation = evaluation,
+                    board = GameSetup.Board(roundsRecommendation.first)
+                ))
+                return true
+            } else {
+                Timber.w("Policy $policy re-entered for ConstraintPolicy")
+            }
+        } else {
+            Timber.w("ConstraintPolicy entered for type $type")
+            view?.showError(GameSetupContract.Feature.CODE_EVALUATION_POLICY, GameSetupContract.Error.FEATURE_NOT_ALLOWED, null)
+        }
+
+        return false
+    }
+
     override fun onFeatureEntered(feature: GameSetupContract.Feature, active: Boolean): Boolean {
-        // Boolean features: EVALUATOR_HONEST, HARD_MODE
+        // Boolean features: CHARACTER_REPETITIONS, EVALUATOR_HONEST, HARD_MODE
         when (feature) {
+            GameSetupContract.Feature.CODE_CHARACTER_REPETITION -> {
+                // accept current
+                if ((gameSetup.vocabulary.characterOccurrences > 1) == active) return true
+                // allowed only as false when length <= characters
+                if ((gameSetup.vocabulary.length <= gameSetup.vocabulary.characters) || active) {
+                    val vocabulary: GameSetup.Vocabulary = GameSetup.Vocabulary(
+                        language = gameSetup.vocabulary.language,
+                        type = gameSetup.vocabulary.type,
+                        length = gameSetup.vocabulary.length,
+                        characters = gameSetup.vocabulary.characters,
+                        characterOccurrences = if (active) gameSetup.vocabulary.length else 1
+                    )
+                    updateGameSetupAndView(gameSetupManager.modifyGameSetup(gameSetup, vocabulary = vocabulary))
+                    Timber.d("feature $feature entered: $gameSetup")
+                    return true
+                } else {
+                    view?.showError(feature, GameSetupContract.Error.FEATURE_NOT_ALLOWED, null)
+                }
+            }
             GameSetupContract.Feature.HARD_MODE -> {
+                // accept current
+                if (gameSetupManager.isHard(gameSetup) == active) return true
                 // allowed in all contexts
                 updateGameSetupAndView(gameSetupManager.modifyGameSetup(gameSetup, hard = active))
                 Timber.d("feature $feature entered: $gameSetup")
                 return true
             }
             GameSetupContract.Feature.EVALUATOR_HONEST -> {
+                // accept current
+                if ((gameSetup.evaluator == GameSetup.Evaluator.HONEST) == active) return true
                 // allowed only when CUSTOM and non-human evaluator
                 if (type == GameSetupContract.Type.CUSTOM && gameSetup.evaluator != GameSetup.Evaluator.PLAYER) {
                     // player roles can substantially alter available features
@@ -610,17 +702,21 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         val languageDetails = gameSetupManager.getCodeLanguageDetails(gameSetup.vocabulary.language)
         val modifiedSetup: GameSetup? = when (feature) {
             GameSetupContract.Feature.CODE_LENGTH -> {
+                // accept current
+                if (gameSetup.vocabulary.length == value) return true
                 if (value in languageDetails.codeLengthsSupported) {
                     // update vocabulary and, possibly, rounds (only to stay in bounds)
+                    val noRepetitionSupported = value <= gameSetup.vocabulary.characters
                     val vocabulary: GameSetup.Vocabulary = GameSetup.Vocabulary(
-                        gameSetup.vocabulary.language,
-                        gameSetup.vocabulary.type,
-                        value,
-                        gameSetup.vocabulary.characters
+                        language = gameSetup.vocabulary.language,
+                        type = gameSetup.vocabulary.type,
+                        length = value,
+                        characters = gameSetup.vocabulary.characters,
+                        characterOccurrences = if (gameSetup.vocabulary.characterOccurrences == 1 && noRepetitionSupported) 1 else value
                     )
 
                     // possibly adjust rounds based on maximum
-                    val roundsRecommendation = gameSetupManager.getRecommendedRounds(vocabulary)
+                    val roundsRecommendation = gameSetupManager.getRecommendedRounds(vocabulary, gameSetup.evaluation)
                     if (gameSetup.board.rounds <= roundsRecommendation.second) {
                         gameSetupManager.modifyGameSetup(gameSetup, vocabulary = vocabulary)
                     } else {
@@ -636,16 +732,20 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
                 }
             }
             GameSetupContract.Feature.CODE_CHARACTERS -> {
+                // accept current
+                if (gameSetup.vocabulary.characters == value) return true
                 if (value in languageDetails.codeCharactersSupported) {
+                    val noRepetitionSupported = gameSetup.vocabulary.length <= value
                     val vocabulary = GameSetup.Vocabulary(
-                        gameSetup.vocabulary.language,
-                        gameSetup.vocabulary.type,
-                        gameSetup.vocabulary.length,
-                        value
+                        language = gameSetup.vocabulary.language,
+                        type = gameSetup.vocabulary.type,
+                        length = gameSetup.vocabulary.length,
+                        characters = value,
+                        characterOccurrences = if (gameSetup.vocabulary.characterOccurrences == 1 && noRepetitionSupported) 1 else gameSetup.vocabulary.length
                     )
 
                     // possibly adjust rounds based on maximum
-                    val roundsRecommendation = gameSetupManager.getRecommendedRounds(vocabulary)
+                    val roundsRecommendation = gameSetupManager.getRecommendedRounds(vocabulary, gameSetup.evaluation)
                     if (gameSetup.board.rounds <= roundsRecommendation.second) {
                         gameSetupManager.modifyGameSetup(gameSetup, vocabulary = vocabulary)
                     } else {
@@ -661,7 +761,9 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
                 }
             }
             GameSetupContract.Feature.ROUNDS -> {
-                val roundsRecommendation = gameSetupManager.getRecommendedRounds(gameSetup.vocabulary)
+                // accept current
+                if (gameSetup.board.rounds == value) return true
+                val roundsRecommendation = gameSetupManager.getRecommendedRounds(gameSetup.vocabulary, gameSetup.evaluation)
                 val rounds = (0..(roundsRecommendation.second))
                 if (value in rounds) {
                     gameSetupManager.modifyGameSetup(

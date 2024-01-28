@@ -1,6 +1,7 @@
 package com.peaceray.codeword.game.feedback
 
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.data.ConstraintPolicy
 
 /**
  * A class which analyzes constraints, potentially in light of pre-existing information about
@@ -22,16 +23,16 @@ interface FeedbackProvider {
     /**
      * Given the provided code constraints, generate feedback.
      */
-    fun getFeedback(policy: ConstraintFeedbackPolicy, constraints: List<Constraint>): Feedback
+    fun getFeedback(policy: ConstraintPolicy, constraints: List<Constraint>): Feedback
 
     /**
      * Given the provided code constraints, generate character feedback.
      */
-    fun getCharacterFeedback(policy: ConstraintFeedbackPolicy, constraints: List<Constraint>): Map<Char, CharacterFeedback>
+    fun getCharacterFeedback(policy: ConstraintPolicy, constraints: List<Constraint>): Map<Char, CharacterFeedback>
 
     /**
      * Is this FeedbackProvider capable of generating Feedback under this policy?
      */
-    fun supports(policy: ConstraintFeedbackPolicy): Boolean
+    fun supports(policy: ConstraintPolicy): Boolean
 
 }

@@ -28,10 +28,15 @@ import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLet
 import com.peaceray.codeword.presentation.view.component.layouts.CellLayout
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
-import com.peaceray.codeword.presentation.view.component.viewholders.ConstraintPipGridViewHolder
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessAggregatedPipGridViewHolder
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessLetterViewHolder
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedExactAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedIncludedAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterCodeAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterEntryAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterMarkupAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.review.GameReviewListenerAdapter
 import com.peaceray.codeword.presentation.view.component.viewholders.review.GameReviewPuzzleTypeViewHolder
@@ -41,6 +46,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
+import kotlin.math.min
 
 @AndroidEntryPoint
 class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
@@ -118,10 +124,11 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
     // Legend Data
     private lateinit var legendGuess: String
     private lateinit var legendSecret: String
+    private lateinit var legendConstraint: Constraint
 
     // Legend View Holders
     private val legendLetterViewHolders = mutableListOf<GuessLetterViewHolder>()
-    private val legendPipViewHolders = mutableListOf<ConstraintPipGridViewHolder>()
+    private val legendPipViewHolders = mutableListOf<GuessAggregatedPipGridViewHolder>()
     private var legendCodeCharacters = listOf<Char>()
 
     // manager / inflater
@@ -209,91 +216,117 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         legendLetterViewHolders.clear()
         legendPipViewHolders.clear()
 
-        if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-            // medium legend size
-            val letterLayout = GuessLetterCellLayout.create(resources, CellLayout.SizeCategory.MEDIUM)
-            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, CellLayout.SizeCategory.MEDIUM)
-            legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout)
-            legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout)
-            legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout)
-
-            legendAdapter.setCodeCharacters(legendCodeCharacters)
-            legendAdapter.setItemStyles(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
-
-            legendGuess = getString(R.string.game_info_legend_guess)
-            legendSecret = getString(R.string.game_info_legend_secret)
-
-            // show potentially hidden
-            binding.sectionHowToPlay.legendNoLetter1.visibility = View.VISIBLE
-            binding.sectionHowToPlay.legendNoLetter2.visibility = View.VISIBLE
-            binding.sectionHowToPlay.legendNoText.visibility = View.VISIBLE
-
-            // hide unused
-            binding.sectionHowToPlay.legendPresentPips.visibility = View.GONE
-            binding.sectionHowToPlay.legendCorrectPips.visibility = View.GONE
-            binding.sectionHowToPlay.legendPresentLetter2.visibility = View.GONE
-
-            // setup potentially altered text
-            binding.sectionHowToPlay.legendCorrectText.text = getString(R.string.game_info_legend_correct)
-            binding.sectionHowToPlay.legendPresentText.text = getString(R.string.game_info_legend_present)
-
-            // setup legend view holders for letters
-            val appearance = GuessLetterMarkupAppearance(requireContext(), letterLayout)
-            createLetterViewHolder(binding.sectionHowToPlay.legendCorrectLetter.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_correct_letter)[0], Constraint.MarkupType.EXACT))
-            createLetterViewHolder(binding.sectionHowToPlay.legendPresentLetter1.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_present_letter)[0], Constraint.MarkupType.INCLUDED))
-            createLetterViewHolder(binding.sectionHowToPlay.legendNoLetter1.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_no_letter_1)[0], Constraint.MarkupType.NO))
-            createLetterViewHolder(binding.sectionHowToPlay.legendNoLetter2.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_no_letter_2)[0], Constraint.MarkupType.NO))
-        } else {
-            // small legend size
-            val letterLayout = GuessLetterCellLayout.create(resources, CellLayout.SizeCategory.SMALL)
-            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, CellLayout.SizeCategory.SMALL)
-            legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout)
-            legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout)
-            legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout)
-
-            legendAdapter.setCodeCharacters(legendCodeCharacters)
-            legendAdapter.setItemStyles(GuessLetterAdapter.ItemStyle.LETTER_CODE, GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER)
-
-            // setup legend recycler view with blanks
-            binding.sectionHowToPlay.recyclerView.adapter = legendAdapter
-            binding.sectionHowToPlay.recyclerView.itemAnimator = GuessLetterViewHolder.ItemAnimator()
-
-            legendGuess = getString(R.string.game_info_legend_code_guess)
-            legendSecret = getString(R.string.game_info_legend_code_secret)
-
-            // show potentially hidden
-            binding.sectionHowToPlay.legendPresentLetter2.visibility = View.VISIBLE
-            binding.sectionHowToPlay.legendPresentPips.visibility = View.VISIBLE
-            binding.sectionHowToPlay.legendCorrectPips.visibility = View.VISIBLE
-
-            // hide unused
-            binding.sectionHowToPlay.legendNoLetter1.visibility = View.GONE
-            binding.sectionHowToPlay.legendNoLetter2.visibility = View.GONE
-            binding.sectionHowToPlay.legendNoText.visibility = View.GONE
-
-            // setup potentially altered text
-            binding.sectionHowToPlay.legendCorrectText.text = getString(R.string.game_info_legend_code_correct)
-            binding.sectionHowToPlay.legendPresentText.text = getString(R.string.game_info_legend_code_present)
-
-            // setup legend view holders for letters
-            val appearance = GuessLetterCodeAppearance(requireContext(), letterLayout, legendCodeCharacters)
-            createLetterViewHolder(binding.sectionHowToPlay.legendCorrectLetter.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_code_correct_letter)[0], Constraint.MarkupType.EXACT))
-            createLetterViewHolder(binding.sectionHowToPlay.legendPresentLetter1.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_code_present_letter_1)[0], Constraint.MarkupType.INCLUDED))
-            createLetterViewHolder(binding.sectionHowToPlay.legendPresentLetter2.getChildAt(0), appearance)
-                .bind(GuessLetter(getString(R.string.game_info_legend_code_present_letter_2)[0], Constraint.MarkupType.INCLUDED))
-
-            // setup legend view holders for pips
-            createPipsViewHolder(binding.sectionHowToPlay.legendCorrectPips.getChildAt(0))
-                .bind(createGuess(4, 1, 0))
-            createPipsViewHolder(binding.sectionHowToPlay.legendPresentPips.getChildAt(0))
-                .bind(createGuess(4, 0, 2))
+        // configuration based on language
+        when (gameSetup.vocabulary.type) {
+            GameSetup.Vocabulary.VocabularyType.LIST -> {
+                // vocabulary list: language words
+                legendGuess = getString(R.string.game_info_legend_guess)
+                legendSecret = getString(R.string.game_info_legend_secret)
+            }
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> {
+                // enumerated codes: ABCD
+                legendGuess = getString(R.string.game_info_legend_code_guess)
+                legendSecret = getString(R.string.game_info_legend_code_secret)
+            }
         }
+
+        // configuration based on evaluation type
+        val letterLayout: GuessLetterCellLayout
+        val pipLayout: GuessAggregateConstraintCellLayout
+        val showPips: Boolean
+        val letterAppearance: GuessLetterAppearance
+        when (gameSetup.evaluation.type) {
+            ConstraintPolicy.AGGREGATED_EXACT,
+            ConstraintPolicy.AGGREGATED_INCLUDED,
+            ConstraintPolicy.AGGREGATED -> {
+                // small legend size
+                letterLayout = GuessLetterCellLayout.create(resources, CellLayout.SizeCategory.SMALL)
+                pipLayout = GuessAggregateConstraintCellLayout.create(resources, CellLayout.SizeCategory.SMALL)
+                showPips = true
+
+                // item styles
+                val letterStyle = when (gameSetup.vocabulary.type) {
+                    GameSetup.Vocabulary.VocabularyType.LIST -> GuessLetterAdapter.ItemStyle.LETTER_ENTRY
+                    GameSetup.Vocabulary.VocabularyType.ENUMERATED -> GuessLetterAdapter.ItemStyle.LETTER_CODE
+                }
+                val aggregatedStyle = when (gameSetup.evaluation.type) {
+                    ConstraintPolicy.AGGREGATED_EXACT -> GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER
+                    ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER
+                    ConstraintPolicy.AGGREGATED -> GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
+                    else -> throw IllegalStateException("Evaluation type ${gameSetup.evaluation.type} changed?")
+                }
+                legendAdapter.setItemStyles(letterStyle, aggregatedStyle)
+
+                // appearances
+                letterAppearance = if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.ENUMERATED) {
+                    GuessLetterCodeAppearance(requireContext(), letterLayout, legendCodeCharacters)
+                } else {
+                    GuessLetterEntryAppearance(requireContext(), letterLayout)
+                }
+            }
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> {
+                // medium legend size
+                letterLayout = GuessLetterCellLayout.create(resources, CellLayout.SizeCategory.MEDIUM)
+                pipLayout = GuessAggregateConstraintCellLayout.create(resources, CellLayout.SizeCategory.MEDIUM)
+                showPips = false
+
+                // item styles
+                legendAdapter.setItemStyles(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
+
+                // appearances
+                letterAppearance = GuessLetterMarkupAppearance(requireContext(), letterLayout)
+            }
+            else -> throw IllegalArgumentException("ConstraintPolicy ${gameSetup.evaluation.type} is not supported")
+        }
+
+        // legend constraint and letters
+        legendConstraint = Constraint.create(legendGuess, legendSecret)
+        val markupLetters = getLegendMarkupLetters(gameSetup, legendConstraint)
+        val markupLabels = getLegendMarkupLabels(gameSetup, markupLetters)
+        val markupViews = getLegendMarkupViews()
+
+        // populate and label
+        for (markup in listOf(Constraint.MarkupType.EXACT, Constraint.MarkupType.INCLUDED, Constraint.MarkupType.NO)) {
+            val letters = markupLetters[markup]
+            val label = markupLabels[markup]
+            val views = markupViews[markup]
+
+            if (letters.isNullOrEmpty() || label == null || views == null) {
+                views?.setVisibility(View.GONE)
+            } else {
+                views.setVisibility(View.VISIBLE)
+                views.textView.text = label
+                views.letterViews.forEachIndexed { index, view ->
+                    if (index < letters.size) {
+                        createLetterViewHolder(view.getChildAt(0), letterAppearance)
+                            .bind(GuessLetter(letters[index], markup))
+                    } else {
+                        view.visibility = View.GONE
+                    }
+                }
+                if (showPips && views.pipView != null && letters.isNotEmpty()) {
+                    val guess = when (markup) {
+                        Constraint.MarkupType.EXACT -> createGuess(legendConstraint.candidate.length, letters.size, 0)
+                        Constraint.MarkupType.INCLUDED -> createGuess(legendConstraint.candidate.length, 0, letters.size)
+                        Constraint.MarkupType.NO -> createGuess(legendConstraint.candidate.length, 0, 0)
+                    }
+                    createPipsViewHolder(gameSetup, views.pipView.getChildAt(0)).bind(guess)
+                } else {
+                    views.pipView?.visibility = View.GONE
+                }
+            }
+        }
+
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout)
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout)
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_ENTRY, letterLayout)
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout)
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER, pipLayout)
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER, pipLayout)
+
+        legendAdapter.setCodeCharacters(legendCodeCharacters)
 
         legendAdapter.setGameFieldSize(legendGuess.length, 2)
         legendAdapter.setCodeCharacters(legendCodeCharacters)
@@ -302,7 +335,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
         // TODO apply animation to these
         legendAdapter.replace(constraints = listOf(
-            Constraint.Companion.create(legendGuess, legendSecret),
+            legendConstraint,
             Constraint.Companion.create(legendSecret, legendSecret)
         ))
     }
@@ -324,7 +357,6 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         }
 
         legendCodeCharacters = codeLetters.distinct().sorted()
-        Timber.v("updating view holders with legendCodeCharacters $legendCodeCharacters for ${itemViewBinding.size} views")
         val appearance = if (locale != null) {
             GuessLetterMarkupAppearance(requireContext(), cellLayout)
         } else {
@@ -341,10 +373,121 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         binding.sectionHowToPlay.recyclerView.adapter = legendAdapter
     }
 
-    private fun createPipsViewHolder(itemView: View): ConstraintPipGridViewHolder {
-        val vh = ConstraintPipGridViewHolder(itemView, colorSwatchManager)
+    private fun createPipsViewHolder(gameSetup: GameSetup, itemView: View): GuessAggregatedPipGridViewHolder {
+        val appearance: GuessAggregatedAppearance = when (gameSetup.evaluation.type) {
+            ConstraintPolicy.AGGREGATED_EXACT -> GuessAggregatedExactAppearance(itemView.context)
+            ConstraintPolicy.AGGREGATED_INCLUDED -> GuessAggregatedIncludedAppearance(itemView.context)
+            ConstraintPolicy.AGGREGATED -> GuessAggregatedCountsAppearance(itemView.context)
+            else -> throw IllegalArgumentException("Unsupported evaluation type ${gameSetup.evaluation.type}")
+        }
+        val vh = GuessAggregatedPipGridViewHolder(itemView, colorSwatchManager, appearance)
         legendPipViewHolders.add(vh)
         return vh
+    }
+
+    private fun getLegendMarkupLetters(gameSetup: GameSetup, constraint: Constraint): Map<Constraint.MarkupType, List<Char>> {
+        val zipped = legendConstraint.candidate.toList().zip(legendConstraint.markup)
+        var exactLetters: List<Char> = emptyList()
+        var includedLetters: List<Char> = emptyList()
+        var noLetters: List<Char>
+        when (gameSetup.evaluation.type) {
+            ConstraintPolicy.AGGREGATED_EXACT -> {
+                exactLetters = zipped.filter { it.second == Constraint.MarkupType.EXACT }.map { it.first }
+                noLetters = zipped.filter { it.second != Constraint.MarkupType.EXACT }.map { it.first }
+            }
+            ConstraintPolicy.AGGREGATED_INCLUDED -> {
+                includedLetters = zipped.filter {
+                    it.second in setOf(Constraint.MarkupType.INCLUDED, Constraint.MarkupType.EXACT)
+                }.map { it.first }
+                noLetters = zipped.filter { it.second == Constraint.MarkupType.NO }.map { it.first }
+            }
+            ConstraintPolicy.AGGREGATED -> {
+                exactLetters = zipped.filter { it.second == Constraint.MarkupType.EXACT }.map { it.first }
+                includedLetters = zipped.filter { it.second == Constraint.MarkupType.INCLUDED }.map { it.first }
+                noLetters = zipped.filter { it.second == Constraint.MarkupType.NO }.map { it.first }
+            }
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> {
+                exactLetters = zipped.filter { it.second == Constraint.MarkupType.EXACT }.map { it.first }
+                includedLetters = zipped.filter { it.second == Constraint.MarkupType.INCLUDED }.map { it.first }
+                noLetters = zipped.filter { it.second == Constraint.MarkupType.NO }.map { it.first }
+            }
+            else -> throw IllegalArgumentException("No support for ${gameSetup.evaluation.type}")
+        }
+
+        return mapOf(
+            Pair(Constraint.MarkupType.EXACT, exactLetters),
+            Pair(Constraint.MarkupType.INCLUDED, includedLetters),
+            Pair(Constraint.MarkupType.NO, noLetters)
+        )
+    }
+
+    private fun getLegendMarkupLabels(gameSetup: GameSetup, letters: Map<Constraint.MarkupType, List<Char>>): Map<Constraint.MarkupType, String> {
+        val map = mutableMapOf<Constraint.MarkupType, String>()
+        val pick: (markup: Constraint.MarkupType, arrayResId: Int) -> Unit = { markup, arrayResId ->
+            val array = requireContext().resources.getStringArray(arrayResId)
+            val index = min(array.size - 1, letters[markup]!!.size - 1)
+            map[markup] = array[index]
+        }
+
+        when (gameSetup.evaluation.type) {
+            ConstraintPolicy.AGGREGATED_EXACT -> {
+                pick(Constraint.MarkupType.EXACT, R.array.game_info_legend_correct_count)
+                pick(Constraint.MarkupType.NO, R.array.game_info_legend_not_correct_count)
+            }
+            ConstraintPolicy.AGGREGATED_INCLUDED -> {
+                pick(Constraint.MarkupType.INCLUDED, R.array.game_info_legend_included_or_exact_count)
+                pick(Constraint.MarkupType.NO, R.array.game_info_legend_no_count)
+            }
+            ConstraintPolicy.AGGREGATED -> {
+                pick(Constraint.MarkupType.EXACT, R.array.game_info_legend_correct_count)
+                pick(Constraint.MarkupType.INCLUDED, R.array.game_info_legend_included_count)
+                pick(Constraint.MarkupType.NO, R.array.game_info_legend_no_count)
+            }
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> {
+                pick(Constraint.MarkupType.EXACT, R.array.game_info_legend_correct_shown)
+                pick(Constraint.MarkupType.INCLUDED, R.array.game_info_legend_included_shown)
+                pick(Constraint.MarkupType.NO, R.array.game_info_legend_no_shown)
+            }
+            else -> throw IllegalArgumentException("No support for ${gameSetup.evaluation.type}")
+        }
+
+        return map.toMap()
+    }
+
+    private fun getLegendMarkupViews(): Map<Constraint.MarkupType, LegendMarkupViews> {
+        return mapOf(
+            Pair(Constraint.MarkupType.EXACT, LegendMarkupViews(
+                binding.sectionHowToPlay.legendCorrectText,
+                listOf(
+                    binding.sectionHowToPlay.legendCorrectLetter1,
+                    binding.sectionHowToPlay.legendCorrectLetter2,
+                    binding.sectionHowToPlay.legendCorrectLetter3
+                    ),
+                binding.sectionHowToPlay.legendCorrectPips
+            )),
+            Pair(Constraint.MarkupType.INCLUDED, LegendMarkupViews(
+                binding.sectionHowToPlay.legendPresentText,
+                listOf(
+                    binding.sectionHowToPlay.legendPresentLetter1,
+                    binding.sectionHowToPlay.legendPresentLetter2,
+                    binding.sectionHowToPlay.legendPresentLetter3
+                ),
+                binding.sectionHowToPlay.legendPresentPips
+            )),
+            Pair(Constraint.MarkupType.NO, LegendMarkupViews(
+                binding.sectionHowToPlay.legendNoText,
+                listOf(
+                    binding.sectionHowToPlay.legendNoLetter1,
+                    binding.sectionHowToPlay.legendNoLetter2,
+                    binding.sectionHowToPlay.legendNoLetter3
+                ),
+                null
+            ))
+        )
     }
 
     private fun createGuess(length: Int, exact: Int, included: Int): Guess {
@@ -356,6 +499,14 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         } }
 
         return Guess(Constraint.create(guess, markup))
+    }
+
+    data class LegendMarkupViews(val textView: TextView, val letterViews: List<ViewGroup>, val pipView: ViewGroup?) {
+        fun setVisibility(visibility: Int) {
+            textView.visibility = visibility
+            letterViews.forEach { it.visibility = visibility }
+            pipView?.visibility = visibility
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -465,6 +616,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             GameSetupContract.Feature.CODE_LANGUAGE,
             GameSetupContract.Feature.CODE_LENGTH,
             GameSetupContract.Feature.CODE_CHARACTERS,
+            GameSetupContract.Feature.CODE_CHARACTER_REPETITION,
             GameSetupContract.Feature.EVALUATOR_HONEST -> {
                 val mutableBefore = puzzleTypeViewHolder.mutable
                 if (mutable) puzzleTypeMutableFeatures.add(feature) else puzzleTypeMutableFeatures.remove(feature)
@@ -591,11 +743,25 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         puzzleTypeViewHolder.bind(review = review)
 
         // set values top to bottom
-        binding.sectionHowToPlay.gameInfoExplanation.text = if (gameSetup.board.rounds in 1..100) {
+        val gameInfoExplanation = if (gameSetup.board.rounds in 1..100) {
             getString(R.string.game_info_explanation, templateLanguageCode, templateCode, gameSetup.vocabulary.length, gameSetup.board.rounds)
         } else {
             getString(R.string.game_info_explanation_unlimited, templateLanguageCode, templateCode, gameSetup.vocabulary.length)
         }
+        val gameFeedbackExplanation = when (gameSetup.evaluation.type) {
+            ConstraintPolicy.AGGREGATED_EXACT -> getString(R.string.game_info_explanation_feedback_aggregated_exact)
+            ConstraintPolicy.AGGREGATED_INCLUDED -> getString(R.string.game_info_explanation_feedback_aggregated_included)
+            ConstraintPolicy.AGGREGATED -> getString(R.string.game_info_explanation_feedback_aggregated)
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> getString(R.string.game_info_explanation_feedback_by_letter)
+            else -> throw IllegalArgumentException("Can't give Feedback explanation for policy ${gameSetup.evaluation.type}")
+        }
+        binding.sectionHowToPlay.gameInfoExplanation.text = getString(
+            R.string.game_info_explanation_full,
+            gameInfoExplanation,
+            gameFeedbackExplanation
+        )
 
         setFeatureVisibility(GameSetupContract.Feature.SEED, seed != null)
         setFeatureProgress(GameSetupContract.Feature.ROUNDS, gameSetup.board.rounds)
@@ -673,6 +839,14 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         if (value != null) {
             setFeatureProgress(feature, value)
         }
+    }
+
+    override fun setLanguagesAllowed(languages: List<CodeLanguage>) {
+        // ignore; languages cannot be changed
+    }
+
+    override fun setEvaluationPoliciesAllowed(policies: List<ConstraintPolicy>) {
+        // ignore; evaluation policies cannot be changed
     }
 
     //---------------------------------------------------------------------------------------------

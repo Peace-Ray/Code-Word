@@ -146,14 +146,16 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
             details.isEnumeration -> GameSetup.Vocabulary.VocabularyType.ENUMERATED
             else -> GameSetup.Vocabulary.VocabularyType.LIST
         }
-        val hardModeConstraint = details.hardModeConstraint ?: ConstraintPolicy.IGNORE
+        val constraintPolicy = gameType.feedback
+        val hardModeConstraint = details.hardModeConstraint[gameType.feedback] ?: ConstraintPolicy.IGNORE
 
-        val vocabulary = GameSetup.Vocabulary(gameType.language, vocabType, gameType.length, gameType.characters)
-        val board = GameSetup.Board(getRecommendedRounds(vocabulary).first)
+        val vocabulary = GameSetup.Vocabulary(gameType.language, vocabType, gameType.length, gameType.characters, gameType.characterOccurrences)
         val evaluation = GameSetup.Evaluation(
-            details.evaluation,
+            constraintPolicy,
             if (hard) hardModeConstraint else ConstraintPolicy.IGNORE
         )
+        val board = GameSetup.Board(getRecommendedRounds(vocabulary, evaluation).first)
+
 
         return GameSetup(
             board,
@@ -213,12 +215,16 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
             throw IllegalArgumentException("Illegal 'code length' number in game setup $setup")
         } else if (setup.vocabulary.characters !in details.codeCharactersSupported) {
             throw IllegalArgumentException("Illegal 'code characters' number in game setup $setup")
+        } else if (setup.vocabulary.characters * setup.vocabulary.characterOccurrences < setup.vocabulary.length) {
+            throw java.lang.IllegalArgumentException("Illegal 'character occurrences' number in game setup $setup")
         }
 
         return GameType(
             setup.vocabulary.language,
             setup.vocabulary.length,
-            setup.vocabulary.characters
+            setup.vocabulary.characters,
+            setup.vocabulary.characterOccurrences,
+            setup.evaluation.type
         )
     }
 
@@ -249,10 +255,19 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
      * @param vocabulary The game Vocabulary
      * @return A 2-tuple of the recommended rounds, and the recommended maximum number of rounds.
      */
-    override fun getRecommendedRounds(vocabulary: GameSetup.Vocabulary): Pair<Int, Int> {
+    override fun getRecommendedRounds(vocabulary: GameSetup.Vocabulary, evaluation: GameSetup.Evaluation?): Pair<Int, Int> {
+        val extraRounds = when {
+            evaluation == null -> 0
+            evaluation.type.isByLetter() -> 0
+            evaluation.type == ConstraintPolicy.AGGREGATED -> 2
+            else -> 4
+        }
+
+        fun asPair(rounds: Int, maxRounds: Int) = Pair(rounds + extraRounds, maxRounds + extraRounds)
+
         return when (vocabulary.language) {
-            CodeLanguage.ENGLISH -> Pair(6, 8)
-            CodeLanguage.CODE -> Pair(8, 16)
+            CodeLanguage.ENGLISH -> asPair(6, 8)
+            CodeLanguage.CODE -> asPair(6, 10)
         }
     }
 
@@ -318,7 +333,14 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 else -> newDetails.codeCharactersRecommended
             }
 
-            GameSetup.Vocabulary(language, vocabType, vocabLength, vocabChars)
+            val repetitionsSupported = newDetails.codeCharacterRepetitionsSupported.map { if (it == 0) candidate.vocabulary.length else it }
+            val charOccurrences = when {
+                vocabulary != null -> vocabulary.characterOccurrences
+                candidate.vocabulary.characterOccurrences in repetitionsSupported -> candidate.vocabulary.characterOccurrences
+                else -> repetitionsSupported.first()
+            }
+
+            GameSetup.Vocabulary(language, vocabType, vocabLength, vocabChars, charOccurrences)
         }
 
         // apply any new vocabulary (provided or inferred from language).
@@ -327,11 +349,19 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
             // new vocabulary; update version if necessary
             val newDetails = getLanguageDetails(newVocabulary.language, true)
 
-            val hardModeConstraint = newDetails.hardModeConstraint ?: ConstraintPolicy.IGNORE
+            // update evaluation, with more urgency if the Language has changed.
+            val languageChanged = candidate.vocabulary.language != newVocabulary.language
+            val candidateEvaluationSupported = candidate.evaluation.type in newDetails.evaluationsSupported
+            val evaluationPolicy = if (languageChanged || !candidateEvaluationSupported) {
+                newDetails.evaluationRecommended
+            } else {
+                candidate.evaluation.type
+            }
+            val hardModeConstraint = newDetails.hardModeConstraint[evaluationPolicy] ?: ConstraintPolicy.IGNORE
             val preferredHard = hard ?: candidateIsHard
 
             val newEvaluation = GameSetup.Evaluation(
-                newDetails.evaluation,
+                evaluationPolicy,
                 if (preferredHard) hardModeConstraint else ConstraintPolicy.IGNORE
             )
 
@@ -366,7 +396,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
         // apply hard mode (a stronger modification than "evaluation")
         if (hard != null) {
             val lDetails = getLanguageDetails(setup.vocabulary.language, true)
-            val hardModeConstraint = lDetails.hardModeConstraint ?: ConstraintPolicy.IGNORE
+            val hardModeConstraint = lDetails.hardModeConstraint[candidate.evaluation.type] ?: ConstraintPolicy.IGNORE
             candidate = candidate.with(evaluation = GameSetup.Evaluation(
                 candidate.evaluation.type,
                 if (hard) hardModeConstraint else ConstraintPolicy.IGNORE
@@ -379,7 +409,8 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 throw UnsupportedOperationException("Daily cannot be randomized")
             }
 
-            candidate = candidate.with(randomized = true)
+            // randomize the seed and update the version to current
+            candidate = candidate.with(randomized = true, version = defaultVersion.numberEncoding)
         }
 
         // check "candidate" for internal consistency.
@@ -417,12 +448,23 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 throw UnsupportedOperationException("Vocabulary characters outside supported character sets")
             }
 
+            // character occurrences must be supported by the language
+            val repetitionsSupported = lDetails.codeCharacterRepetitionsSupported.map { if (it == 0) candidate.vocabulary.length else it }
+            if (candidate.vocabulary.characterOccurrences !in repetitionsSupported) {
+                throw UnsupportedOperationException("Vocabulary character occurrences not supported by language")
+            }
+
+            // character occurrences must be possible given length and characters
+            if (candidate.vocabulary.characters * candidate.vocabulary.characterOccurrences < candidate.vocabulary.length) {
+                throw UnsupportedOperationException("Vocabulary character occurrences allow no words")
+            }
+
             // check evaluation for language support
-            if (candidate.evaluation.type != lDetails.evaluation) {
+            if (candidate.evaluation.type !in lDetails.evaluationsSupported) {
                 throw UnsupportedOperationException("Evaluation type not supported by language")
             }
 
-            if (candidate.evaluation.enforced != ConstraintPolicy.IGNORE && candidate.evaluation.enforced != lDetails.hardModeConstraint) {
+            if (candidate.evaluation.enforced != ConstraintPolicy.IGNORE && candidate.evaluation.enforced != lDetails.hardModeConstraint[candidate.evaluation.type]) {
                 throw UnsupportedOperationException("Evaluation enforcement (hard mode) not supported by language")
             }
         }

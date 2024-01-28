@@ -1,13 +1,8 @@
-package com.peaceray.codeword.presentation.view.component.viewholders
+package com.peaceray.codeword.presentation.view.component.viewholders.guess
 
 import android.graphics.PorterDuff
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.annotation.LayoutRes
-import androidx.core.view.children
-import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
@@ -15,12 +10,15 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedExactAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
 import com.peaceray.codeword.presentation.view.component.views.PipGridLayout
-import com.peaceray.codeword.utils.extensions.toLifecycleOwner
 
-class ConstraintPipGridViewHolder(
+class GuessAggregatedPipGridViewHolder(
     itemView: View,
-    val colorSwatchManager: ColorSwatchManager
+    val colorSwatchManager: ColorSwatchManager,
+    var appearance: GuessAggregatedAppearance
 ): RecyclerView.ViewHolder(itemView) {
 
     //region View
@@ -59,7 +57,7 @@ class ConstraintPipGridViewHolder(
         if (guess.constraint == null) {
             pipGrid.visibility = View.GONE
             noPipImageView.visibility = View.GONE
-        } else if (guess.constraint.exact + guess.constraint.included == 0) {
+        } else if (appearance.getTotalCount(guess) == 0) {
             pipGrid.visibility = View.GONE
             noPipImageView.visibility = View.VISIBLE
         } else {
@@ -68,9 +66,7 @@ class ConstraintPipGridViewHolder(
         }
 
         // configure pip visible count
-        pipGrid.setPipsVisibility(if (guess.constraint == null) 0 else {
-            guess.constraint.exact + guess.constraint.included
-        })
+        pipGrid.setPipsVisibility(if (guess.constraint == null) 0 else appearance.getTotalCount(guess))
 
         // configure pip colors
         setConstraintColors(guess, colorSwatchManager.colorSwatch)
@@ -86,8 +82,8 @@ class ConstraintPipGridViewHolder(
     }
 
     private fun setConstraintColors(guess: Guess, swatch: ColorSwatch) {
-        val exact = guess.constraint?.exact ?: 0
-        val inclu = guess.constraint?.included ?: 0
+        val exact = appearance.getExactCount(guess)
+        val inclu = appearance.getIncludedCount(guess)
         List(guess.length) {
             when {
                 it < exact -> Constraint.MarkupType.EXACT
@@ -100,11 +96,11 @@ class ConstraintPipGridViewHolder(
             val elevation = if (!guess.isEvaluation) 0.0f else dimenPipElevation
 
             if (pipView is MaterialCardView) {
-                pipView.setCardBackgroundColor(bg)
-                pipView.strokeColor = stroke
-                pipView.elevation = elevation
+                pipView.setCardBackgroundColor(appearance.getColorFill(guess, markUp, swatch))
+                pipView.strokeColor = appearance.getColorStroke(guess, markUp, swatch)
+                pipView.elevation = appearance.getElevation(guess, markUp)
             } else {
-                pipView.setBackgroundColor(bg)
+                pipView.setBackgroundColor(appearance.getColorFill(guess, markUp, swatch))
                 pipView.elevation = elevation
             }
         }

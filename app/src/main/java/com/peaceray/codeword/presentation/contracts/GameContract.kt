@@ -2,6 +2,7 @@ package com.peaceray.codeword.presentation.contracts
 
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
 import java.util.*
 
@@ -11,16 +12,13 @@ import java.util.*
  */
 interface GameContract: BaseContract {
     enum class ErrorType {
-        WORD_EMPTY,
-        WORD_LENGTH,
-        WORD_NOT_RECOGNIZED,
-        WORD_NOT_CONSTRAINED,
-        CODE_EMPTY,
-        CODE_LENGTH,
-        CODE_INVALID,
-        CODE_NOT_CONSTRAINED,
+        GUESS_EMPTY,
+        GUESS_LENGTH,
+        GUESS_NOT_CONSTRAINED,
+        GUESS_LETTER_REPETITIONS,
+        GUESS_INVALID,
         EVALUATION_INCONSISTENT,
-        UNKNOWN
+        UNKNOWN;
     }
 
     interface View: BaseContract.View {
@@ -76,25 +74,20 @@ interface GameContract: BaseContract {
         //endregion
 
 
-        //region Initial Configuration: Code Characters
+        //region Initial Configuration: Code Characters and Markup Style
         //-----------------------------------------------------------------------------------------
 
         /**
-         * Specify the language used for code words. This function will be called when
-         * dealing with real word vocabularies.
+         * Specify the language used for code words. If called for real word vocabularies,
+         * [locale] will be specified. If [locale] is null, the codes are comprised of
+         * arbitrary character sequences, e.g. "AAAA" or "AABC".
          *
-         * @param characters The characters allowed to appear in valid words.
-         * @param locale The language/region for the language the codes are derived from.
+         * @param characters The characters allowed to appear in valid words or codes.
+         * @param locale The language/region for the language the codes are derived from, if any.
+         * @param feedbackPolicy The ConstraintPolicy used for evaluating each guess. Constraints
+         * contain by-letter markup, but many game types do not make full information available.
          */
-        fun setCodeLanguage(characters: Iterable<Char>, locale: Locale)
-
-        /**
-         * Specify the language used for code sequences. This function will be called when
-         * dealing with arbitrary character sequences, e.g. "AAAA" or "AABC".
-         *
-         * @param characters The characters allowed to appear in valid codes.
-         */
-        fun setCodeComposition(characters: Iterable<Char>)
+        fun setCodeType(characters: Iterable<Char>, locale: Locale?, feedbackPolicy: ConstraintPolicy)
 
         //-----------------------------------------------------------------------------------------
         //endregion

@@ -3,6 +3,7 @@ package com.peaceray.codeword.presentation.contracts
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
 import com.peaceray.codeword.presentation.datamodel.Information
 import java.util.*
@@ -35,6 +36,8 @@ interface GameSetupContract: BaseContract {
         CODE_LANGUAGE,
         CODE_LENGTH,
         CODE_CHARACTERS,
+        CODE_CHARACTER_REPETITION,
+        CODE_EVALUATION_POLICY,
         EVALUATOR_HONEST,
         HARD_MODE,
         ROUNDS,
@@ -221,13 +224,24 @@ interface GameSetupContract: BaseContract {
         //-----------------------------------------------------------------------------------------
 
         /**
-         * Set the available range for the integer feature (used for [Feature.CODE_LENGTH],
+         * Set the available range for an integer feature (used for [Feature.CODE_LENGTH],
          * [Feature.CODE_CHARACTERS], and [Feature.ROUNDS]).
          */
         fun setFeatureValuesAllowed(feature: Feature, values: List<Int>)
 
+        /**
+         * Set the available [CodeLanguage]s for secrets.
+         */
+        fun setLanguagesAllowed(languages: List<CodeLanguage>)
+
+        /**
+         * Set the available [ConstraintPolicy]s for guess evaluation.
+         */
+        fun setEvaluationPoliciesAllowed(policies: List<ConstraintPolicy>)
+
         //-----------------------------------------------------------------------------------------
         //endregion
+
     }
 
     interface Presenter: BaseContract.Presenter<View> {
@@ -260,7 +274,7 @@ interface GameSetupContract: BaseContract {
         /**
          * Notify the Presenter that the user has entered a new seed. Returns whether the View
          * should accept this change. Note that whatever the return value, additional calls may
-         * be made by the Presenter, such as [View.setGameSetup] and [View.showError], either
+         * be made by the Presenter, such as [View.setGameStatusReview] and [View.showError], either
          * during or after this call.
          *
          * @param seed The string entered by the user.
@@ -285,7 +299,7 @@ interface GameSetupContract: BaseContract {
         /**
          * Notify the Presenter that the user has selected new player roles. Returns whether the View
          * should accept this change. Note that whatever the return value, additional calls may
-         * be made by the Presenter, such as [View.setGameSetup] and [View.showError], either
+         * be made by the Presenter, such as [View.setGameStatusReview] and [View.showError], either
          * during or after this call.
          *
          * @param solver The Solver selected by the user.
@@ -298,7 +312,7 @@ interface GameSetupContract: BaseContract {
         /**
          * Notify the Presenter that the user has selected a new language. Returns whether the View
          * should accept this change. Note that whatever the return value, additional calls may
-         * be made by the Presenter, such as [View.setGameSetup] and [View.showError], either
+         * be made by the Presenter, such as [View.setGameStatusReview] and [View.showError], either
          * during or after this call.
          *
          * @param language The language selected by the user.
@@ -308,10 +322,22 @@ interface GameSetupContract: BaseContract {
         fun onLanguageEntered(language: CodeLanguage): Boolean
 
         /**
+         * Notify the Presenter that the user has selected a new ConstraintPolicy. Returns whether
+         * the View should accept this change. Note that whatever the return value, additional
+         * calls may be made by the Presenter, such as [View.setGameStatusReview] and [View.showError],
+         * either during or after this call.
+         *
+         * @param policy The ConstraintPolicy selected by the user.
+         * @return Whether this change should be accepted (left in place) by the View. If 'false',
+         * the change should be reverted.
+         */
+        fun onConstraintPolicyEntered(policy: ConstraintPolicy): Boolean
+
+        /**
          * Notify the Presenter that the user has selected a new value for the indicated
          * Feature. It is preferred to use the Feature-specific functions where they exist.
          * Returns whether the View should accept this change. Note that whatever the return value,
-         * additional calls may be made by the Presenter, such as [View.setGameSetup] and
+         * additional calls may be made by the Presenter, such as [View.setGameStatusReview] and
          * [View.showError], either during or after this call.
          *
          * @param feature The Feature altered by the user.
@@ -325,7 +351,7 @@ interface GameSetupContract: BaseContract {
          * Notify the Presenter that the user has selected a new value for the indicated
          * Feature. It is preferred to use the Feature-specific functions where they exist.
          * Returns whether the View should accept this change. Note that whatever the return value,
-         * additional calls may be made by the Presenter, such as [View.setGameSetup] and
+         * additional calls may be made by the Presenter, such as [View.setGameStatusReview] and
          * [View.showError], either during or after this call.
          *
          * @param feature The Feature altered by the user.

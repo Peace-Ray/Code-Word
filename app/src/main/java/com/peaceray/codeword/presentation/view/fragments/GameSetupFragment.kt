@@ -36,6 +36,7 @@ import okhttp3.internal.toImmutableMap
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 
 @AndroidEntryPoint
 class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
@@ -172,9 +173,15 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         binding.sectionPuzzleType.codeLanguageSpinner.adapter = codeLanguageAdapter
         binding.sectionPuzzleType.codeLanguageSpinner.onItemSelectedListener = codeLanguageListener
 
+        // apply feedback constraint policy settings
+        binding.sectionPuzzleType.feedbackPolicySpinner.adapter = feedbackPolicyAdapter
+        binding.sectionPuzzleType.feedbackPolicySpinner.onItemSelectedListener = feedbackPolicyListener
+
+
         // apply code length / chars settings
         binding.sectionPuzzleType.codeLengthSeekBar.setOnSeekBarChangeListener(codeLengthListener)
         binding.sectionPuzzleType.codeCharactersSeekBar.setOnSeekBarChangeListener(codeCharactersListener)
+        binding.sectionPuzzleType.codeCharacterRepetitionsCheckBox.setOnCheckedChangeListener(codeCharacterRepetitionsListener)
 
         // apply opponent behavior
         binding.sectionPuzzleType.evaluatorCheatsCheckBox.setOnCheckedChangeListener(evaluatorCheatsListener)
@@ -185,6 +192,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         binding.sectionDifficulty.roundsSeekBar.setOnSeekBarChangeListener(roundsListener)
 
         // apply checkbox descriptions
+        binding.sectionPuzzleType.codeCharacterRepetitionsCheckBox.setPrompt(R.string.game_setup_code_character_repetitions_prompt, R.string.game_setup_code_character_repetitions_hint)
         binding.sectionPuzzleType.evaluatorCheatsCheckBox.setPrompt(R.string.game_setup_evaluator_cheats_prompt, R.string.game_setup_evaluator_cheats_hint)
         binding.sectionDifficulty.hardModeCheckBox.setPrompt(R.string.game_setup_hard_mode_prompt, R.string.game_setup_hard_mode_description)
         binding.sectionDifficulty.limitedRoundsCheckBox.setPrompt(R.string.game_setup_limited_rounds_prompt)
@@ -348,10 +356,13 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
     }
 
     private val codeLanguageAdapter: ArrayAdapter<CharSequence> by lazy {
-        ArrayAdapter.createFromResource(
+        val valArray = requireContext().resources.getStringArray(R.array.game_setup_language_values)
+        val valList: MutableList<CharSequence> = valArray.toMutableList()
+
+        ArrayAdapter(
             requireContext(),
-            R.array.game_setup_language_values,
-            android.R.layout.simple_spinner_item
+            android.R.layout.simple_spinner_item,
+            valList
         ).also { adapter ->
             // Specify the layout to use when the list of choices appears
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -391,6 +402,58 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         }
     }
 
+    private val feedbackPolicyAdapter: ArrayAdapter<CharSequence> by lazy {
+        val valArray = requireContext().resources.getStringArray(R.array.game_setup_feedback_values)
+        val valList: MutableList<CharSequence> = valArray.toMutableList()
+
+        ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            valList
+        ).also { adapter ->
+            // Specify the layout to use when the list of choices appears
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+    }
+
+    private val feedbackPolicyListener = object: AdapterView.OnItemSelectedListener {
+        override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+            val policyValue: String = parent.getItemAtPosition(pos) as String
+            val policy = getConstraintPolicyFromSpinnerItem(policyValue)
+
+            if (!presenter.onConstraintPolicyEntered(policy)) {
+                val item = getSpinnerItemFromConstraintPolicy(gameSetup!!.evaluation.type)
+                binding.sectionPuzzleType.feedbackPolicySpinner.setSelection(feedbackPolicyAdapter.getPosition(item))
+            }
+        }
+
+        override fun onNothingSelected(p0: AdapterView<*>?) {
+            Timber.v("onNothingSelected")
+        }
+    }
+
+    private fun getConstraintPolicyFromSpinnerItem(item: String): ConstraintPolicy {
+        val context = requireContext()
+        return when (item) {
+            context.getString(R.string.game_setup_feedback_perfect) -> ConstraintPolicy.PERFECT
+            context.getString(R.string.game_setup_feedback_aggregated_counts) -> ConstraintPolicy.AGGREGATED
+            context.getString(R.string.game_setup_feedback_included_counts) -> ConstraintPolicy.AGGREGATED_INCLUDED
+            context.getString(R.string.game_setup_feedback_exacts_counts) -> ConstraintPolicy.AGGREGATED_EXACT
+            else -> throw IllegalArgumentException("Policy string $item not supported")
+        }
+    }
+
+    private fun getSpinnerItemFromConstraintPolicy(policy: ConstraintPolicy): String {
+        val context = requireContext()
+        return when (policy) {
+            ConstraintPolicy.PERFECT -> context.getString(R.string.game_setup_feedback_perfect)
+            ConstraintPolicy.AGGREGATED_EXACT -> context.getString(R.string.game_setup_feedback_exacts_counts)
+            ConstraintPolicy.AGGREGATED_INCLUDED -> context.getString(R.string.game_setup_feedback_included_counts)
+            ConstraintPolicy.AGGREGATED -> context.getString(R.string.game_setup_feedback_aggregated_counts)
+            else -> throw IllegalArgumentException("Policy $policy not supported")
+        }
+    }
+
     private val codeLengthListener = object: SeekBar.OnSeekBarChangeListener {
         override fun onProgressChanged(seekBar: SeekBar?, progress: Int, p2: Boolean) {
             val length = codeLengthsAllowed[progress]
@@ -427,6 +490,15 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
                     GameSetupContract.Feature.CODE_CHARACTERS,
                     codeCharactersAllowed[seekbar.progress]
                 )
+            }
+        }
+    }
+
+    private val codeCharacterRepetitionsListener = object: CompoundButton.OnCheckedChangeListener {
+        override fun onCheckedChanged(button: CompoundButton?, checked: Boolean) {
+            Timber.v("codeCharacterRepetitionsCheckBox checked to $checked")
+            if (!presenter.onFeatureEntered(GameSetupContract.Feature.CODE_CHARACTER_REPETITION, checked)) {
+                button?.isChecked = !checked
             }
         }
     }
@@ -492,6 +564,8 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             GameSetupContract.Feature.CODE_LANGUAGE -> setMutability(binding.sectionPuzzleType.codeLanguageSpinner, mutable)
             GameSetupContract.Feature.CODE_LENGTH -> setMutability(binding.sectionPuzzleType.codeLengthSeekBar, mutable)
             GameSetupContract.Feature.CODE_CHARACTERS -> setMutability(binding.sectionPuzzleType.codeCharactersSeekBar, mutable)
+            GameSetupContract.Feature.CODE_CHARACTER_REPETITION -> setMutability(binding.sectionPuzzleType.codeCharacterRepetitionsCheckBox, mutable)
+            GameSetupContract.Feature.CODE_EVALUATION_POLICY -> setMutability(binding.sectionPuzzleType.feedbackPolicySpinner, mutable)
             GameSetupContract.Feature.EVALUATOR_HONEST -> setMutability(binding.sectionPuzzleType.evaluatorCheatsCheckBox, mutable)
             GameSetupContract.Feature.HARD_MODE -> setMutability(binding.sectionDifficulty.hardModeCheckBox, mutable)
             GameSetupContract.Feature.ROUNDS -> {
@@ -508,6 +582,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
 
     private fun setMutability(control: Spinner, mutable: Boolean) {
         control.isEnabled = mutable
+        control.alpha = if (mutable) 1.0f else 0.7f
     }
 
     private fun setMutability(control: SeekBar, mutable: Boolean) {
@@ -529,6 +604,8 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             GameSetupContract.Feature.CODE_LANGUAGE -> binding.sectionPuzzleType.codeLanguageContainer.visibility = visibility
             GameSetupContract.Feature.CODE_LENGTH -> binding.sectionPuzzleType.codeLengthContainer.visibility = visibility
             GameSetupContract.Feature.CODE_CHARACTERS -> binding.sectionPuzzleType.codeCharactersContainer.visibility = visibility
+            GameSetupContract.Feature.CODE_CHARACTER_REPETITION -> binding.sectionPuzzleType.codeCharacterRepetitionsCheckBox.visibility = visibility
+            GameSetupContract.Feature.CODE_EVALUATION_POLICY -> binding.sectionPuzzleType.feedbackPolicyContainer.visibility = visibility
             GameSetupContract.Feature.EVALUATOR_HONEST -> binding.sectionPuzzleType.evaluatorCheatsCheckBox.visibility = visibility
             GameSetupContract.Feature.HARD_MODE -> binding.sectionDifficulty.hardModeCheckBox.visibility = visibility
             GameSetupContract.Feature.ROUNDS -> binding.sectionDifficulty.roundsMetaContainer.visibility = visibility
@@ -550,6 +627,8 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             GameSetupContract.Feature.CODE_LANGUAGE,
             GameSetupContract.Feature.CODE_LENGTH,
             GameSetupContract.Feature.CODE_CHARACTERS,
+            GameSetupContract.Feature.CODE_CHARACTER_REPETITION,
+            GameSetupContract.Feature.CODE_EVALUATION_POLICY,
             GameSetupContract.Feature.EVALUATOR_HONEST -> {
                 val anyVisible = listOf(
                     binding.sectionPuzzleType.playerRoleContainer.visibility,
@@ -756,10 +835,17 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
                 getSpinnerItemFromCodeLanguage(gameSetup.vocabulary.language)
             )
         )
+        binding.sectionPuzzleType.feedbackPolicySpinner.setSelection(
+            feedbackPolicyAdapter.getPosition(
+                getSpinnerItemFromConstraintPolicy(gameSetup.evaluation.type)
+            )
+        )
         setFeatureProgress(GameSetupContract.Feature.CODE_LENGTH, gameSetup.vocabulary.length)
         setFeatureProgress(GameSetupContract.Feature.CODE_CHARACTERS, gameSetup.vocabulary.characters)
         setFeatureProgress(GameSetupContract.Feature.ROUNDS, gameSetup.board.rounds)
 
+        Timber.v("set codeCharacterRepetitionsCheckBox to ${gameSetup.vocabulary.characterOccurrences > 1}; is enabled ${binding.sectionPuzzleType.codeCharacterRepetitionsCheckBox.isEnabled}")
+        binding.sectionPuzzleType.codeCharacterRepetitionsCheckBox.quickCheck(gameSetup.vocabulary.characterOccurrences > 1, this.gameSetup == null)
         binding.sectionPuzzleType.evaluatorCheatsCheckBox.quickCheck(gameSetup.evaluator == GameSetup.Evaluator.CHEATER, this.gameSetup == null)
 
         binding.sectionDifficulty.hardModeCheckBox.quickCheck(gameSetup.evaluation.enforced != ConstraintPolicy.IGNORE, this.gameSetup == null)
@@ -863,6 +949,30 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         // enabled / disabled)
         if (value != null) {
             setFeatureProgress(feature, value)
+        }
+    }
+
+    override fun setLanguagesAllowed(languages: List<CodeLanguage>) {
+        val languageStrings = languages.map { getSpinnerItemFromCodeLanguage(it) }
+        codeLanguageAdapter.clear()
+        codeLanguageAdapter.addAll(languageStrings)
+
+        gameSetup?.let { setup ->
+            val selectedItem = getSpinnerItemFromCodeLanguage(setup.vocabulary.language)
+            val position = codeLanguageAdapter.getPosition(selectedItem)
+            if (position >= 0) binding.sectionPuzzleType.codeLanguageSpinner.setSelection(position)
+        }
+    }
+
+    override fun setEvaluationPoliciesAllowed(policies: List<ConstraintPolicy>) {
+        val policyStrings = policies.map { getSpinnerItemFromConstraintPolicy(it) }
+        feedbackPolicyAdapter.clear()
+        feedbackPolicyAdapter.addAll(policyStrings)
+
+        gameSetup?.let { setup ->
+            val selectedItem = getSpinnerItemFromConstraintPolicy(setup.evaluation.type)
+            val position = feedbackPolicyAdapter.getPosition(selectedItem)
+            if (position >= 0) binding.sectionPuzzleType.feedbackPolicySpinner.setSelection(position)
         }
     }
 

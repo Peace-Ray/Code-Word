@@ -109,7 +109,13 @@ class FeatureAvailabilityPresenter @Inject constructor():
             current -> FeatureAvailabilityContract.Availability.AVAILABLE
             in (minimum + 1)..current -> FeatureAvailabilityContract.Availability.UPDATE_AVAILABLE
             minimum -> FeatureAvailabilityContract.Availability.UPDATE_URGENT
-            else -> FeatureAvailabilityContract.Availability.UPDATE_REQUIRED
+            else -> if (local > current) {
+                // shouldn't occur in practice, but happens in local testing and
+                // may occur when a new update is first released but API not updated
+                FeatureAvailabilityContract.Availability.AVAILABLE
+            } else {
+                FeatureAvailabilityContract.Availability.UPDATE_REQUIRED
+            }
         }
 
         view?.setFeatureAvailability(feature, availability)

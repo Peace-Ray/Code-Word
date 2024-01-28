@@ -4,6 +4,7 @@ import com.peaceray.codeword.game.bot.modules.generation.MonotonicCachingGenerat
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import kotlin.math.min
 import kotlin.random.Random
 
 /**
@@ -21,42 +22,46 @@ import kotlin.random.Random
  * @param length The code length
  * @param guessPolicy How Constraints are applied to guess lists
  * @param solutionPolicy How Constraints are applied to solution lists
+ * @param maxOccurrences The maximum number of a occurrences a given character may have in a valid code
+ * @param shuffle Iterate code characters in a randomized order (vs. alphabetical)
  * @param truncateAtProduct Truncate guess enumeration before the *product* of solution list size and
  * guess list size reaches this value.
+ * @param seed A random seed used for [shuffle]
  */
 class CodeEnumeratingGenerator(
     alphabet: Iterable<Char>,
     val length: Int,
     val guessPolicy: ConstraintPolicy,
     val solutionPolicy: ConstraintPolicy,
+    val maxOccurrences: Int = length,
     val shuffle: Boolean = false,
+    val truncateAtLength: Int = 0,
     val truncateAtProduct: Int = 0,
     val seed: Long? = null
 ): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
-    val alphabet: List<Char> = if (shuffle) {
-        alphabet.distinct().toList().shuffled()
-    } else {
-        alphabet.distinct().toList().sorted()
+    private val positionAlphabet: List<List<Char>>
+    init {
+        val letters = alphabet.distinct().map { it }.toList().sorted()
+        val positionAlphabetMut = mutableListOf<List<Char>>()
+        for (i in 1..length) {
+            positionAlphabetMut.add(if (shuffle) letters.shuffled(random) else letters)
+        }
+        positionAlphabet = positionAlphabetMut.toList()
     }
-    val size = Math.pow(this.alphabet.size.toDouble(), length.toDouble()).toInt()
+
+    private var solutionsTruncated = false
+    private var guessesTruncated = false
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
-        val solutions = codeSequence()
-            .filter { code -> constraints.all { it.allows(code, solutionPolicy) } }
-            .filter { code -> constraints.all { it.candidate != code || it.correct } }
-            .toList()
+        val solutionsPair = generateSolutions(null, true, constraints, constraints)
+        val solutions = solutionsPair.first.take(solutionsPair.second).toList()
+        solutionsTruncated = solutionsPair.second == solutions.size
 
-        val guessSource = if (truncateAtProduct == 0 || solutions.isEmpty()) {
-            codeSequence()
-        } else {
-            codeSequence().take(truncateAtProduct / solutions.size)
-        }
+        val guessPair = generateGuesses(solutions, null, true, constraints, constraints)
+        val guesses = guessPair.first.take(guessPair.second).toList()
+        guessesTruncated = guessPair.second == guesses.size
 
-        val guesses = guessSource
-            .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
-            .filter { code -> constraints.all { it.candidate != code } }
-
-        return Candidates(guesses.toList(), solutions)
+        return Candidates(guesses, solutions)
     }
 
     override fun onCacheMissFilter(
@@ -64,37 +69,101 @@ class CodeEnumeratingGenerator(
         constraints: List<Constraint>,
         freshConstraints: List<Constraint>
     ): Candidates {
-        val solutions = candidates.solutions.asSequence()
-            .filter { code -> freshConstraints.all { it.allows(code, solutionPolicy) } }
-            .filter { code -> freshConstraints.all { it.candidate != code || it.correct } }
-            .toList()
+        val solutionsPair = generateSolutions(candidates.solutions, solutionsTruncated, constraints, freshConstraints)
+        val solutions = solutionsPair.first.take(solutionsPair.second).toList()
+        solutionsTruncated = solutionsPair.second == solutions.size
 
-        // TODO attempt to filter the cached guesses; requires determining if they
-        // were truncated, and only re-using if not
-        val guessSource = if (truncateAtProduct == 0 || solutions.isEmpty()) {
-            codeSequence()
-        } else {
-            codeSequence().take(truncateAtProduct / solutions.size)
-        }
+        val guessPair = generateGuesses(solutions, candidates.guesses, guessesTruncated, constraints, freshConstraints)
+        val guesses = guessPair.first.take(guessPair.second).toList()
+        guessesTruncated = guessPair.second == guesses.size
 
-        val guesses = guessSource
-            .filter { code -> freshConstraints.all { it.allows(code, guessPolicy) } }
-            .filter { code -> freshConstraints.all { it.candidate != code } }
-
-        return Candidates(guesses.toList(), solutions)
+        return Candidates(guesses, solutions)
     }
 
-    private fun codeSequence(): Sequence<String> {
-        val characters = if (shuffle) alphabet.shuffled(random) else alphabet
-        return generateSequence(0) { if (it < size - 1) it + 1 else null }
-            .map {
-                var num = it
-                var code = ""
-                for (i in (1..length)) {
-                    code = "${characters[num % characters.size]}$code"
-                    num /= characters.size
-                }
-                code
+    private fun generateSolutions(
+        solutions: Collection<String>?,
+        solutionsTruncated: Boolean,
+        constraints: List<Constraint>,
+        freshConstraints: List<Constraint>
+    ): Pair<Sequence<String>, Int> {
+        val genSequence: Sequence<String>
+        val genConstraints: List<Constraint>
+
+        if (solutions != null && !solutionsTruncated) {
+            genSequence = solutions.asSequence()
+            genConstraints = freshConstraints
+        } else {
+            genSequence = codeSequence(constraints, solutionPolicy)
+            genConstraints = constraints
+        }
+
+        val lengthLimit = if (truncateAtLength <= 0) Int.MAX_VALUE else truncateAtLength
+        val solutionList = genSequence
+            .filter { code -> genConstraints.all { it.allows(code, solutionPolicy) } }
+            .filter { code -> genConstraints.all { it.candidate != code || it.correct } }
+
+
+        return Pair(solutionList, lengthLimit)
+    }
+
+    private fun generateGuesses(
+        solutions: Collection<String>,
+        guesses: Collection<String>?,
+        guessesTruncated: Boolean,
+        constraints: List<Constraint>,
+        freshConstraints: List<Constraint>
+    ): Pair<Sequence<String>, Int> {
+        val lengthLimit = if (truncateAtLength <= 0) Int.MAX_VALUE else truncateAtLength
+        val productLimit = if (solutions.isEmpty() || truncateAtProduct == 0) {
+            Int.MAX_VALUE
+        } else {
+            truncateAtProduct / solutions.size
+        }
+        val guessLimit = min(lengthLimit, productLimit)
+
+        val guessSequence = if (guesses != null && !guessesTruncated) {
+            guesses.asSequence()
+                .filter { code -> freshConstraints.all { it.allows(code, guessPolicy) } }
+                .filter { code -> freshConstraints.all { it.candidate != code } }
+        } else {
+            // prefer guess variety and efficacy: if guessPolicy.isSupersetOf(solutionPolicy), all valid
+            // solutions are valid guesses. If the guessLimit is < solution.size then
+            // iterating the guess sequence will necessarily select a more homogenous set of
+            // guesses than simply sampling within the solution space.
+            sequence {
+                val solutionGuesses =
+                    if (!guessPolicy.isSupersetOf(solutionPolicy)) emptyList() else {
+                        solutions.shuffled(random).subList(0, min(guessLimit, solutions.size))
+                    }
+
+                yieldAll(solutionGuesses)
+                yieldAll(
+                    codeSequence(constraints, guessPolicy)
+                        .filter { code -> code !in solutionGuesses }
+                        .filter { code -> constraints.all { it.allows(code, guessPolicy) } }
+                        .filter { code -> constraints.all { it.candidate != code } }
+                )
             }
+        }
+
+        return Pair(guessSequence, guessLimit)
+    }
+
+    private fun codeSequence(
+        constraints: List<Constraint> = emptyList(),
+        constraintPolicy: ConstraintPolicy = ConstraintPolicy.IGNORE
+    ): Sequence<String> {
+        var subsequence = positionAlphabet[0].asSequence().map { "$it" }
+        for (i in 1 until length) {
+            subsequence = subsequence
+                .filter { subCode -> constraints.all { it.allows(subCode, constraintPolicy, true) } }
+                .flatMap { subCode ->
+                    positionAlphabet[(subCode.last().code + subCode.length) % positionAlphabet.size]
+                        .filter { char -> subCode.count { it == char } < maxOccurrences }
+                        .map { "$subCode$it" }
+                        .asSequence()
+                }
+        }
+        return subsequence
     }
 }

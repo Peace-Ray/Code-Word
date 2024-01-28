@@ -16,7 +16,7 @@ abstract class DailyGameTypeFactory(version: SeedVersion): GameTypeFactory, Vers
 
     companion object {
         private val cachedFactories: MutableMap<SeedVersion, DailyGameTypeFactory> = mutableMapOf()
-        private val defaultFactory = DailyGameTypeFactoryV1()
+        private val defaultFactory = DailyGameTypeFactoryV2()
 
         fun getFactory(seedVersion: SeedVersion): DailyGameTypeFactory {
             var factory = cachedFactories[seedVersion]
@@ -24,6 +24,7 @@ abstract class DailyGameTypeFactory(version: SeedVersion): GameTypeFactory, Vers
             if (factory == null) {
                 factory = when (seedVersion) {
                     SeedVersion.V1 -> DailyGameTypeFactoryV1()
+                    SeedVersion.V2 -> DailyGameTypeFactoryV2()
                 }
                 cachedFactories[seedVersion] = factory
             }

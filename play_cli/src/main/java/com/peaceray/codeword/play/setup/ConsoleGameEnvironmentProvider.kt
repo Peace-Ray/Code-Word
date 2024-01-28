@@ -7,6 +7,9 @@ import com.peaceray.codeword.game.bot.ModularSolver
 import com.peaceray.codeword.game.bot.modules.generation.CandidateGenerationModule
 import com.peaceray.codeword.game.bot.modules.generation.CascadingGenerator
 import com.peaceray.codeword.game.bot.modules.generation.enumeration.CodeEnumeratingGenerator
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.OneCodeEnumeratingGenerator
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.SolutionTruncatedEnumerationCodeGenerator
+import com.peaceray.codeword.game.bot.modules.generation.vocabulary.OneCodeGenerator
 import com.peaceray.codeword.game.bot.modules.generation.vocabulary.VocabularyFileGenerator
 import com.peaceray.codeword.game.bot.modules.scoring.InformationGainScorer
 import com.peaceray.codeword.game.bot.modules.scoring.KnuthMinimumInvertedScorer
@@ -17,7 +20,6 @@ import com.peaceray.codeword.game.bot.modules.selection.MinimumScoreSelector
 import com.peaceray.codeword.game.bot.modules.selection.RandomSelector
 import com.peaceray.codeword.game.bot.modules.selection.StochasticThresholdScoreSelector
 import com.peaceray.codeword.game.data.ConstraintPolicy
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvider
 import com.peaceray.codeword.game.validators.Validator
 import com.peaceray.codeword.game.validators.Validators
@@ -34,6 +36,8 @@ class ConsoleGameEnvironmentProvider {
     //region Provide Environment
     //---------------------------------------------------------------------------------------------
 
+    private var loopCount = 0
+
     fun getEnvironment(): ConsoleGameEnvironment {
         val settings = getSettings()
         return getEnvironment(settings)
@@ -49,12 +53,8 @@ class ConsoleGameEnvironmentProvider {
         val validator: Validator
         val generator: CandidateGenerationModule
         val secretGenerator: CandidateGenerationModule
-        val generatorSP = when(settings.difficulty.constraintFeedbackPolicy) {
-            ConstraintFeedbackPolicy.CHARACTER_MARKUP -> ConstraintPolicy.ALL
-            ConstraintFeedbackPolicy.AGGREGATED_MARKUP -> ConstraintPolicy.AGGREGATED
-            ConstraintFeedbackPolicy.COUNT_INCLUDED -> ConstraintPolicy.AGGREGATED_INCLUDED
-            ConstraintFeedbackPolicy.COUNT_EXACT -> ConstraintPolicy.AGGREGATED_EXACT
-        }
+        val cheaterSecretGenerator: CandidateGenerationModule
+        val generatorSP = settings.difficulty.feedbackPolicy
         val generatorGP = if (settings.difficulty.hard && generatorSP == ConstraintPolicy.ALL) {
             ConstraintPolicy.POSITIVE
         } else {
@@ -64,8 +64,9 @@ class ConsoleGameEnvironmentProvider {
 
         // game dimensions
         builder.length = settings.vocabulary.length
-        builder.rounds = when (settings.difficulty.constraintFeedbackPolicy) {
-            ConstraintFeedbackPolicy.CHARACTER_MARKUP -> 6
+        builder.rounds = when {
+            settings.difficulty.feedbackPolicy.isByLetter() -> 6
+            settings.vocabulary.length >= 8 -> 12
             else -> 10
         }
 
@@ -88,6 +89,7 @@ class ConsoleGameEnvironmentProvider {
                 )
             )
             secretGenerator = VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets-995.txt", generatorGP, generatorSP, filter = validator)
+            cheaterSecretGenerator = secretGenerator
         } else {
             validator = Validators.all(
                 Validators.alphabet(characters),
@@ -98,9 +100,26 @@ class ConsoleGameEnvironmentProvider {
                 characters,
                 settings.vocabulary.length,
                 generatorGP,
-                generatorSP
+                generatorSP,
+                maxOccurrences = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                shuffle = true,
+                truncateAtProduct = 5000000,
+                truncateAtLength = 50000
             )
-            secretGenerator = generator
+            secretGenerator = OneCodeEnumeratingGenerator(
+                characters,
+                settings.vocabulary.length,
+                maxOccurrences = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1
+            )
+            cheaterSecretGenerator = SolutionTruncatedEnumerationCodeGenerator(
+                characters,
+                settings.vocabulary.length,
+                generatorSP,
+                maxOccurrences = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                shuffle = true,
+                truncateAtSize = 5000000,
+                pretruncateAtSize = 5000000
+            )
         }
 
         // solver
@@ -119,11 +138,14 @@ class ConsoleGameEnvironmentProvider {
                 MaximumScoreSelector()
             )
             ConsoleGameSettings.Players.Guesser.REALISTIC_DECISION_TREE -> {
-                val commonWords = File("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets-90.txt")
-                    .readLines()
-                    .filter { it.isNotBlank() }
-                    .distinct()
-                val weightMap = commonWords.associateWith { if (it in commonWords) 10.0 else 1.0 }
+                val weightMap: Map<String, Double> = if (!settings.vocabulary.words) emptyMap() else {
+                    val commonWords = File("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets-90.txt")
+                        .readLines()
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                    commonWords.associateWith { if (it in commonWords) 10.0 else 1.0 }
+                }
+
                 ModularSolver(
                     generator,
                     InformationGainScorer(generatorSP) { weightMap[it] ?: 1.0 },
@@ -149,7 +171,7 @@ class ConsoleGameEnvironmentProvider {
             ConsoleGameSettings.Players.Keeper.CHEATING_BOT -> {
                 builder.rounds = 10000
                 ModularFlexibleEvaluator(
-                    secretGenerator,
+                    cheaterSecretGenerator,
                     KnuthMinimumInvertedScorer(ConstraintPolicy.ALL),
                     MinimumScoreSelector(solutions = true)
                 )
@@ -172,7 +194,7 @@ class ConsoleGameEnvironmentProvider {
                 setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED)
             )
         }
-        builder.constraintFeedbackPolicy = settings.difficulty.constraintFeedbackPolicy
+        builder.feedbackPolicy = settings.difficulty.feedbackPolicy
 
         return builder.build()
     }
@@ -181,6 +203,8 @@ class ConsoleGameEnvironmentProvider {
         val previousSettingsName = "previous"
         var settings = loadSettings(previousSettingsName)?.settings ?: ConsoleGameSettings()
 
+        if (--loopCount > 0) return settings
+
         // prepare basic prompts
         val mainOptionPrompts = mutableListOf (
             settings.vocabulary.toPromptOption(0),
@@ -188,7 +212,8 @@ class ConsoleGameEnvironmentProvider {
             settings.players.toPromptOption(2),
             PromptOption(3,"Play", setOf("play", "go", "now", "start", "begin")),
             PromptOption(4, "Print", hidden = true),
-            PromptOption(5, "List", setOf("games", "saves"), hidden = true)
+            PromptOption(5, "List", setOf("games", "saves"), hidden = true),
+            PromptOption(6, "Loop", setOf("iterate"), hidden = true)
         )
         val savedSettingsOffset = mainOptionPrompts.size
 
@@ -220,23 +245,15 @@ class ConsoleGameEnvironmentProvider {
                     val gameType = promptSelection(
                         "Vocabulary Type",
                         PromptOption(0, "Codes, e.g. 'AAAA', 'ACAF'"),
-                        PromptOption(
-                            1,
-                            "Words, e.g. 'tower', 'reach', 'roots'"
-                        ),
-                        PromptOption(2, "Words w/o letter repetition")
+                        PromptOption(1, "Words, e.g. 'tower', 'reach', 'roots'")
                     )
-                    val words = gameType > 0
-                    val repetitions = gameType != 2
+                    val words = gameType == 1
                     val length = promptInt(
-                        if (words) "Word length" else "Code length",
-                        3..12
+                        if (words) "Word length (3-12)" else "Code length (3-8)",
+                        if (words) 3..12 else 3..8
                     )
-                    val characterCount = if (words) 26 else promptInt(
-                        "Code chars ",
-                        3..12
-                    )
-
+                    val characterCount = if (words) 26 else promptInt("Code chars (3-12)", 3..12)
+                    val repetitions = promptBoolean("Allow letter repetitions")
                     settings = settings.with(ConsoleGameSettings.Vocabulary(words, length, characterCount, repetitions))
                 }
                 1 -> {
@@ -244,28 +261,28 @@ class ConsoleGameEnvironmentProvider {
                     val feedbackPolicy = promptSelection(
                         "Feedback type",
                         PromptOption(
-                            ConstraintFeedbackPolicy.CHARACTER_MARKUP,
+                            ConstraintPolicy.POSITIVE,
                             "Direct letter annotation",
                             setOf("word", "letter", "character")
                         ),
                         PromptOption(
-                            ConstraintFeedbackPolicy.AGGREGATED_MARKUP,
+                            ConstraintPolicy.AGGREGATED,
                             "Aggregated (exact/included) counts",
                             setOf("master", "counts")
                         ),
                         PromptOption(
-                            ConstraintFeedbackPolicy.COUNT_INCLUDED,
+                            ConstraintPolicy.AGGREGATED_INCLUDED,
                             "Included count",
                             setOf("j")
                         ),
                         PromptOption(
-                            ConstraintFeedbackPolicy.COUNT_EXACT,
+                            ConstraintPolicy.AGGREGATED_EXACT,
                             "Exact counts",
                             setOf("match")
                         )
                     )
 
-                    val hardMode = if (feedbackPolicy != ConstraintFeedbackPolicy.CHARACTER_MARKUP) false else promptBoolean(
+                    val hardMode = if (!feedbackPolicy.isByLetter()) false else promptBoolean(
                         "Hard mode"
                     )
 
@@ -360,6 +377,18 @@ class ConsoleGameEnvironmentProvider {
                     println("Paste the above text into a settings file, e.g. ${"exampleName".toFile().absolutePath},")
                     println("and replace the 'name' and 'aliases' properties.")
                     println()
+                }
+                5 -> {
+                    // list available games
+                    println("")
+                    println("Available game modes:")
+                    savedSettingsWrappers.forEach { println("  ${it.title}") }
+                }
+                6 -> {
+                    // loop
+                    loopCount = promptInt("Iterations", 2..1000)
+                    saveSettings(previousSettingsName, SettingsWrapper(previousSettingsName, setOf(), settings))
+                    return settings
                 }
                 else -> {
                     val savedSettings = savedSettingsWrappers[selection - savedSettingsOffset]
@@ -556,11 +585,14 @@ class ConsoleGameEnvironmentProvider {
 
     fun <T> ConsoleGameSettings.Difficulty.toPromptOption(value: T): PromptOption<T> {
         val elements = mutableListOf<String>()
-        when (constraintFeedbackPolicy) {
-            ConstraintFeedbackPolicy.CHARACTER_MARKUP -> elements.add("Per-letter feedback")
-            ConstraintFeedbackPolicy.AGGREGATED_MARKUP -> elements.add("Exact/Included counts")
-            ConstraintFeedbackPolicy.COUNT_INCLUDED -> elements.add("Included letter count")
-            ConstraintFeedbackPolicy.COUNT_EXACT -> elements.add("Exact letter count")
+        when (feedbackPolicy) {
+            ConstraintPolicy.IGNORE -> elements.add("No feedback")
+            ConstraintPolicy.AGGREGATED_EXACT -> elements.add("Exact letter count")
+            ConstraintPolicy.AGGREGATED_INCLUDED -> elements.add("Included letter count")
+            ConstraintPolicy.AGGREGATED -> elements.add("Exact/Included counts")
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> elements.add("Per-letter feedback")
         }
 
         if (hard) elements.add("Hard Mode")

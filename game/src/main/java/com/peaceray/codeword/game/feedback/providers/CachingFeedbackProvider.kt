@@ -1,27 +1,27 @@
 package com.peaceray.codeword.game.feedback.providers
 
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.Feedback
 import com.peaceray.codeword.game.feedback.FeedbackProvider
 
 abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: Int, val occurrences: IntRange): FeedbackProvider {
 
-    private var cachedInput: Pair<ConstraintFeedbackPolicy, List<Constraint>>? = null
+    private var cachedInput: Pair<ConstraintPolicy, List<Constraint>>? = null
     private var cachedOutput: Pair<Feedback, Map<Char, CharacterFeedback>>? = null
 
     override fun getFeedback(
-        policy: ConstraintFeedbackPolicy,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>
     ) = cachedGet(policy, constraints).first
 
     override fun getCharacterFeedback(
-        policy: ConstraintFeedbackPolicy,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>
     ) = cachedGet(policy, constraints).second
 
-    private fun cachedGet(policy: ConstraintFeedbackPolicy, constraints: List<Constraint>): Pair<Feedback, Map<Char, CharacterFeedback>> {
+    private fun cachedGet(policy: ConstraintPolicy, constraints: List<Constraint>): Pair<Feedback, Map<Char, CharacterFeedback>> {
         synchronized(this) {
             val previousInput = cachedInput
             cachedInput = Pair(policy, constraints)
@@ -51,7 +51,7 @@ abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: In
         }
     }
 
-    open fun initializeFeedback(policy: ConstraintFeedbackPolicy): Pair<Feedback, Map<Char, CharacterFeedback>> {
+    open fun initializeFeedback(policy: ConstraintPolicy): Pair<Feedback, Map<Char, CharacterFeedback>> {
         return Pair(
             Feedback(characters, length, occurrences),
             characters.associateWith { CharacterFeedback(it, occurrences) }
@@ -60,7 +60,7 @@ abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: In
 
     abstract fun constrainFeedback(
         feedback: Pair<Feedback, Map<Char, CharacterFeedback>>,
-        policy: ConstraintFeedbackPolicy,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>,
         freshConstraints: List<Constraint>
     ): Pair<Feedback, Map<Char, CharacterFeedback>>

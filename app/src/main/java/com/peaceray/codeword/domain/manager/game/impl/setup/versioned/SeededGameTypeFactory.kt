@@ -12,7 +12,7 @@ import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.Versi
 abstract class SeededGameTypeFactory(version: SeedVersion): GameTypeFactory, VersionedBySeed(version) {
     companion object {
         private val cachedFactories: MutableMap<SeedVersion, SeededGameTypeFactory> = mutableMapOf()
-        private val defaultFactory = SeededGameTypeFactoryV1()
+        private val defaultFactory = SeededGameTypeFactoryV2()
 
         fun getFactory(seedVersion: SeedVersion): SeededGameTypeFactory {
             var factory = cachedFactories[seedVersion]
@@ -20,6 +20,7 @@ abstract class SeededGameTypeFactory(version: SeedVersion): GameTypeFactory, Ver
             if (factory == null) {
                 factory = when (seedVersion) {
                     SeedVersion.V1 -> SeededGameTypeFactoryV1()
+                    SeedVersion.V2 -> SeededGameTypeFactoryV2()
                 }
                 cachedFactories[seedVersion] = factory
             }

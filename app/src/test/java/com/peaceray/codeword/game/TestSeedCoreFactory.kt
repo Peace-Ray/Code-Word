@@ -6,12 +6,10 @@ import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedC
 import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedFactoryEncoder
 import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.data.ConstraintPolicy
-import com.peaceray.codeword.random.ConsistentRandom
 import com.peaceray.codeword.utils.extensions.toFakeB58
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.Calendar
-import kotlin.math.max
 
 
 /**
@@ -278,16 +276,29 @@ class TestSeedCoreFactory {
     private val factory = SeedCoreFactory()
 
     // note: update this value to match changes in SeedCoreFactory
-    private val defaultVersion = SeedVersion.V1
+    private val defaultVersion = SeedVersion.V2
 
     // do not change after launch w/o building compensation for legacy values
     private val firstDaily: Calendar = Calendar.getInstance()
     private val dailyRandomSeedA = 51202493L
     private val dailyRandomSeedB = 487145950223L
 
+    private val seedVersionFirstDaily: Map<SeedVersion, Calendar>
+
     init {
         // Remember that months begin at 0 = January
         firstDaily.set(2024, 0, 22)     // January 22, 2024
+
+        fun calendarFor(year: Int, month: Int, date: Int): Calendar {
+            val cal = Calendar.getInstance()
+            cal.set(year, month, date)
+            return cal
+        }
+
+        seedVersionFirstDaily = mapOf(
+            Pair(SeedVersion.V1, firstDaily),
+            Pair(SeedVersion.V2, calendarFor(2024, 1, 12))      // February 12th, 2024
+        )
     }
 
     //region SeedCoreFactory: Test Helpers
@@ -328,7 +339,7 @@ class TestSeedCoreFactory {
     private fun createGameSetup(daily: Boolean, randomSeed: Long, version: Int) = GameSetup(
         GameSetup.Board(6),
         GameSetup.Evaluation(ConstraintPolicy.POSITIVE),
-        GameSetup.Vocabulary(CodeLanguage.ENGLISH, GameSetup.Vocabulary.VocabularyType.LIST, 6, 26),
+        GameSetup.Vocabulary(CodeLanguage.ENGLISH, GameSetup.Vocabulary.VocabularyType.LIST, 6, 26, 6),
         GameSetup.Solver.PLAYER,
         GameSetup.Evaluator.HONEST,
         randomSeed = randomSeed,
@@ -396,11 +407,19 @@ class TestSeedCoreFactory {
 
     @Test
     fun factory_getSeedVersionInteger_daily() {
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#1"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#12"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#156"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#8766"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#500"))
+        assertEquals(SeedVersion.V1.numberEncoding, factory.getSeedVersionInteger("#1"))
+        assertEquals(SeedVersion.V1.numberEncoding, factory.getSeedVersionInteger("#12"))
+        assertEquals(SeedVersion.V2.numberEncoding, factory.getSeedVersionInteger("#156"))
+        assertEquals(SeedVersion.V2.numberEncoding, factory.getSeedVersionInteger("#500"))
+        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#87660"))
+    }
+
+    @Test
+    fun factory_getSeedVersionInteger_daily_transitionV2() {
+        assertEquals(SeedVersion.V1.numberEncoding, factory.getSeedVersionInteger("#20"))
+        assertEquals(SeedVersion.V1.numberEncoding, factory.getSeedVersionInteger("#21"))
+        assertEquals(SeedVersion.V2.numberEncoding, factory.getSeedVersionInteger("#22"))
+        assertEquals(SeedVersion.V2.numberEncoding, factory.getSeedVersionInteger("#23"))
     }
 
     @Test
@@ -456,11 +475,19 @@ class TestSeedCoreFactory {
 
     @Test
     fun factory_getSeedVersion_daily() {
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#1"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#12"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#156"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#8766"))
-        assertEquals(defaultVersion.numberEncoding, factory.getSeedVersionInteger("#500"))
+        assertEquals(SeedVersion.V1, factory.getSeedVersion("#1"))
+        assertEquals(SeedVersion.V1, factory.getSeedVersion("#12"))
+        assertEquals(SeedVersion.V2, factory.getSeedVersion("#156"))
+        assertEquals(SeedVersion.V2, factory.getSeedVersion("#500"))
+        assertEquals(defaultVersion, factory.getSeedVersion("#87660"))
+    }
+
+    @Test
+    fun factory_getSeedVersion_daily_transitionV2() {
+        assertEquals(SeedVersion.V1, factory.getSeedVersion("#20"))
+        assertEquals(SeedVersion.V1, factory.getSeedVersion("#21"))
+        assertEquals(SeedVersion.V2, factory.getSeedVersion("#22"))
+        assertEquals(SeedVersion.V2, factory.getSeedVersion("#23"))
     }
 
     @Test

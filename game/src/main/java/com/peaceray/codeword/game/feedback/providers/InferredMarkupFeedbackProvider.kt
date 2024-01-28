@@ -1,8 +1,8 @@
 package com.peaceray.codeword.game.feedback.providers
 
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.Feedback
 import java.lang.UnsupportedOperationException
 import kotlin.math.max
@@ -56,29 +56,29 @@ class InferredMarkupFeedbackProvider(
          */
         INFERRED_ELIMINATION;
 
-        // TODO more markup policies, e.g. INDIRECT_* that check candidates and occurrences lists, not just Constraint responses.
-
         companion object {
             val directPolicies = setOf(DIRECT, DIRECT_ELIMINATION)
             val inferredPolicies = setOf(INFERRED, INFERRED_ELIMINATION)
         }
     }
 
-    override fun supports(policy: ConstraintFeedbackPolicy) = policy in setOf(
-        ConstraintFeedbackPolicy.CHARACTER_MARKUP,
-        ConstraintFeedbackPolicy.AGGREGATED_MARKUP,
-        ConstraintFeedbackPolicy.COUNT_EXACT,
-        ConstraintFeedbackPolicy.COUNT_INCLUDED
+    override fun supports(policy: ConstraintPolicy) = policy in setOf(
+        ConstraintPolicy.PERFECT,
+        ConstraintPolicy.ALL,
+        ConstraintPolicy.POSITIVE,
+        ConstraintPolicy.AGGREGATED,
+        ConstraintPolicy.AGGREGATED_EXACT,
+        ConstraintPolicy.AGGREGATED_INCLUDED
     )
 
     override fun constrainFeedback(
         feedback: Pair<Feedback, Map<Char, CharacterFeedback>>,
-        policy: ConstraintFeedbackPolicy,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>,
         freshConstraints: List<Constraint>
     ): Pair<Feedback, Map<Char, CharacterFeedback>> {
         if (!supports(policy)) {
-            throw UnsupportedOperationException("Cannot provide feedback for policy ${policy}")
+            throw UnsupportedOperationException("Cannot provide feedback for policy $policy")
         }
 
         // make mutable
@@ -112,18 +112,21 @@ class InferredMarkupFeedbackProvider(
     private fun constrainCandidatesAndOccurrences(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
-        policy: ConstraintFeedbackPolicy,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>
     ): Boolean {
         val f: (c: Constraint) -> Boolean = when (policy) {
-            ConstraintFeedbackPolicy.CHARACTER_MARKUP ->
+            ConstraintPolicy.PERFECT,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.POSITIVE ->
                 { c: Constraint -> constrainCandidatesAndOccurrencesCharacterMarkup(candidates, occurrences, c) }
-            ConstraintFeedbackPolicy.AGGREGATED_MARKUP ->
+            ConstraintPolicy.AGGREGATED ->
                 { c: Constraint -> constrainCandidatesAndOccurrencesAggregatedMarkup(candidates, occurrences, c) }
-            ConstraintFeedbackPolicy.COUNT_INCLUDED ->
+            ConstraintPolicy.AGGREGATED_INCLUDED ->
                 { c: Constraint -> constrainCandidatesAndOccurrencesCountIncluded(candidates, occurrences, c) }
-            ConstraintFeedbackPolicy.COUNT_EXACT ->
+            ConstraintPolicy.AGGREGATED_EXACT ->
                 { c: Constraint -> constrainCandidatesAndOccurrencesCountExact(candidates, occurrences, c) }
+            ConstraintPolicy.IGNORE -> { _: Constraint -> false }
         }
 
         return constraints.fold(false) { changed, c -> f(c) || changed }
@@ -159,19 +162,19 @@ class InferredMarkupFeedbackProvider(
 
             val range = occurrences[c] ?: 0..0
             val bounded = range.bound(
-                // minimum: number of exact and included markup, or number of exact candidates so far
-                minimum = setOf(eiCount, candidates.count { it.size == 1 && c in it }),
-                // maximum: number of direct and included markup if NO appears, number of possible candidates so far
-                maximum = setOf(
-                    if (eiCount == cZipped.size) range.last else eiCount,
-                    candidates.count { c in it }
-                )
+                // minimum: number of exact and included markup
+                minimum = setOf(eiCount),
+                // maximum: number of direct and included markup if NO appears
+                maximum = setOf(if (eiCount == cZipped.size) range.last else eiCount)
             )
             if (range.first != bounded.first || range.last != bounded.last) {
                 occurrences[c] = bounded
                 changed = true
             }
         }
+
+        // allow new occurrences and candidates to constrain each other
+        if (changed) constrainCandidatesAndOccurrences(candidates, occurrences)
 
         return changed
     }
@@ -244,12 +247,15 @@ class InferredMarkupFeedbackProvider(
             necessaryChars.forEach { char ->
                 val otherExactCount = pos.count { index ->
                     val otherChar = word[index]
-                    otherChar != char && candidates[index].size == 1 && char in candidates[index]
+                    otherChar != char && candidates[index].size == 1 && otherChar in candidates[index]
                 }
                 if (constraint.exact == otherExactCount) {
                     // If "constraint.exact" can be fully explained by other letters, this char must not
                     // appear at any current position.
-                    pos.filter { word[it] == char }.forEach { if (candidates[it].remove(char)) changed = true }
+                    pos.filter { word[it] == char }
+                        .forEach { if (candidates[it].remove(char)) {
+                            changed = true
+                        } }
                 }
 
                 if (constraint.included == 0) {
@@ -271,23 +277,22 @@ class InferredMarkupFeedbackProvider(
             characters.forEach { char ->
                 val range = occurrences[char] ?: 0..0
                 val boundedRange = range.bound(
-                    // minimum bounds: the number of known candidate positions,
-                    // and the number of exact or included matches remaining after other letters are accounted for
+                    // minimum bounds: the number of exact or included matches remaining after other letters are accounted for
                     minimum = setOf(
-                        candidates.count { char in it && it.size == 1 },
                         (constraint.exact + constraint.included) - constraint.candidate.count { c -> c != char }
                     ),
                     // maximum bounds: the number of possible candidate positions,
                     // the non-exact count if the letter does not occur
-                    maximum = setOf(
-                        candidates.count { char in it },
-                        if (constraint.candidate.count { it == char } != 0) length else noCount
-                    )
+                    maximum = setOf(if (constraint.candidate.count { it == char } != 0) length else noCount)
                 )
-                occurrences[char] = boundedRange
-
-                changed = range.first != boundedRange.first || range.last != boundedRange.last
+                if (range.first != boundedRange.first || range.last != boundedRange.last) {
+                    occurrences[char] = boundedRange
+                    changed = true
+                }
             }
+
+            // allow new occurrences and candidates to constrain each other
+            if (changed) constrainCandidatesAndOccurrences(candidates, occurrences)
 
             // Note: we have strictly more information than the IncludedCount and ExactCount cases,
             // so performing their calculations is appropriate here to consider analysis we skipped.
@@ -382,6 +387,10 @@ class InferredMarkupFeedbackProvider(
                     }
                 }
             }
+
+            // allow new occurrences and candidates to constrain each other
+            if (changed) constrainCandidatesAndOccurrences(candidates, occurrences)
+
             everChanged = everChanged || changed
         } while (changed)
 
@@ -410,7 +419,9 @@ class InferredMarkupFeedbackProvider(
             if (ePos.size == constraint.exact) {
                 pos.filter { i -> i !in ePos }.forEach { i ->
                     val char = constraint.candidate[i]
-                    if (candidates[i].remove(char)) changed = true
+                    if (candidates[i].remove(char)) {
+                        changed = true
+                    }
                 }
             }
 
@@ -421,8 +432,10 @@ class InferredMarkupFeedbackProvider(
             if (nPos.size == noCount) {
                 pos.filter { i -> i !in nPos }.forEach { i ->
                     val char = constraint.candidate[i]
-                    if (candidates[i].size != 1) changed = true
-                    candidates[i] = mutableSetOf(char)
+                    if (candidates[i].size != 1) {
+                        changed = true
+                        candidates[i] = mutableSetOf(char)
+                    }
                 }
             }
 
@@ -430,22 +443,71 @@ class InferredMarkupFeedbackProvider(
             characters.forEach { char ->
                 val range = occurrences[char] ?: 0..0
                 val boundedRange = range.bound(
-                    // minimum bounds: the number of known candidate positions,
-                    // and the number of "exact" matches remaining after other letters are accounted for
-                    minimum = setOf(
-                        candidates.count { char in it && it.size == 1 },
-                        constraint.exact - constraint.candidate.count { c -> c != char }
-                    ),
-                    // maximum bounds: the number of possible candidate positions,
-                    // the non-exact count if the letter does not occur
-                    maximum = setOf(
-                        candidates.count { char in it },
-                        if (constraint.candidate.count { it == char } != 0) length else noCount
-                    )
+                    // minimum bounds: the number of "exact" matches remaining after other letters are accounted for
+                    minimum = setOf(constraint.exact - constraint.candidate.count { c -> c != char }),
+                    // maximum bounds: the non-exact count if the letter does not occur
+                    maximum = setOf(if (constraint.candidate.count { it == char } != 0) length else noCount)
                 )
-                occurrences[char] = boundedRange
 
-                changed = range.first != boundedRange.first || range.last != boundedRange.last
+                if (range.first != boundedRange.first || range.last != boundedRange.last) {
+                    occurrences[char] = boundedRange
+                    changed = true
+                }
+            }
+
+            // allow new occurrences and candidates to constrain each other
+            if (changed) constrainCandidatesAndOccurrences(candidates, occurrences)
+
+            everChanged = everChanged || changed
+        } while (changed)
+
+        return everChanged
+    }
+
+    /**
+     * Constraint candidates based on occurrences, and occurrences based on candidates.
+     * For instance, the number of known exact positions is a lower-bound on occurrences,
+     * while the number of possible positions is an upper bound. Similarly, if the number
+     * of confirmed positions meets the upper occurrences bound, then the character is not
+     * a candidate for any other position.
+     */
+    private fun constrainCandidatesAndOccurrences(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>
+    ): Boolean {
+        var everChanged = false
+        var changed: Boolean
+        do {
+            changed = false
+
+            // update occurrences based on candidates
+            for (char in characters) {
+                val range = occurrences[char] ?: 0..0
+                val boundedRange = range.bound(
+                    minimum = setOf( candidates.count { char in it && it.size == 1 } ),
+                    maximum = setOf( candidates.count { char in it } )
+                )
+                if (range.first != boundedRange.first || range.last != boundedRange.last) {
+                    occurrences[char] = boundedRange
+                    changed = true
+                }
+            }
+
+            // update candidates based on occurrences
+            for (char in characters) {
+                val range = occurrences[char] ?: 0..0
+                val (exactPos, inexactPos) = candidates.indices
+                    .filter { char in candidates[it] }
+                    .partition { candidates[it].size == 1 }
+                if (exactPos.size >= range.last && inexactPos.size > 1) {
+                    // all positions are known; remove from inexact
+                    inexactPos.forEach { candidates[it].remove(char) }
+                    changed = true
+                } else if (inexactPos.isNotEmpty() && inexactPos.size <= range.first - exactPos.size) {
+                    // all inexact positions must be this character
+                    inexactPos.forEach { candidates[it] = mutableSetOf(char) }
+                    changed = true
+                }
             }
 
             everChanged = everChanged || changed
@@ -458,13 +520,13 @@ class InferredMarkupFeedbackProvider(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
         markups: MutableMap<Char, Constraint.MarkupType?>,
-        constraintFeedbackPolicy: ConstraintFeedbackPolicy,
+        constraintFeedbackPolicy: ConstraintPolicy,
         constraints: List<Constraint>
     ): Boolean {
         var changed = false
 
         // apply explicitly indicated markup as indicated by markup policy
-        if (constraintFeedbackPolicy == ConstraintFeedbackPolicy.CHARACTER_MARKUP
+        if (constraintFeedbackPolicy.isByLetter()
             && markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()) {
 
             constraints.forEach { constraint ->
@@ -490,7 +552,7 @@ class InferredMarkupFeedbackProvider(
         }
 
         // DIRECT ELIMINATION: if a constraint has all NOs, eliminate all candidates.
-        if (constraintFeedbackPolicy != ConstraintFeedbackPolicy.COUNT_EXACT
+        if ((constraintFeedbackPolicy.isByLetter() || constraintFeedbackPolicy in setOf(ConstraintPolicy.AGGREGATED, ConstraintPolicy.AGGREGATED_INCLUDED))
             && markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()) {
 
             constraints.forEach { constraint ->
@@ -507,6 +569,8 @@ class InferredMarkupFeedbackProvider(
             }
         }
 
+
+
         // INFERRED MARKUP
         if (markupPolicies.intersect(MarkupPolicy.inferredPolicies).isNotEmpty()) {
             // elimination: any character with a max of 0 occurrences is marked NO
@@ -522,16 +586,19 @@ class InferredMarkupFeedbackProvider(
                 occurrences.filter { it.value.first > 0 }.keys.forEach { c ->
                     // a letter that definitely appears. but should it be EXACT or INCLUDED?
                     val oMarkup = when (constraintFeedbackPolicy) {
-                        ConstraintFeedbackPolicy.CHARACTER_MARKUP,
-                        ConstraintFeedbackPolicy.AGGREGATED_MARKUP -> {
+                        ConstraintPolicy.PERFECT,
+                        ConstraintPolicy.ALL,
+                        ConstraintPolicy.POSITIVE,
+                        ConstraintPolicy.AGGREGATED -> {
                             if (candidates.any { it.size == 1 && c in it }) {
                                 Constraint.MarkupType.EXACT
                             } else {
                                 Constraint.MarkupType.INCLUDED
                             }
                         }
-                        ConstraintFeedbackPolicy.COUNT_INCLUDED -> Constraint.MarkupType.INCLUDED
-                        ConstraintFeedbackPolicy.COUNT_EXACT -> Constraint.MarkupType.EXACT
+                        ConstraintPolicy.AGGREGATED_INCLUDED -> Constraint.MarkupType.INCLUDED
+                        ConstraintPolicy.AGGREGATED_EXACT -> Constraint.MarkupType.EXACT
+                        ConstraintPolicy.IGNORE -> null
                     }
 
                     val cMarkup = markups[c]

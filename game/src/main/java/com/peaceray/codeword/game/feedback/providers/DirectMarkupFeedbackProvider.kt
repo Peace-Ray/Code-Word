@@ -1,8 +1,8 @@
 package com.peaceray.codeword.game.feedback.providers
 
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
-import com.peaceray.codeword.game.feedback.ConstraintFeedbackPolicy
 import com.peaceray.codeword.game.feedback.Feedback
 import kotlin.math.max
 import kotlin.math.min
@@ -25,11 +25,15 @@ class DirectMarkupFeedbackProvider(
     maxOccurrences: Int = length
 ): CachingFeedbackProvider(characters, length, 0..maxOccurrences) {
 
-    override fun supports(policy: ConstraintFeedbackPolicy) = policy == ConstraintFeedbackPolicy.CHARACTER_MARKUP
+    override fun supports(policy: ConstraintPolicy) = policy in setOf(
+        ConstraintPolicy.POSITIVE,
+        ConstraintPolicy.ALL,
+        ConstraintPolicy.PERFECT
+    )
 
     override fun constrainFeedback(
         feedback: Pair<Feedback, Map<Char, CharacterFeedback>>,
-        policy: ConstraintFeedbackPolicy,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>,
         freshConstraints: List<Constraint>
     ): Pair<Feedback, Map<Char, CharacterFeedback>> {
