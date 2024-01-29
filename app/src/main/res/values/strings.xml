@@ -188,6 +188,7 @@
     <string name="game_info_puzzle_new_button">New Puzzle</string>
     <string name="game_info_explanation_unlimited">Guess the secret %1$s: type a %3$d-letter %2$s and press the ✔ button.</string>
     <string name="game_info_explanation">Guess the secret %1$s in %4$d tries: type a %3$d-letter %2$s and press the ✔ button.</string>
+    <string name="game_info_explanation_short">Guess the secret %1$s: type a %2$s and press the ✔ button.</string>
     <string name="game_info_explanation_feedback_by_letter">Each letter is marked to show how close your guess was to the secret.</string>
     <string name="game_info_explanation_feedback_aggregated">Your guess is marked to show how close it was to the secret.</string>
     <string name="game_info_explanation_feedback_aggregated_included">Your guess is marked with the number of letters, in any position, it shares with the secret.</string>

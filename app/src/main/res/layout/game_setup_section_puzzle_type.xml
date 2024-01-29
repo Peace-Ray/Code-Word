@@ -55,7 +55,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="start"
-        android:minHeight="@dimen/setup_control_height"
+        android:minHeight="@dimen/setup_control_height_short"
         android:paddingTop="@dimen/setup_control_spacing_half"
         android:paddingBottom="@dimen/setup_control_spacing_half"
         >
@@ -82,7 +82,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="start"
-        android:minHeight="@dimen/setup_control_height"
+        android:minHeight="@dimen/setup_control_height_short"
         android:paddingTop="@dimen/setup_control_spacing_half"
         android:paddingBottom="@dimen/setup_control_spacing_half"
         >

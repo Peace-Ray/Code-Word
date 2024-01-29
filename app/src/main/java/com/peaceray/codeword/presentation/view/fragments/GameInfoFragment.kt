@@ -386,7 +386,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
     }
 
     private fun getLegendMarkupLetters(gameSetup: GameSetup, constraint: Constraint): Map<Constraint.MarkupType, List<Char>> {
-        val zipped = legendConstraint.candidate.toList().zip(legendConstraint.markup)
+        val zipped = constraint.candidate.toList().zip(constraint.markup)
         var exactLetters: List<Char> = emptyList()
         var includedLetters: List<Char> = emptyList()
         var noLetters: List<Char>
@@ -743,10 +743,10 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         puzzleTypeViewHolder.bind(review = review)
 
         // set values top to bottom
-        val gameInfoExplanation = if (gameSetup.board.rounds in 1..100) {
-            getString(R.string.game_info_explanation, templateLanguageCode, templateCode, gameSetup.vocabulary.length, gameSetup.board.rounds)
-        } else {
-            getString(R.string.game_info_explanation_unlimited, templateLanguageCode, templateCode, gameSetup.vocabulary.length)
+        val gameInfoExplanation = when {
+            gameSetup.vocabulary.length > 9 -> getString(R.string.game_info_explanation_short, templateLanguageCode, templateCode)
+            gameSetup.board.rounds in 1..100 -> getString(R.string.game_info_explanation, templateLanguageCode, templateCode, gameSetup.vocabulary.length, gameSetup.board.rounds)
+            else -> getString(R.string.game_info_explanation_unlimited, templateLanguageCode, templateCode, gameSetup.vocabulary.length)
         }
         val gameFeedbackExplanation = when (gameSetup.evaluation.type) {
             ConstraintPolicy.AGGREGATED_EXACT -> getString(R.string.game_info_explanation_feedback_aggregated_exact)
