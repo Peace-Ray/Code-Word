@@ -3,19 +3,20 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="@dimen/guess_letter_cell_size_estimate"
-    android:layout_height="@dimen/guess_letter_cell_size_estimate"
+    android:layout_width="@dimen/guess_letter_cell_full_size_estimate"
+    android:layout_height="@dimen/guess_letter_cell_full_size_estimate"
+    android:background="#00ffff"
     >
 
     <com.peaceray.codeword.presentation.view.component.views.PipGridLayout
         android:id="@+id/pipGridLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="@dimen/guess_letter_cell_margin"
+        android:padding="@dimen/guess_letter_cell_full_margin"
         android:layout_gravity="center"
-        app:pipLayoutFor2x2="@layout/cell_pip"
-        app:pipLayoutFor3x3="@layout/cell_pip_medium"
-        app:pipLayoutFor4x4="@layout/cell_pip_small"
+        app:pipLayoutFor2x2="@layout/cell_pip_full"
+        app:pipLayoutFor3x3="@layout/cell_pip_large"
+        app:pipLayoutFor4x4="@layout/cell_pip_medium"
         />
 
     <ImageView

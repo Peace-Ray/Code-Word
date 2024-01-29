@@ -7,6 +7,7 @@ interface CellLayout {
 
     enum class SizeCategory {
         FULL,
+        LARGE,
         MEDIUM,
         SMALL,
         TINY

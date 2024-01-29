@@ -48,7 +48,7 @@ class PipGridLayout: GridLayout {
 
     //region Pip Properties
     //---------------------------------------------------------------------------------------------
-    @LayoutRes var pipLayoutFor2x2: Int = R.layout.cell_pip
+    @LayoutRes var pipLayoutFor2x2: Int = R.layout.cell_pip_large
         set(value) {
             if (field != value) {
                 field = value

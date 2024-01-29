@@ -11,7 +11,7 @@ open class GuessAggregatedCountsAppearance(context: Context): GuessAggregatedApp
     private val dimenPipElevation: Float
 
     init {
-        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_elevation)
+        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_large_elevation)
     }
 
     override fun getColorFill(

@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="@dimen/guess_letter_cell_tiny_size_estimate"
     android:layout_height="@dimen/guess_letter_cell_tiny_size_estimate"
+    android:background="#8080ff"
     >
 
     <com.peaceray.codeword.presentation.view.component.views.PipGridLayout

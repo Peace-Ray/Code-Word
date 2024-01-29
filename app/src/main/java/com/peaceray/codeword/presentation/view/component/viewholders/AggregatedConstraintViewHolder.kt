@@ -5,7 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.core.view.children
-import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
@@ -13,7 +12,6 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
-import com.peaceray.codeword.utils.extensions.toLifecycleOwner
 
 class AggregatedConstraintViewHolder(
     itemView: View,
@@ -23,7 +21,7 @@ class AggregatedConstraintViewHolder(
 
     //region View
     //---------------------------------------------------------------------------------------------
-    @LayoutRes var layoutId: Int = R.layout.cell_pip
+    @LayoutRes var layoutId: Int = R.layout.cell_pip_large
 
     private val constraintContainer: ViewGroup = itemView.findViewById(R.id.constraintContainer)
     private val constraintPipViews = mutableListOf<View>()
@@ -37,7 +35,7 @@ class AggregatedConstraintViewHolder(
         }
 
         val context = itemView.context
-        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_elevation)
+        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_large_elevation)
     }
     //---------------------------------------------------------------------------------------------
     //endregion

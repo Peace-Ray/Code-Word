@@ -21,7 +21,7 @@
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="0dp"
         app:cardElevation="0dp"
-        app:strokeWidth="@dimen/guess_letter_cell_stroke_width"
+        app:strokeWidth="@dimen/guess_letter_cell_large_stroke_width"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
         android:paddingStart="12dp"

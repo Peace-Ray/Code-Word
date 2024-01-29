@@ -11,8 +11,6 @@ import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedExactAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
 import com.peaceray.codeword.presentation.view.component.views.PipGridLayout
 
 class GuessAggregatedPipGridViewHolder(
@@ -31,7 +29,7 @@ class GuessAggregatedPipGridViewHolder(
 
     init {
         val context = itemView.context
-        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_elevation)
+        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_large_elevation)
     }
     //---------------------------------------------------------------------------------------------
     //endregion

@@ -13,7 +13,8 @@ data class GuessAggregateConstraintCellLayout(
     companion object {
         fun create(resources: Resources, @Dimension widthPerCell: Float = Float.MAX_VALUE): GuessAggregateConstraintCellLayout {
             val sizeCategory = when {
-                widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_size_estimate) -> CellLayout.SizeCategory.FULL
+                widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_full_size_estimate) -> CellLayout.SizeCategory.FULL
+                widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_large_size_estimate) -> CellLayout.SizeCategory.LARGE
                 widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_medium_size_estimate) -> CellLayout.SizeCategory.MEDIUM
                 widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_small_size_estimate) -> CellLayout.SizeCategory.SMALL
                 else -> CellLayout.SizeCategory.TINY
@@ -24,8 +25,13 @@ data class GuessAggregateConstraintCellLayout(
         fun create(resources: Resources, sizeCategory: CellLayout.SizeCategory) = when (sizeCategory) {
             CellLayout.SizeCategory.FULL -> GuessAggregateConstraintCellLayout(
                 sizeCategory = CellLayout.SizeCategory.FULL,
-                layoutId = R.layout.cell_aggregate_constraint_grid,
-                size = resources.getDimension(R.dimen.guess_letter_cell_size)
+                layoutId = R.layout.cell_aggregate_constraint_grid_full,
+                size = resources.getDimension(R.dimen.guess_letter_cell_full_size)
+            )
+            CellLayout.SizeCategory.LARGE -> GuessAggregateConstraintCellLayout(
+                sizeCategory = CellLayout.SizeCategory.LARGE,
+                layoutId = R.layout.cell_aggregate_constraint_grid_large,
+                size = resources.getDimension(R.dimen.guess_letter_cell_large_size)
             )
             CellLayout.SizeCategory.MEDIUM -> GuessAggregateConstraintCellLayout(
                 sizeCategory = CellLayout.SizeCategory.MEDIUM,

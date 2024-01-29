@@ -16,7 +16,8 @@ data class GuessLetterCellLayout(
     companion object {
         fun create(resources: Resources, @Dimension widthPerCell: Float = Float.MAX_VALUE): GuessLetterCellLayout {
             val sizeCategory = when {
-                widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_size_estimate) -> CellLayout.SizeCategory.FULL
+                widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_full_size_estimate) -> CellLayout.SizeCategory.FULL
+                widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_large_size_estimate) -> CellLayout.SizeCategory.LARGE
                 widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_medium_size_estimate) -> CellLayout.SizeCategory.MEDIUM
                 widthPerCell >= resources.getDimension(R.dimen.guess_letter_cell_small_size_estimate) -> CellLayout.SizeCategory.SMALL
                 else -> CellLayout.SizeCategory.TINY
@@ -27,11 +28,19 @@ data class GuessLetterCellLayout(
         fun create(resources: Resources, sizeCategory: CellLayout.SizeCategory) = when (sizeCategory) {
             CellLayout.SizeCategory.FULL -> GuessLetterCellLayout(
                 sizeCategory = CellLayout.SizeCategory.FULL,
-                layoutId = R.layout.cell_letter,
-                size = resources.getDimension(R.dimen.guess_letter_cell_size),
-                strokeWidth = resources.getDimension(R.dimen.guess_letter_cell_stroke_width),
-                cornerRadius = resources.getDimension(R.dimen.guess_letter_cell_corner_radius),
-                elevation = resources.getDimension(R.dimen.guess_letter_cell_elevation)
+                layoutId = R.layout.cell_letter_full,
+                size = resources.getDimension(R.dimen.guess_letter_cell_full_size),
+                strokeWidth = resources.getDimension(R.dimen.guess_letter_cell_full_stroke_width),
+                cornerRadius = resources.getDimension(R.dimen.guess_letter_cell_full_corner_radius),
+                elevation = resources.getDimension(R.dimen.guess_letter_cell_full_elevation)
+            )
+            CellLayout.SizeCategory.LARGE -> GuessLetterCellLayout(
+                sizeCategory = CellLayout.SizeCategory.LARGE,
+                layoutId = R.layout.cell_letter_large,
+                size = resources.getDimension(R.dimen.guess_letter_cell_large_size),
+                strokeWidth = resources.getDimension(R.dimen.guess_letter_cell_large_stroke_width),
+                cornerRadius = resources.getDimension(R.dimen.guess_letter_cell_large_corner_radius),
+                elevation = resources.getDimension(R.dimen.guess_letter_cell_large_elevation)
             )
             CellLayout.SizeCategory.MEDIUM -> GuessLetterCellLayout(
                 sizeCategory = CellLayout.SizeCategory.MEDIUM,

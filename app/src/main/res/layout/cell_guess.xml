@@ -10,10 +10,10 @@
     android:gravity="center"
     >
 
-    <include layout="@layout/cell_letter"/>
-    <include layout="@layout/cell_letter"/>
-    <include layout="@layout/cell_letter"/>
-    <include layout="@layout/cell_letter"/>
-    <include layout="@layout/cell_letter"/>
+    <include layout="@layout/cell_letter_large"/>
+    <include layout="@layout/cell_letter_large"/>
+    <include layout="@layout/cell_letter_large"/>
+    <include layout="@layout/cell_letter_large"/>
+    <include layout="@layout/cell_letter_large"/>
 
 </LinearLayout>

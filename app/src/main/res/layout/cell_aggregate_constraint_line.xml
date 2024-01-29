@@ -11,10 +11,10 @@
     android:paddingBottom="@dimen/aggregate_markup_margin_bottom"
     >
 
-    <include layout="@layout/cell_pip"/>
-    <include layout="@layout/cell_pip"/>
-    <include layout="@layout/cell_pip"/>
-    <include layout="@layout/cell_pip"/>
-    <include layout="@layout/cell_pip"/>
+    <include layout="@layout/cell_pip_large"/>
+    <include layout="@layout/cell_pip_large"/>
+    <include layout="@layout/cell_pip_large"/>
+    <include layout="@layout/cell_pip_large"/>
+    <include layout="@layout/cell_pip_large"/>
 
 </LinearLayout>

@@ -23,7 +23,6 @@ import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCell
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterMarkupAppearance
 import com.peaceray.codeword.utils.extensions.view.setScale
-import timber.log.Timber
 import kotlin.random.Random
 
 class GuessLetterViewHolder(
@@ -58,8 +57,8 @@ class GuessLetterViewHolder(
 
         val context = itemView.context
 
-        dimenCardElevation = context.resources.getDimension(R.dimen.guess_letter_cell_elevation)
-        dimenCardRadius = context.resources.getDimension(R.dimen.guess_letter_cell_corner_radius)
+        dimenCardElevation = context.resources.getDimension(R.dimen.guess_letter_cell_large_elevation)
+        dimenCardRadius = context.resources.getDimension(R.dimen.guess_letter_cell_large_corner_radius)
 
         durationShortAnimation = context.resources.getInteger(android.R.integer.config_shortAnimTime)
         durationMediumAnimation = context.resources.getInteger(android.R.integer.config_mediumAnimTime)

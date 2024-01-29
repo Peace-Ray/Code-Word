@@ -34,11 +34,16 @@
     <dimen name="guess_container_margin_small">10dp</dimen>
     <dimen name="guess_container_margin_smaller">6dp</dimen>
     <!-- Puzzle Cells -->
-    <dimen name="guess_letter_cell_size">60dp</dimen>
-    <dimen name="guess_letter_cell_margin">2.5dp</dimen>
-    <dimen name="guess_letter_cell_stroke_width">2dp</dimen>
-    <dimen name="guess_letter_cell_corner_radius">6dp</dimen>
-    <dimen name="guess_letter_cell_elevation">6dp</dimen>
+    <dimen name="guess_letter_cell_full_size">75dp</dimen>
+    <dimen name="guess_letter_cell_full_margin">3dp</dimen>
+    <dimen name="guess_letter_cell_full_stroke_width">2dp</dimen>
+    <dimen name="guess_letter_cell_full_corner_radius">7.5dp</dimen>
+    <dimen name="guess_letter_cell_full_elevation">7.5dp</dimen>
+    <dimen name="guess_letter_cell_large_size">60dp</dimen>
+    <dimen name="guess_letter_cell_large_margin">2.5dp</dimen>
+    <dimen name="guess_letter_cell_large_stroke_width">2dp</dimen>
+    <dimen name="guess_letter_cell_large_corner_radius">6dp</dimen>
+    <dimen name="guess_letter_cell_large_elevation">6dp</dimen>
     <dimen name="guess_letter_cell_medium_size">45dp</dimen>
     <dimen name="guess_letter_cell_medium_margin">2.5dp</dimen>
     <dimen name="guess_letter_cell_medium_stroke_width">2dp</dimen>
@@ -55,12 +60,14 @@
     <dimen name="guess_letter_cell_tiny_corner_radius">2dp</dimen>
     <dimen name="guess_letter_cell_tiny_elevation">3dp</dimen>
     <!-- Cell Measurement: sums of values above to quickly estimate total cell size -->
-    <dimen name="guess_letter_cell_size_estimate">65dp</dimen>
+    <dimen name="guess_letter_cell_full_size_estimate">81dp</dimen>
+    <dimen name="guess_letter_cell_large_size_estimate">65dp</dimen>
     <dimen name="guess_letter_cell_medium_size_estimate">50dp</dimen>
     <dimen name="guess_letter_cell_small_size_estimate">35dp</dimen>
     <dimen name="guess_letter_cell_tiny_size_estimate">24dp</dimen>
     <!-- Puzzle Text (don't use SP for this; text size must match view size w/o scaling) -->
-    <dimen name="guess_letter_text_size">36dp</dimen>
+    <dimen name="guess_letter_full_text_size">45dp</dimen>
+    <dimen name="guess_letter_large_text_size">36dp</dimen>
     <dimen name="guess_letter_medium_text_size">27dp</dimen>
     <dimen name="guess_letter_small_text_size">18dp</dimen>
     <dimen name="guess_letter_tiny_text_size">14dp</dimen>
@@ -68,11 +75,16 @@
     <dimen name="guess_letter_rumble_size">6dp</dimen>
     <dimen name="guess_letter_animation_elevation">0.5dp</dimen>
     <!-- Code Puzzle Cells -->
-    <dimen name="aggregate_markup_pip_size">14dp</dimen>
-    <dimen name="aggregate_markup_pip_margin">3dp</dimen>
-    <dimen name="aggregate_markup_pip_corner_radius">7dp</dimen>
-    <dimen name="aggregate_markup_pip_stroke_width">1dp</dimen>
-    <dimen name="aggregate_markup_pip_elevation">2dp</dimen>
+    <dimen name="aggregate_markup_pip_full_size">20dp</dimen>
+    <dimen name="aggregate_markup_pip_full_margin">4.5dp</dimen>
+    <dimen name="aggregate_markup_pip_full_corner_radius">10dp</dimen>
+    <dimen name="aggregate_markup_pip_full_stroke_width">1.5dp</dimen>
+    <dimen name="aggregate_markup_pip_full_elevation">2dp</dimen>
+    <dimen name="aggregate_markup_pip_large_size">14dp</dimen>
+    <dimen name="aggregate_markup_pip_large_margin">3dp</dimen>
+    <dimen name="aggregate_markup_pip_large_corner_radius">7dp</dimen>
+    <dimen name="aggregate_markup_pip_large_stroke_width">1dp</dimen>
+    <dimen name="aggregate_markup_pip_large_elevation">2dp</dimen>
     <dimen name="aggregate_markup_pip_medium_size">9dp</dimen>
     <dimen name="aggregate_markup_pip_medium_margin">1.5dp</dimen>
     <dimen name="aggregate_markup_pip_medium_corner_radius">4.5dp</dimen>
