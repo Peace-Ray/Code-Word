@@ -176,12 +176,52 @@ class GameRecordManagerImpl @Inject constructor(
         }
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-            // no updates; one version
+            if (oldVersion == 1) {
+                // after this version, GameTypes use an expanded string representation that
+                // specifies ConstraintPolicy and letter occurrences. Convert rows to the new format.
+                val updateGameType: (table: String, column: String, omit: String) -> Unit = { table, column, omit ->
+                    val queryGameTypes: () -> List<String> = {
+                        val types = mutableListOf<String>()
+                        db?.query(
+                            true, table, arrayOf(column), "$column != ?", arrayOf(omit),
+                            null, null, null, null
+                        )?.use {
+                            if (it.moveToFirst()) {
+                                do {
+                                    types.add(it.getString(0))
+                                    it.moveToNext()
+                                } while (!it.isAfterLast)
+                            }
+                        }
+                        types.toList()
+                    }
+
+                    queryGameTypes().forEach { legacy ->
+                        val gameType = GameType.fromString(legacy)
+                        if (legacy != gameType.toString()) {
+                            // updated string representation available
+                            val cv = ContentValues()
+                            cv.put(column, gameType.toString())
+                            Timber.v("DB update v$oldVersion $table put $cv where $column = ?, ($legacy)")
+                            db?.updateWithOnConflict(table, cv, "$column = ?", arrayOf(legacy), SQLiteDatabase.CONFLICT_IGNORE)
+                        }
+                    }
+
+                    queryGameTypes().forEach { Timber.v("DB updated v$oldVersion $table put $column = $it") }
+                }
+
+                GameRecordContract.GameOutcomeEntry
+                    .run { updateGameType(TABLE_NAME, COLUMN_NAME_GAME_TYPE, "") }
+                GameRecordContract.GameTypePerformanceEntry
+                    .run { updateGameType(TABLE_NAME, COLUMN_NAME_GAME_TYPE, COLUMN_VALUE_GAME_TYPE_ALL) }
+                GameRecordContract.PlayerStreakEntry
+                    .run { updateGameType(TABLE_NAME, COLUMN_NAME_GAME_TYPE, "") }
+            }
         }
 
         companion object {
             const val DATABASE_NAME = "game_record.db"
-            const val DATABASE_VERSION = 1
+            const val DATABASE_VERSION = 2
         }
     }
     //---------------------------------------------------------------------------------------------
