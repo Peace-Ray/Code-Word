@@ -63,9 +63,15 @@ enum class SeedVersion(val numberEncoding: Int) {
     /**
      * Initial version. Launch.
      */
-    V1(1);
+    V1(1),
 
-    // next version: V2(46)
+    /**
+     * Update version; adds "characterOccurrences" (either 1 or word length) and the ability to
+     * set ConstraintPolicy within a language.
+     */
+    V2(46);
+
+    // next version: V3(212)
 
     init {
         if (numberEncoding != 0 && numberEncoding.toString(10).contains("0")) {

@@ -1,8 +1,11 @@
-package com.peaceray.codeword.game.bot.modules.generation
+package com.peaceray.codeword.game.bot.modules.generation.vocabulary
 
+import com.peaceray.codeword.game.bot.modules.generation.MonotonicCachingGenerationModule
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import com.peaceray.codeword.game.validators.Validator
+import com.peaceray.codeword.game.validators.Validators
 import java.io.File
 import kotlin.random.Random
 
@@ -22,6 +25,7 @@ class VocabularyFileGenerator(
     val solutionPolicy: ConstraintPolicy,
     guessFilenames: List<String>? = null,
     solutionFilenames: List<String>? = null,
+    filter: Validator = Validators.pass(),
     seed: Long? = null
 ): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
 
@@ -30,34 +34,40 @@ class VocabularyFileGenerator(
         guessPolicy: ConstraintPolicy,
         solutionPolicy: ConstraintPolicy,
         guessFilename: String? = null,
-        solutionFilename: String? = null
+        solutionFilename: String? = null,
+        filter: Validator = Validators.pass(),
+        seed: Long? = null
     ) : this(
         listOf(filename),
         guessPolicy,
         solutionPolicy,
         if (guessFilename == null) null else listOf(guessFilename),
-        if (solutionFilename == null) null else listOf(solutionFilename)
+        if (solutionFilename == null) null else listOf(solutionFilename),
+        filter,
+        seed
     ) {
 
     }
 
-    val guessFilenames = guessFilenames ?: filenames
-    val solutionFilenames = solutionFilenames ?: filenames
+    private val guessFilenames = guessFilenames ?: filenames
+    private val solutionFilenames = solutionFilenames ?: filenames
 
-    val guessVocabulary: List<String> by lazy {
+    private val guessVocabulary: List<String> by lazy {
         val wordList = mutableListOf<String>()
         this.guessFilenames.forEach { wordList.addAll(File(it).readLines()) }
         wordList.filter { it.isNotBlank() }
+            .filter(filter)
             .distinct()
     }
 
-    val solutionVocabulary: List<String> by lazy {
+    private val solutionVocabulary: List<String> by lazy {
         if (this.guessFilenames == this.solutionFilenames) {
             this.guessVocabulary
         } else {
             val wordList = mutableListOf<String>()
             this.solutionFilenames.forEach { wordList.addAll(File(it).readLines()) }
             wordList.filter { it.isNotBlank() }
+                .filter(filter)
                 .distinct()
         }
     }

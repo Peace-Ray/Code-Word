@@ -38,7 +38,7 @@ abstract class CodeLanguageDetailsFactory(version: SeedVersion): VersionedBySeed
 
     companion object {
         private val cachedFactories: MutableMap<SeedVersion, CodeLanguageDetailsFactory> = mutableMapOf()
-        private val defaultFactory = CodeLanguageDetailsFactoryV1()
+        private val defaultFactory = CodeLanguageDetailsFactoryV2()
 
         /**
          * Provide the appropriate CodeLanguageDetailsFactory for this seed. As version updates
@@ -51,6 +51,7 @@ abstract class CodeLanguageDetailsFactory(version: SeedVersion): VersionedBySeed
             if (factory == null) {
                 factory = when (seedVersion) {
                     SeedVersion.V1 -> CodeLanguageDetailsFactoryV1()
+                    SeedVersion.V2 -> CodeLanguageDetailsFactoryV2()
                 }
                 cachedFactories[seedVersion] = factory
             }

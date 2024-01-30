@@ -8,8 +8,9 @@ import java.util.SortedSet
 
 /**
  * This is a versioned game rule class! Do not make ANY modifications to the behavior of this class
- * after [SeedVersion.V1] launches. To alter game rules in the future, create a new class for the
- * new [SeedVersion].
+ * after [SeedVersion.V1] launches. If the format of CodeLanguageDetails changes, only make alterations
+ * necessary to restore the previous behavior exactly. To alter game rules in the future, create a
+ * new class for the new [SeedVersion].
  */
 internal class CodeLanguageDetailsFactoryV1: CodeLanguageDetailsFactory(SeedVersion.V1) {
     // do not change contents or order
@@ -27,27 +28,29 @@ internal class CodeLanguageDetailsFactoryV1: CodeLanguageDetailsFactory(SeedVers
             details = when (language) {
                 CodeLanguage.ENGLISH -> CodeLanguageDetails(
                     language = CodeLanguage.ENGLISH,
-                    evaluation = ConstraintPolicy.PERFECT,
-                    hardModeConstraint = ConstraintPolicy.POSITIVE,
+                    evaluationRecommended = ConstraintPolicy.PERFECT,
+                    evaluationsSupported = listOf(ConstraintPolicy.PERFECT),
+                    hardModeConstraint = mapOf(Pair(ConstraintPolicy.PERFECT, ConstraintPolicy.POSITIVE)),
                     characters = ('a'..'z').toList(),
                     isEnumeration = false,
                     codeLengthRecommended = 5,
                     codeCharactersRecommended = 26,
                     (3..12).toList(),
                     listOf(26),
-                    true
+                    codeCharacterRepetitionsSupported = listOf(0)
                 )
                 CodeLanguage.CODE -> CodeLanguageDetails(
                     language = CodeLanguage.CODE,
-                    evaluation = ConstraintPolicy.AGGREGATED,
-                    hardModeConstraint = null,
+                    evaluationRecommended = ConstraintPolicy.AGGREGATED,
+                    evaluationsSupported = listOf(ConstraintPolicy.AGGREGATED),
+                    hardModeConstraint = emptyMap(),
                     characters = ('a'..'p').toList(),
                     isEnumeration = true,
                     codeLengthRecommended = 4,
                     codeCharactersRecommended = 6,
                     (3..8).toList(),
                     (4..16).toList(),
-                    false
+                    codeCharacterRepetitionsSupported = listOf(0)
                 )
                 else -> throw IllegalArgumentException("$language not supported by $seedVersion")
             }

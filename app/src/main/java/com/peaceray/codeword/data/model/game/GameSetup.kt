@@ -43,11 +43,19 @@ data class GameSetup(
         }
     }
     @Parcelize data class Evaluation(val type: ConstraintPolicy, val enforced: ConstraintPolicy = ConstraintPolicy.IGNORE): Parcelable
-    @Parcelize data class Vocabulary(val language: CodeLanguage, val type: VocabularyType, val length: Int, val characters: Int, val secret: String? = null): Parcelable {
+    @Parcelize data class Vocabulary(
+        val language: CodeLanguage,
+        val type: VocabularyType,
+        val length: Int,
+        val characters: Int,
+        val characterOccurrences: Int,
+        val secret: String? = null
+    ): Parcelable {
         enum class VocabularyType { LIST, ENUMERATED }
         init {
             if (length <= 0) throw IllegalArgumentException("letters must be positive")
             if (characters <= 0) throw IllegalArgumentException("characters must be positive")
+            if (characterOccurrences <= 0) throw IllegalArgumentException("characterOccurrences must be positive")
             if (secret != null && secret.length != length) throw IllegalArgumentException("secret length must match vocabulary length")
         }
     }

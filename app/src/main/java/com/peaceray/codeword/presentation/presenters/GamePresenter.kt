@@ -9,8 +9,11 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.bot.Solver
 import com.peaceray.codeword.game.bot.Evaluator
 import com.peaceray.codeword.game.bot.ModularSolver
+import com.peaceray.codeword.game.data.ConstraintPolicy
+import com.peaceray.codeword.game.feedback.CharacterFeedback
+import com.peaceray.codeword.game.feedback.FeedbackProvider
+import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvider
 import com.peaceray.codeword.presentation.contracts.GameContract
-import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
 import com.peaceray.codeword.utils.wrappers.WrappedNullable
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
@@ -65,6 +68,33 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             .cache()
     }
 
+    // TODO move FeedbackProvider instantiation to the appropriate Manager
+    // allow the user to set "Hint" settings which determine both MarkupPolicy and
+    // UI display.
+    private val feedbackProviderObservable: Single<FeedbackProvider> by lazy {
+        Single.defer {
+            Timber.v("Creating FeedbackProvider")
+            val characters = gameSessionManager.getCodeCharacters(gameSetup)
+            val markupPolicies = when (gameSetup.evaluation.type) {
+                ConstraintPolicy.IGNORE -> setOf()
+                ConstraintPolicy.AGGREGATED_EXACT,
+                ConstraintPolicy.AGGREGATED_INCLUDED,
+                ConstraintPolicy.AGGREGATED -> setOf()
+                ConstraintPolicy.POSITIVE,
+                ConstraintPolicy.ALL,
+                ConstraintPolicy.PERFECT -> setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
+            }
+            val provider: FeedbackProvider = InferredMarkupFeedbackProvider(
+                characters.toSet(),
+                gameSetup.vocabulary.length,
+                gameSetup.vocabulary.length,
+                markupPolicies
+            )
+            Single.just(provider)
+        }.subscribeOn(Schedulers.io())
+            .cache()
+    }
+
     private var disposable: Disposable = Disposable.disposed()
 
     override fun onAttached() {
@@ -80,19 +110,17 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         } else {
             view?.setGameFieldSize(gameSetup.vocabulary.length, gameSetup.board.rounds)
         }
-        when (gameSetup.vocabulary.type) {
-            GameSetup.Vocabulary.VocabularyType.LIST -> {
-                view?.setCodeLanguage(
-                    gameSessionManager.getCodeCharacters(gameSetup),
-                    gameSetup.vocabulary.language.locale!!
-                )
-            }
-            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> {
-                view?.setCodeComposition(gameSessionManager.getCodeCharacters(gameSetup))
-            }
+        val locale = when (gameSetup.vocabulary.type) {
+            GameSetup.Vocabulary.VocabularyType.LIST -> gameSetup.vocabulary.language.locale!!
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> null
         }
+        view?.setCodeType(
+            gameSessionManager.getCodeCharacters(gameSetup),
+            locale,
+            gameSetup.evaluation.type
+        )
 
-        // preload Solver and Evaluator (as needed)
+        // preload Solver, Evaluator, and FeedbackProvider (as needed)
         if (gameSetup.solver != GameSetup.Solver.PLAYER) {
             solverObservable.observeOn(AndroidSchedulers.mainThread())
                 .subscribe { solver -> Timber.v("Preloaded Solver $solver") }
@@ -102,6 +130,9 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             evaluatorObservable.observeOn(AndroidSchedulers.mainThread())
                 .subscribe { evaluator -> Timber.v("Preloaded Evaluator $evaluator peeked ${evaluator.peek(listOf())}") }
         }
+
+        feedbackProviderObservable.observeOn(AndroidSchedulers.mainThread())
+            .subscribe { provider -> Timber.v("Preloaded FeedbackProvider $provider") }
 
         // load (or create) the game, provide the lateinit field, then set char evaluations
         ready = false
@@ -130,7 +161,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                             cachedPartialGuess = view?.getCachedGuess()
                             if ((cachedPartialGuess?.length ?: 0) > 0) view?.setGuess(cachedPartialGuess!!, true)
                         }
-                        advanceGameCharacterEvaluations(false)
+                        advanceGameCharacterFeedback(false)
                     }
                 },
                 { error ->
@@ -139,7 +170,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     this.ready = true
                     view?.setConstraints(game.constraints, true)
                     if (game.currentGuess != null) view?.setGuess(game.currentGuess!!, true)
-                    advanceGameCharacterEvaluations(false)
+                    advanceGameCharacterFeedback(false)
                 }
             )
     }
@@ -237,7 +268,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     }
 
     private fun advanceGameWithoutSaving() {
-        Timber.v("advanceGameWithoutSaving")
         when (game.state) {
             Game.State.GUESSING -> advanceGameGuessing()
             Game.State.EVALUATING -> advanceGameEvaluating()
@@ -245,17 +275,18 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         }
     }
 
-    private fun advanceGameCharacterEvaluations(saveAfter: Boolean) {
+    private fun advanceGameCharacterFeedback(saveAfter: Boolean) {
         disposable.dispose()
-        disposable = computeCharacterEvaluations(game.constraints)
+        disposable = computeCharacterFeedback(game.constraints)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
-                { solution ->
-                    view?.setCharacterEvaluations(solution)
+                { feedback ->
+                    Timber.v("advanceGameCharacterFeedback has feedback $feedback")
+                    view?.setCharacterFeedback(feedback)
                     advanceGame(saveAfter)
                 },
                 { cause ->
-                    Timber.e(cause, "Error computing character constraints")
+                    Timber.e(cause, "Error computing character feedback")
                     // TODO display error to user?
                 }
             )
@@ -266,7 +297,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             view?.promptForGuess(cachedPartialGuess)
             cachedPartialGuess = null
         } else {
-            Timber.v("About to compute a solution")
             val time = System.currentTimeMillis()
             view?.promptForWait()
             disposable.dispose()
@@ -300,9 +330,10 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { constraint ->
+                        Timber.v("advanceGameEvaluating: computed evaluation $constraint")
                         game.evaluate(constraint)
                         view?.replaceGuessWithConstraint(constraint, true)
-                        advanceGameCharacterEvaluations(true)
+                        advanceGameCharacterFeedback(true)
 
                         // TODO remove
                         computePeek(game.constraints)
@@ -334,11 +365,9 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         if (gameSetup != updatedGameSetup) {
             val settings = gameSessionManager.getSettings(updatedGameSetup)
             if (game.canUpdateSettings(settings)) {
-                Timber.v("Updating game settings")
                 game.updateSettings(settings)
                 gameSetup = updatedGameSetup
 
-                Timber.v("Updating new game settings to view")
                 // set board size
                 if (gameSetup.board.rounds == 0) {
                     view?.setGameFieldUnlimited(gameSetup.vocabulary.length)
@@ -422,38 +451,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
     //region Observable Helpers
     //---------------------------------------------------------------------------------------------
-    private var cachedComputedCharEvaluations: Map<Char, CharacterEvaluation> = mapOf()
-    private var cachedComputedCharEvaluationConstraints = listOf<Constraint>()
-
-    private fun computeCharacterEvaluations(constraints: List<Constraint>): Single<Map<Char, CharacterEvaluation>> {
-        // local copies so they don't change during computation
-        val ccce: Map<Char, CharacterEvaluation>
-        val cccec: List<Constraint>
-        synchronized(this) {
-            ccce = cachedComputedCharEvaluations
-            cccec = cachedComputedCharEvaluationConstraints
-        }
-
-        return Single.defer {
-            val map = if (ccce.isEmpty() || cccec.any { it !in constraints }) {
-                val letters = gameSessionManager.getCodeCharacters(gameSetup)
-                constrainCharacterEvaluations(initialCharacterEvaluations(letters), constraints)
-            } else {
-                constrainCharacterEvaluations(ccce, constraints.filter { it !in  cccec })
-            }
-
-            Timber.v("character evaluation map is $map")
-
-            // update
-            synchronized(this) {
-                cachedComputedCharEvaluations = map
-                cachedComputedCharEvaluationConstraints = constraints
-            }
-
-            Single.just(map)
-        }.subscribeOn(Schedulers.computation())
-    }
-
     private fun computeSolution(constraints: List<Constraint>): Single<String> {
         // Solver is available as a cached Single; compute it then use the result to determine
         // a solution for the provided game state.
@@ -480,7 +477,10 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         return Single.create { emitter ->
             val disposable = evaluatorObservable.observeOn(Schedulers.computation())
                 .subscribe(
-                    { evaluator -> emitter.onSuccess(evaluator.evaluate(candidate, constraints)) },
+                    { evaluator ->
+                        Timber.d("computeEvaluation has evaluator $evaluator")
+                        emitter.onSuccess(evaluator.evaluate(candidate, constraints))
+                    },
                     { cause -> emitter.onError(cause) }
                 )
 
@@ -488,6 +488,25 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         }
     }
 
+    private fun computeCharacterFeedback(constraints: List<Constraint>): Single<Map<Char, CharacterFeedback>> {
+        // FeedbackProvider is available as a cached Single; compute it then use the result to determine
+        // feedback for the provided game state.
+        return Single.create {emitter ->
+            val disposable = feedbackProviderObservable.observeOn(Schedulers.computation())
+                .subscribe(
+                    { provider ->
+                        val feedback = provider.getFeedback(gameSetup.evaluation.type, constraints)
+                        val characterFeedback = provider.getCharacterFeedback(gameSetup.evaluation.type, constraints)
+                        Timber.v("FeedbackProvider for ${gameSetup.evaluation.type} gave feedback: $feedback")
+                        Timber.v("FeedbackProvider for ${gameSetup.evaluation.type} gave character feedback: ${characterFeedback.values}")
+                        emitter.onSuccess(characterFeedback)
+                    },
+                    { cause -> emitter.onError(cause) }
+                )
+
+            emitter.setCancellable { disposable.dispose() }
+        }
+    }
 
     private fun computePeekWrappedNullable(constraints: List<Constraint>): Single<WrappedNullable<String>> {
         // When solved by the Player, no solution will be available
@@ -518,112 +537,32 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     //---------------------------------------------------------------------------------------------
     //endregion
 
-
-    //region Character Evaluations
-    //---------------------------------------------------------------------------------------------
-    private fun initialCharacterEvaluations(letters: Iterable<Char>) = letters
-        .map { CharacterEvaluation(it, gameSetup.vocabulary.length) }
-        .associateBy { it.character }
-
-    private fun constrainCharacterEvaluations(
-        evaluations: Map<Char, CharacterEvaluation>,
-        constraint: Constraint
-    ): Map<Char, CharacterEvaluation> = constrainCharacterEvaluations(evaluations, listOf(constraint))
-
-    private fun constrainCharacterEvaluations(
-        evaluations: Map<Char, CharacterEvaluation>,
-        constraints: List<Constraint>
-    ): Map<Char, CharacterEvaluation> {
-        val working = evaluations.toMutableMap()
-        for (constraint in constraints) {
-            val letters = constraint.candidate.toSet()
-            for (letter in letters) {
-                working[letter] = if (letter in working) {
-                    working[letter]!!.constrained(constraint)
-                } else {
-                    CharacterEvaluation(
-                        letter,
-                        gameSetup.vocabulary.length,
-                        constraint.markup.filterIndexed { index, _ -> constraint.candidate[index] == letter }
-                            .maxByOrNull { it.value() }
-                    )
-                }
-            }
-        }
-        return working.toMap()
-    }
-
-    private fun CharacterEvaluation.constrained(constraint: Constraint): CharacterEvaluation {
-        val characterMarkups = constraint.markup
-            .filterIndexed { index, _ -> constraint.candidate[index] == character }
-
-        Timber.v("characterMarkups for $character: $characterMarkups")
-        val cMarkup = characterMarkups.maxByOrNull { it.value() }
-
-        // maxCount is the minimum of:
-        // 1. guess length minus number of included other characters in markup
-        // 2. number of included markups IF a non-included example appears for the character
-
-        val otherChars = constraint.markup
-            .filterIndexed { index, markupType ->
-                constraint.candidate[index] != character && markupType != Constraint.MarkupType.NO
-            }.count()
-
-        val sameChars = if (Constraint.MarkupType.NO !in characterMarkups) maxCount else characterMarkups.count {
-            it != Constraint.MarkupType.NO
-        }
-
-        val cMaxCount = Math.min(sameChars, constraint.candidate.length - otherChars)
-
-        return constrained(cMaxCount, cMarkup)
-    }
-
-    private fun CharacterEvaluation.constrained(maxCount: Int?, markup: Constraint.MarkupType?): CharacterEvaluation {
-        val newMaxCount = Math.min(this.maxCount, maxCount ?: this.maxCount)
-        val newMarkup = markup?.bestOf(this.markup) ?: this.markup
-
-        return if (newMarkup == this.markup && newMaxCount == this.maxCount) this else {
-            CharacterEvaluation(character, newMaxCount, newMarkup)
-        }
-    }
-
-    private fun Constraint.MarkupType.value() = when(this) {
-        Constraint.MarkupType.EXACT -> 2
-        Constraint.MarkupType.INCLUDED -> 1
-        Constraint.MarkupType.NO -> 0
-    }
-
-    private fun Constraint.MarkupType.bestOf(other: Constraint.MarkupType?): Constraint.MarkupType {
-        return if (other == null || value() > other.value()) this else other
-    }
-    //---------------------------------------------------------------------------------------------
-    //endregion
-
     //region Error Handling
     //---------------------------------------------------------------------------------------------
     private fun reportGuessError(guess: String, err: Game.IllegalGuessException) {
+        var violations = err.violations
         val type = when(err.error) {
             Game.GuessError.LENGTH ->
-                if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    if (guess.isEmpty()) GameContract.ErrorType.WORD_EMPTY else GameContract.ErrorType.WORD_LENGTH
+                if (guess.isEmpty()) GameContract.ErrorType.GUESS_EMPTY else GameContract.ErrorType.GUESS_LENGTH
+            Game.GuessError.VALIDATION -> {
+                // check for letter repetitions; this error type is not labeled by the Game
+                // as a Violation.
+                val repeatedLetter = guess.toSet().associateWith { char -> guess.count { char == it } }.maxByOrNull { it.value }
+                if (repeatedLetter != null && repeatedLetter.value > gameSetup.vocabulary.characterOccurrences) {
+                    violations = listOf(Constraint.Violation(
+                        Constraint.create(guess, guess),
+                        guess,
+                        guess.indexOf(repeatedLetter.key)
+                    ))
+                    GameContract.ErrorType.GUESS_LETTER_REPETITIONS
                 } else {
-                    if (guess.isEmpty()) GameContract.ErrorType.CODE_EMPTY else GameContract.ErrorType.CODE_LENGTH
+                    GameContract.ErrorType.GUESS_INVALID
                 }
-            Game.GuessError.VALIDATION ->
-                if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    GameContract.ErrorType.WORD_NOT_RECOGNIZED
-                } else {
-                    GameContract.ErrorType.CODE_INVALID
-                }
-            Game.GuessError.CONSTRAINTS ->
-                if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    GameContract.ErrorType.WORD_NOT_CONSTRAINED
-                } else {
-                    GameContract.ErrorType.CODE_NOT_CONSTRAINED
-                }
+            }
+            Game.GuessError.CONSTRAINTS -> GameContract.ErrorType.GUESS_NOT_CONSTRAINED
             else -> GameContract.ErrorType.UNKNOWN
         }
-        view?.showError(type, err.violations)
+        view?.showError(type, violations)
     }
     //---------------------------------------------------------------------------------------------
     //endregion

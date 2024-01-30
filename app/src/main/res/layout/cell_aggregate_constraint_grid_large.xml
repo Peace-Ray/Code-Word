@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/guess_letter_cell_large_size_estimate"
+    android:layout_height="@dimen/guess_letter_cell_large_size_estimate"
+    >
+
+    <com.peaceray.codeword.presentation.view.component.views.PipGridLayout
+        android:id="@+id/pipGridLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/guess_letter_cell_large_margin"
+        android:paddingBottom="@dimen/guess_letter_cell_large_margin"
+        android:paddingStart="@dimen/guess_letter_cell_large_more_margin"
+        android:paddingEnd="@dimen/guess_letter_cell_large_less_margin"
+        android:layout_gravity="center"
+        app:pipLayoutFor2x2="@layout/cell_pip_full"
+        app:pipLayoutFor3x3="@layout/cell_pip_large"
+        app:pipLayoutFor4x4="@layout/cell_pip_medium"
+        android:clipToPadding="false"
+        android:clipChildren="false"
+        />
+
+    <ImageView
+        android:id="@+id/noPipImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingTop="@dimen/guess_letter_cell_large_margin"
+        android:paddingBottom="@dimen/guess_letter_cell_large_margin"
+        android:paddingStart="@dimen/guess_letter_cell_large_more_margin"
+        android:paddingEnd="@dimen/guess_letter_cell_large_less_margin"
+        android:layout_gravity="center"
+        android:scaleType="centerInside"
+        android:src="@drawable/round_close_white_24"
+        />
+
+</FrameLayout>

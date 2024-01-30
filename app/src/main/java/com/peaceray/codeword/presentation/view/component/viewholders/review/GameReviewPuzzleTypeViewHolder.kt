@@ -6,6 +6,7 @@ import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.record.GameOutcome
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
@@ -32,7 +33,9 @@ class GameReviewPuzzleTypeViewHolder(
     //region View
     //---------------------------------------------------------------------------------------------
     private val languageTextView: TextView = itemView.findViewById(R.id.languageTextView)
+    private val feedbackTextView: TextView = itemView.findViewById(R.id.feedbackTextView)
     private val charactersTextView: TextView = itemView.findViewById(R.id.charactersTextView)
+    private val letterRepetitionsTextView: TextView = itemView.findViewById(R.id.characterRepetitionTextView)
     private val cheatingTextView: TextView = itemView.findViewById(R.id.cheatingTextView)
 
     init {
@@ -48,6 +51,8 @@ class GameReviewPuzzleTypeViewHolder(
             review.setup.vocabulary.language,
             review.setup.vocabulary.length,
             review.setup.vocabulary.characters,
+            review.setup.vocabulary.characterOccurrences,
+            review.setup.evaluation.type,
             review.setup.evaluator,
             mutable
         )
@@ -66,6 +71,8 @@ class GameReviewPuzzleTypeViewHolder(
             outcome.type.language,
             outcome.type.length,
             outcome.type.characters,
+            outcome.type.characterOccurrences,
+            outcome.type.feedback,
             outcome.evaluator,
             false
         )
@@ -79,7 +86,15 @@ class GameReviewPuzzleTypeViewHolder(
 
     //region Helpers
     //---------------------------------------------------------------------------------------------
-    private fun setViewContent(language: CodeLanguage, length: Int, characters: Int, evaluator: GameSetup.Evaluator, mutable: Boolean) {
+    private fun setViewContent(
+        language: CodeLanguage,
+        length: Int,
+        characters: Int,
+        characterOccurrences: Int,
+        feedback: ConstraintPolicy,
+        evaluator: GameSetup.Evaluator,
+        mutable: Boolean
+    ) {
         val context = itemView.context
 
         val isCode = when (language) {
@@ -92,8 +107,23 @@ class GameReviewPuzzleTypeViewHolder(
             CodeLanguage.CODE -> R.string.template_code_secret
         })
 
+        val feedbackText = context.getString(when(feedback) {
+            ConstraintPolicy.AGGREGATED_EXACT -> R.string.game_info_puzzle_evaluation_exact
+            ConstraintPolicy.AGGREGATED_INCLUDED -> R.string.game_info_puzzle_evaluation_included
+            ConstraintPolicy.AGGREGATED -> R.string.game_info_puzzle_evaluation_aggregated
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> R.string.game_info_puzzle_evaluation_by_letter
+            else -> throw UnsupportedOperationException("Can't describe feedback $feedback")
+        })
+
         languageTextView.text = context.getString(R.string.game_info_puzzle_language, templateLanguageCode, length)
+        feedbackTextView.text = feedbackText
         charactersTextView.text = context.getString(R.string.game_info_puzzle_characters, characters)
+        letterRepetitionsTextView.text = context.getString(
+            if (characterOccurrences == 1) R.string.game_info_puzzle_character_repetition_no
+            else R.string.game_info_puzzle_character_repetition_yes
+        )
 
         charactersTextView.visibility = if (isCode) View.VISIBLE else View.GONE
         cheatingTextView.visibility = if (evaluator == GameSetup.Evaluator.CHEATER) View.VISIBLE else View.GONE

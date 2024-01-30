@@ -1,8 +1,11 @@
-package com.peaceray.codeword.game.bot.modules.generation
+package com.peaceray.codeword.game.bot.modules.generation.vocabulary
 
+import com.peaceray.codeword.game.bot.modules.generation.MonotonicCachingGenerationModule
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
+import com.peaceray.codeword.game.validators.Validator
+import com.peaceray.codeword.game.validators.Validators
 import kotlin.random.Random
 
 /**
@@ -21,10 +24,11 @@ class VocabularyListGenerator(
     val solutionPolicy: ConstraintPolicy,
     guessVocabulary: List<String>? = null,
     solutionVocabulary: List<String>? = null,
+    filter: Validator = Validators.pass(),
     seed: Long? = null
 ): MonotonicCachingGenerationModule(seed ?: Random.nextLong()) {
-    val guessVocabulary = guessVocabulary ?: vocabulary
-    val solutionVocabulary = solutionVocabulary ?: vocabulary
+    private val guessVocabulary = (guessVocabulary ?: vocabulary).filter(filter)
+    private val solutionVocabulary = (solutionVocabulary ?: vocabulary).filter(filter)
 
     override fun onCacheMissGeneration(constraints: List<Constraint>): Candidates {
         val guesses = guessVocabulary.asSequence()

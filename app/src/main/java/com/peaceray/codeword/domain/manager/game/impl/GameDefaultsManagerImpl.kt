@@ -13,6 +13,7 @@ import timber.log.Timber
 import java.lang.Exception
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.min
 
 @Singleton
 class GameDefaultsManagerImpl @Inject constructor(
@@ -34,6 +35,7 @@ class GameDefaultsManagerImpl @Inject constructor(
         const val KEY_VOCABULARY_TYPE = "VOCABULARY_TYPE"
         const val KEY_VOCABULARY_LENGTH = "VOCABULARY_LENGTH"
         const val KEY_VOCABULARY_CHARACTERS = "VOCABULARY_CHARACTERS"
+        const val KEY_VOCABULARY_CHARACTER_OCCURRENCES = "VOCABULARY_CHARACTER_OCCURRENCES"
         // players
         const val KEY_SOLVER = "SOLVER"
         const val KEY_EVALUATOR = "EVALUATOR"
@@ -120,18 +122,26 @@ class GameDefaultsManagerImpl @Inject constructor(
     private fun SharedPreferences.getLanguage(default: CodeLanguage = CodeLanguage.ENGLISH) =
         getEnum(KEY_VOCABULARY_LANGUAGE, default)
 
-    private fun SharedPreferences.getVocabulary() = GameSetup.Vocabulary(
-        getLanguage(),
-        getEnum(KEY_VOCABULARY_TYPE, GameSetup.Vocabulary.VocabularyType.LIST),
-        getInt(KEY_VOCABULARY_LENGTH, 5),
-        getInt(KEY_VOCABULARY_CHARACTERS, 26)
-    )
+    private fun SharedPreferences.getVocabulary(): GameSetup.Vocabulary {
+        val length = getInt(KEY_VOCABULARY_LENGTH, 5)
+        val characters = getInt(KEY_VOCABULARY_CHARACTERS, 26)
+        val occurrences = getInt(KEY_VOCABULARY_CHARACTER_OCCURRENCES, length)
+
+        return GameSetup.Vocabulary(
+            getLanguage(),
+            getEnum(KEY_VOCABULARY_TYPE, GameSetup.Vocabulary.VocabularyType.LIST),
+            length,
+            characters,
+            occurrences
+        )
+    }
 
     private fun SharedPreferences.Editor.putVocabulary(value: GameSetup.Vocabulary) {
         putEnum(KEY_VOCABULARY_LANGUAGE, value.language)
         putEnum(KEY_VOCABULARY_TYPE, value.type)
         putInt(KEY_VOCABULARY_LENGTH, value.length)
         putInt(KEY_VOCABULARY_CHARACTERS, value.characters)
+        putInt(KEY_VOCABULARY_CHARACTER_OCCURRENCES, value.characterOccurrences)
     }
     //endregion
 
@@ -154,6 +164,14 @@ class GameDefaultsManagerImpl @Inject constructor(
     override var vocabulary
         get() = preferences.getVocabulary()
         set(value) = preferences.edit { putVocabulary(value) }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Evaluation Settings
+    //---------------------------------------------------------------------------------------------
+    override var evaluation
+        get() = preferences.getEvaluation()
+        set(value) = preferences.edit { putEvaluation(value) }
     //---------------------------------------------------------------------------------------------
     //endregion
 

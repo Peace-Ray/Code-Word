@@ -6,14 +6,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.LayoutRes
 import androidx.core.view.children
-import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
-import com.peaceray.codeword.utils.extensions.toLifecycleOwner
-import timber.log.Timber
 
 class GuessViewHolder(
     itemView: View,
@@ -23,7 +20,7 @@ class GuessViewHolder(
 
     //region View
     //---------------------------------------------------------------------------------------------
-    @LayoutRes var layoutId: Int = R.layout.cell_letter
+    @LayoutRes var layoutId: Int = R.layout.cell_letter_large
 
     private val guessLetterContainer: ViewGroup = itemView.findViewById(R.id.guessLetterContainer)
     private val guessLetterTextViews = mutableListOf<TextView>()

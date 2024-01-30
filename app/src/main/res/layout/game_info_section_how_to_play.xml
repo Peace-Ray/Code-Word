@@ -52,7 +52,7 @@
         >
 
         <FrameLayout
-            android:id="@+id/legendCorrectLetter"
+            android:id="@+id/legendCorrectLetter1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintTop_toTopOf="parent"
@@ -70,15 +70,61 @@
         </FrameLayout>
 
         <FrameLayout
-            android:id="@+id/legendCorrectPips"
-            android:layout_width="@dimen/guess_letter_cell_small_size_estimate"
-            android:layout_height="@dimen/guess_letter_cell_small_size_estimate"
-            app:layout_constraintTop_toTopOf="@id/legendCorrectLetter"
-            app:layout_constraintBottom_toBottomOf="@id/legendCorrectLetter"
-            app:layout_constraintStart_toEndOf="@id/legendCorrectLetter"
+            android:id="@+id/legendCorrectLetter2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/legendCorrectLetter1"
             android:padding="@dimen/guess_letter_cell_small_margin"
             android:clipToPadding="false"
             android:clipChildren="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/legendCorrectLetter3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/legendCorrectLetter2"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/legendCorrectLetterBarrier"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:barrierDirection="end"
+            app:constraint_referenced_ids="legendCorrectLetter1,legendCorrectLetter2,legendCorrectLetter3"
+            />
+
+        <FrameLayout
+            android:id="@+id/legendCorrectPips"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/guess_letter_cell_small_size_estimate"
+            app:layout_constraintTop_toTopOf="@id/legendCorrectLetter1"
+            app:layout_constraintBottom_toBottomOf="@id/legendCorrectLetter1"
+            app:layout_constraintStart_toEndOf="@id/legendCorrectLetterBarrier"
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            android:paddingEnd="@dimen/guess_letter_cell_small_more_margin"
             >
 
             <include layout="@layout/cell_aggregate_constraint_grid_small"
@@ -94,17 +140,16 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:barrierDirection="end"
-            app:constraint_referenced_ids="legendCorrectLetter,legendCorrectPips"
+            app:constraint_referenced_ids="legendCorrectLetter1,legendCorrectLetter2,legendCorrectLetter3,legendCorrectPips"
             />
 
         <TextView
             android:id="@+id/legendCorrectText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="@id/legendCorrectLetter"
-            app:layout_constraintBottom_toBottomOf="@id/legendCorrectLetter"
+            app:layout_constraintTop_toTopOf="@id/legendCorrectLetter1"
+            app:layout_constraintBottom_toBottomOf="@id/legendCorrectLetter1"
             app:layout_constraintStart_toEndOf="@id/legendCorrectBarrier"
-            android:text="@string/game_info_legend_correct"
             android:textSize="@dimen/text_size"
             android:layout_marginStart="@dimen/guess_letter_cell_small_margin"
             />
@@ -113,7 +158,7 @@
             android:id="@+id/legendPresentLetter1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/legendCorrectLetter"
+            app:layout_constraintTop_toBottomOf="@id/legendCorrectLetter1"
             app:layout_constraintStart_toStartOf="parent"
             android:padding="@dimen/guess_letter_cell_small_margin"
             android:clipToPadding="false"
@@ -131,8 +176,26 @@
             android:id="@+id/legendPresentLetter2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/legendCorrectLetter"
+            app:layout_constraintTop_toBottomOf="@id/legendCorrectLetter1"
             app:layout_constraintStart_toEndOf="@id/legendPresentLetter1"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/legendPresentLetter3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/legendCorrectLetter1"
+            app:layout_constraintStart_toEndOf="@id/legendPresentLetter2"
             android:padding="@dimen/guess_letter_cell_small_margin"
             android:clipToPadding="false"
             android:clipChildren="false"
@@ -150,19 +213,19 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:barrierDirection="end"
-            app:constraint_referenced_ids="legendPresentLetter1,legendPresentLetter2"
+            app:constraint_referenced_ids="legendPresentLetter1,legendPresentLetter2,legendPresentLetter3"
             />
 
         <FrameLayout
             android:id="@+id/legendPresentPips"
-            android:layout_width="@dimen/guess_letter_cell_small_size_estimate"
+            android:layout_width="wrap_content"
             android:layout_height="@dimen/guess_letter_cell_small_size_estimate"
             app:layout_constraintTop_toTopOf="@id/legendPresentLetter1"
             app:layout_constraintBottom_toBottomOf="@id/legendPresentLetter1"
             app:layout_constraintStart_toEndOf="@id/legendPresentLetterBarrier"
-            android:padding="@dimen/guess_letter_cell_small_margin"
             android:clipToPadding="false"
             android:clipChildren="false"
+            android:paddingEnd="@dimen/guess_letter_cell_small_more_margin"
             >
 
             <include layout="@layout/cell_aggregate_constraint_grid_small"
@@ -178,7 +241,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:barrierDirection="end"
-            app:constraint_referenced_ids="legendPresentLetter1,legendPresentLetter2,legendPresentPips"
+            app:constraint_referenced_ids="legendPresentLetter1,legendPresentLetter2,legendPresentLetter3,legendPresentPips"
             />
 
         <TextView
@@ -188,7 +251,6 @@
             app:layout_constraintTop_toTopOf="@id/legendPresentLetter1"
             app:layout_constraintBottom_toBottomOf="@id/legendPresentLetter1"
             app:layout_constraintStart_toEndOf="@id/legendPresentBarrier"
-            android:text="@string/game_info_legend_present"
             android:textSize="@dimen/text_size"
             android:layout_marginStart="@dimen/guess_letter_cell_small_margin"
             />
@@ -229,14 +291,39 @@
 
         </FrameLayout>
 
+        <FrameLayout
+            android:id="@+id/legendNoLetter3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/legendPresentLetter1"
+            app:layout_constraintStart_toEndOf="@id/legendNoLetter2"
+            android:padding="@dimen/guess_letter_cell_small_margin"
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            >
+
+            <include layout="@layout/cell_letter_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+
+        </FrameLayout>
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/legendNoLetterBarrier"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:barrierDirection="end"
+            app:constraint_referenced_ids="legendNoLetter1,legendNoLetter2,legendNoLetter3"
+            />
+
         <TextView
             android:id="@+id/legendNoText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="@id/legendNoLetter2"
-            app:layout_constraintBottom_toBottomOf="@id/legendNoLetter2"
-            app:layout_constraintStart_toEndOf="@id/legendNoLetter2"
-            android:text="@string/game_info_legend_no"
+            app:layout_constraintTop_toTopOf="@id/legendNoLetter1"
+            app:layout_constraintBottom_toBottomOf="@id/legendNoLetter1"
+            app:layout_constraintStart_toEndOf="@id/legendNoLetterBarrier"
             android:textSize="@dimen/text_size"
             android:layout_marginStart="@dimen/guess_letter_cell_small_margin"
             />

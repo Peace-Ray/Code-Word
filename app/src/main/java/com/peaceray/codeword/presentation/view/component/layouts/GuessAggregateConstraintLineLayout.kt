@@ -14,7 +14,7 @@ data class GuessAggregateConstraintLineLayout(
         fun create(resources: Resources, @Dimension widthPerCell: Float = Float.MAX_VALUE) = GuessAggregateConstraintLineLayout(
             sizeCategory = CellLayout.SizeCategory.FULL,
             layoutId = R.layout.cell_aggregate_constraint_line,
-            size = resources.getDimension(R.dimen.guess_letter_cell_size)
+            size = resources.getDimension(R.dimen.guess_letter_cell_full_size)
         )
     }
 }

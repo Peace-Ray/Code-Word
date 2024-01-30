@@ -4,6 +4,7 @@ import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.language.CodeLanguageDetailsFactory
 import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.random.ConsistentRandom
 import com.peaceray.codeword.utils.extensions.fromFakeB58
 import com.peaceray.codeword.utils.extensions.toFakeB58
@@ -48,10 +49,19 @@ internal class SeededGameTypeFactoryV1: SeededGameTypeFactory(SeedVersion.V1) {
             throw IllegalArgumentException("seedDetail not valid")
         }
 
+        val length = details.codeLengthsSupported[lengthIndex]
+        val characters = details.codeCharactersSupported[charsIndex]
+
         return GameType(
             language,
-            details.codeLengthsSupported[lengthIndex],
-            details.codeCharactersSupported[charsIndex]
+            length,
+            characters,
+            length,
+            when (language) {
+                CodeLanguage.ENGLISH -> ConstraintPolicy.PERFECT
+                CodeLanguage.CODE -> ConstraintPolicy.AGGREGATED
+                null -> ConstraintPolicy.PERFECT
+            }
         )
     }
 
@@ -92,10 +102,10 @@ internal class SeededGameTypeFactoryV1: SeededGameTypeFactory(SeedVersion.V1) {
         // pick a game mode
         val a = random.nextFloat()
         val gameType = when {
-            a < 0.20 -> GameType(CodeLanguage.ENGLISH, 3, 26)
-            a < 0.50 -> GameType(CodeLanguage.ENGLISH, 4, 26)
-            a < 0.80 -> GameType(CodeLanguage.ENGLISH, 5, 26)
-            else -> GameType(CodeLanguage.ENGLISH, 6, 26)
+            a < 0.20 -> GameType(CodeLanguage.ENGLISH, 3, 26, 3, ConstraintPolicy.PERFECT)
+            a < 0.50 -> GameType(CodeLanguage.ENGLISH, 4, 26, 4, ConstraintPolicy.PERFECT)
+            a < 0.80 -> GameType(CodeLanguage.ENGLISH, 5, 26, 5, ConstraintPolicy.PERFECT)
+            else -> GameType(CodeLanguage.ENGLISH, 6, 26, 6, ConstraintPolicy.PERFECT)
         }
 
         return getSeedDetail(randomSeed, gameType)

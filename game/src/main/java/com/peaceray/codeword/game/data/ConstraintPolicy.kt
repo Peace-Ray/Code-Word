@@ -11,6 +11,35 @@ enum class ConstraintPolicy {
     IGNORE {
         override fun isSupersetOf(policy: ConstraintPolicy) = true
         override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE
+        override fun isByLetter() = false
+        override fun isByWord() = false
+    },
+
+    /**
+     * Require that the [Constraint.exact] aggregated totals match the new candidates; i.e. the total
+     * number of [Constraint.exact] letters must be consistent.
+     *
+     * Is a superset of [AGGREGATED], as [Constraint.included] is ignored entirely.
+     */
+    AGGREGATED_EXACT {
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(AGGREGATED_EXACT, AGGREGATED, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, AGGREGATED_EXACT)
+        override fun isByLetter() = false
+        override fun isByWord() = true
+    },
+
+    /**
+     * Require that the sum of [Constraint.exact] and [Constraint.included] aggregated totals
+     * match the new candidates; i.e. the total number of letters that occur in the word
+     * (whether in their exact positions or not) must be consistent.
+     *
+     * Is a superset of [AGGREGATED], as the position of [Constraint.exact] matches is ignored.
+     */
+    AGGREGATED_INCLUDED {
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(AGGREGATED_INCLUDED, AGGREGATED, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, AGGREGATED_INCLUDED)
+        override fun isByLetter() = false
+        override fun isByWord() = true
     },
 
     /**
@@ -21,8 +50,10 @@ enum class ConstraintPolicy {
      * Is a distinct, overlapping set to [POSITIVE].
      */
     AGGREGATED {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == AGGREGATED || policy == ALL || policy == PERFECT
-        override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE || policy == AGGREGATED
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(AGGREGATED, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, AGGREGATED_EXACT, AGGREGATED_INCLUDED, AGGREGATED)
+        override fun isByLetter() = false
+        override fun isByWord() = true
     },
 
     /**
@@ -33,8 +64,10 @@ enum class ConstraintPolicy {
      * Is a distinct, overlapping set to [AGGREGATED].
      */
     POSITIVE {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == POSITIVE || policy == ALL || policy == PERFECT
-        override fun isSubsetOf(policy: ConstraintPolicy) = policy == IGNORE || policy == POSITIVE
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(POSITIVE, ALL, PERFECT)
+        override fun isSubsetOf(policy: ConstraintPolicy) = policy in setOf(IGNORE, POSITIVE)
+        override fun isByLetter() = true
+        override fun isByWord() = false
     },
 
     /**
@@ -42,8 +75,10 @@ enum class ConstraintPolicy {
      * must not occur in the candidate.
      */
     ALL {
-        override fun isSupersetOf(policy: ConstraintPolicy) = policy == ALL || policy == PERFECT
+        override fun isSupersetOf(policy: ConstraintPolicy) = policy in setOf(ALL, PERFECT)
         override fun isSubsetOf(policy: ConstraintPolicy) = policy != PERFECT
+        override fun isByLetter() = true
+        override fun isByWord() = false
     },
 
     /**
@@ -58,6 +93,8 @@ enum class ConstraintPolicy {
     PERFECT {
         override fun isSupersetOf(policy: ConstraintPolicy) = policy == PERFECT
         override fun isSubsetOf(policy: ConstraintPolicy) = true
+        override fun isByLetter() = true
+        override fun isByWord() = false
     };
 
     /**
@@ -73,4 +110,36 @@ enum class ConstraintPolicy {
      * guess that would be permitted by the receiver is also permitted by [policy].
      */
     abstract fun isSubsetOf(policy: ConstraintPolicy): Boolean
+
+    /**
+     * Returns whether this [ConstraintPolicy] allows by-letter feedback or comparison. If 'true',
+     * letter-specific information is provided by the policy, e.g. direct markup indicating that it
+     * in the right spot, present elsewhere, or omitted. If 'false' such feedback is aggregated
+     * across the entire word and cannot necessarily be associated with a particular letter (although
+     * in some cases the inference can be made).
+     */
+    abstract fun isByLetter(): Boolean
+
+    /**
+     * Returns whether this [ConstraintPolicy] allows by-word feedback or comparison. If 'true',
+     * the policy does not provide direct letter-specific markup or information, but does provide
+     * distinct responses for different words -- e.g. by aggregated counts of "exact" and/or "included"
+     * letters.
+     */
+    abstract fun isByWord(): Boolean
+
+    companion object {
+        /**
+         * A Set of those policies for which [isByLetter] is true -- the policies which provide
+         * letter-specific information.
+         */
+        fun policiesByLetter() = values().filter { it.isByLetter() }.toSet()
+
+        /**
+         * A Set of those policies for which [isByWord] is true -- the policies which do not
+         * provide letter-specific information, but which do provide information for the
+         * entire word.
+         */
+        fun policiesByWord() = values().filter { it.isByWord() }.toSet()
+    }
 }

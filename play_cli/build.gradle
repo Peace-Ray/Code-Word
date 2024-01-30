@@ -14,4 +14,7 @@ dependencies {
 
     // Code Game logic
     implementation project(":game")
+
+    // Serialization
+    implementation 'com.google.code.gson:gson:2.9.0'
 }

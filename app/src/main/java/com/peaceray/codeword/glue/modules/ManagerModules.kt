@@ -4,7 +4,7 @@ import com.peaceray.codeword.domain.manager.game.GameDefaultsManager
 import com.peaceray.codeword.domain.manager.game.GameSessionManager
 import com.peaceray.codeword.domain.manager.game.GameSetupManager
 import com.peaceray.codeword.domain.manager.game.impl.GameDefaultsManagerImpl
-import com.peaceray.codeword.domain.manager.game.impl.GameSessionManagerImpl
+import com.peaceray.codeword.domain.manager.game.impl.session.GameSessionManagerImpl
 import com.peaceray.codeword.domain.manager.game.impl.setup.BaseGameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.domain.manager.record.impl.GameRecordManagerImpl

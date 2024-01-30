@@ -1,5 +1,6 @@
-package com.peaceray.codeword.game.bot.modules.generation
+package com.peaceray.codeword.game.bot.modules.generation.enumeration
 
+import com.peaceray.codeword.game.bot.modules.generation.CandidateGenerationModule
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
@@ -28,24 +29,27 @@ import kotlin.random.Random
  *
  * @param alphabet The code character set
  * @param length The code length
- * @param guessPolicy How Constraints are applied to guess lists
  * @param solutionPolicy How Constraints are applied to solution lists
+ * @param maxOccurrences The maximum number of a occurrences a given character may have in a valid code
+ * @param shuffle Iterate code characters in a randomized order (vs. alphabetical)
  * @param truncateAtProduct Truncate guess enumeration before the *product* of solution list size and
  * guess list size reaches this value.
+ * @param seed A random seed used for [shuffle]
  */
 class SolutionTruncatedEnumerationCodeGenerator(
     alphabet: Iterable<Char>,
     val length: Int,
     val solutionPolicy: ConstraintPolicy,
+    val maxOccurrences: Int = length,
     val shuffle: Boolean = false,
     val truncateAtSize: Int = 0,
     val pretruncateAtSize: Int = 0,
     val seed: Long? = null
 ): CandidateGenerationModule, Seeded(seed ?: Random.nextLong()) {
-    val positionAlphabet: List<List<String>>
+    val positionAlphabet: List<List<Char>>
     init {
-        val letters = alphabet.distinct().map { "$it" }.toList().sorted()
-        val positionAlphabetMut = mutableListOf<List<String>>()
+        val letters = alphabet.distinct().map { it }.toList().sorted()
+        val positionAlphabetMut = mutableListOf<List<Char>>()
         for (i in 1..length) {
             positionAlphabetMut.add(if (shuffle) letters.shuffled(random) else letters)
         }
@@ -74,18 +78,16 @@ class SolutionTruncatedEnumerationCodeGenerator(
     private fun extendCodes(constraints: List<Constraint>, codes: Sequence<String>?): Sequence<String> {
         // get a sequence of code candidates by extending codes by one character, eliminate all
         // such codes that don't fit the constraints, then truncate the list.
-        val extended = when {
-            codes == null -> positionAlphabet[0].asSequence()     // kickstart from one character
-            codes.first().length == length -> codes               // no extension (finished)
-            else -> codes.flatMap { partialCode ->
-                val alphabet = positionAlphabet[(partialCode.last().toInt() + partialCode.length) % positionAlphabet.size]
-                alphabet.map { "$partialCode$it" }
-            }
-        }.filter { code ->
+        val extended = codes?.flatMap { subCode ->
+            positionAlphabet[(subCode.last().code + subCode.length) % positionAlphabet.size]
+                .filter { char -> subCode.count { it == char } < maxOccurrences }
+                .map { "$subCode$it" }
+                .asSequence()
+        }?.filter { code ->
             constraints.all { constraint ->
                 constraint.allows(code, solutionPolicy, partial = true)
             }
-        }
+        } ?: positionAlphabet[0].asSequence().map { "$it" }
 
         return if (pretruncateAtSize  > 0) extended.take(pretruncateAtSize) else extended
     }

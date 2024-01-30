@@ -32,7 +32,7 @@ import kotlin.math.pow
 class SeedCoreFactory {
 
     // If changed, alter TestSeedCoreFactory to compensate.
-    private val defaultVersion = SeedVersion.V1
+    private val defaultVersion = SeedVersion.V2
 
     // Do not change these after launch without building in compensation for legacy values!
     private val firstDaily: Calendar = Calendar.getInstance()
@@ -42,6 +42,15 @@ class SeedCoreFactory {
     init {
         // Remember that months begin at 0 = January
         firstDaily.set(2024, 0, 22)     // January 22, 2024
+    }
+
+    private fun seedVersionFirstDaily(seedVersion: SeedVersion): Calendar = when (seedVersion) {
+        SeedVersion.V1 -> firstDaily
+        SeedVersion.V2 -> { // February 12th, 2024
+            val calendar = Calendar.getInstance()
+            calendar.set(2024, 1, 12)
+            calendar
+        }
     }
 
     fun isDaily(seedCore: String? = null) = seedCore != null && seedCore.firstOrNull() == '#'
@@ -58,7 +67,10 @@ class SeedCoreFactory {
             // date, then switch to the new version. Some other component should check a
             // canonical reference (e.g. an external API) to determine if an app update is required
             // for the "Daily" feature to function.
-            defaultVersion.numberEncoding
+            val moment = getDailyDay(seedCore).timeInMillis
+            SeedVersion.values().sortedByDescending { it.numberEncoding }.first {
+                moment >= seedVersionFirstDaily(it).timeInMillis
+            }.numberEncoding
         } else {
             val parts = decode(seedCore)
             parts.second
@@ -94,9 +106,17 @@ class SeedCoreFactory {
     }
 
     fun getDailySeedCore(day: Calendar): String {
-        val diff = day.time.time - firstDaily.time.time
+        val diff = day.timeInMillis - firstDaily.timeInMillis
         val days = if (diff < 0) 0 else TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS)
         return "#${days + 1}"   // first daily is #1, not #0
+    }
+
+    private fun getDailyDay(seedCore: String): Calendar {
+        val days = seedCore.substring(1).toLong() - 1    // first daily is #1, not #0
+        val diff = TimeUnit.MILLISECONDS.convert(days, TimeUnit.DAYS)
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = firstDaily.timeInMillis + diff
+        return calendar
     }
 
     fun generateSeedCore() = encode(GameSetup.createSeed(), defaultVersion.numberEncoding)

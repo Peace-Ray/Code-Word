@@ -11,6 +11,7 @@ import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.GameOutcome
+import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
@@ -123,6 +124,8 @@ class GameReviewSeedViewHolder(
             GameStatusReview.Purpose.EXAMINE -> View.GONE
         }
 
+        Timber.v("setViewContent with purpose $purpose")
+
         // set text
         seedTextView.text = if (!daily) seed else context.getString(R.string.game_setup_daily_seed, seed)
         setStatusText(daily, seed, setup, gameType, purpose, status, mutable)
@@ -169,7 +172,15 @@ class GameReviewSeedViewHolder(
 
         return when (status) {
             GameStatusReview.Status.NEW -> {
-                if (daily) getGameTypeString(setup, gameType, R.string.game_setup_status_new_daily, R.string.game_setup_status_new_daily_no_specs)
+                if (daily) {
+                    getGameTypeString(
+                        setup,
+                        gameType,
+                        R.string.game_setup_status_new_daily,
+                        R.string.game_setup_status_new_daily_no_letter_repetition,
+                        R.string.game_setup_status_new_daily_no_specs
+                    )
+                }
                 else context.getString(R.string.game_setup_status_new_seeded)
             }
             GameStatusReview.Status.ONGOING -> {
@@ -195,17 +206,28 @@ class GameReviewSeedViewHolder(
         setup: GameSetup?,
         gameType: GameType?,
         stringResId: Int,
+        noLetterRepetitionStringResId: Int,
         backupStringResId: Int
     ): String {
         val context = itemView.context
 
         val length = setup?.vocabulary?.length ?: gameType?.length ?: 0
         val language = getLanguageString(setup?.vocabulary?.language ?: gameType?.language)
+        val allowRepetition = (setup?.vocabulary?.characterOccurrences ?: 0) > 1
+        val feedbackString = when (setup?.evaluation?.type ?: gameType?.feedback) {
+            ConstraintPolicy.AGGREGATED_EXACT -> context.getString(R.string.game_setup_status_feedback_aggregated_exact)
+            ConstraintPolicy.AGGREGATED_INCLUDED -> context.getString(R.string.game_setup_status_feedback_aggregated_included)
+            ConstraintPolicy.AGGREGATED -> context.getString(R.string.game_setup_status_feedback_aggregated)
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> context.getString(R.string.game_setup_status_feedback_by_letter)
+            else -> null
+        }
 
-        return if (length > 0 && language != null) {
-            context.getString(stringResId, length, language)
-        } else {
-            context.getString(backupStringResId)
+        return when {
+            length == 0 || language == null || feedbackString == null -> context.getString(backupStringResId)
+            allowRepetition -> context.getString(stringResId, length, language, feedbackString)
+            else -> context.getString(noLetterRepetitionStringResId, length, language, feedbackString)
         }
     }
 

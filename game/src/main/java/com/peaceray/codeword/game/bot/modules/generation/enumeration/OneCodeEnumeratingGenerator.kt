@@ -1,5 +1,6 @@
-package com.peaceray.codeword.game.bot.modules.generation
+package com.peaceray.codeword.game.bot.modules.generation.enumeration
 
+import com.peaceray.codeword.game.bot.modules.generation.CandidateGenerationModule
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.bot.modules.shared.Candidates
@@ -28,12 +29,26 @@ import kotlin.random.Random
 class OneCodeEnumeratingGenerator(
     alphabet: Iterable<Char>,
     val length: Int,
+    val maxOccurrences: Int = length,
     val seed: Long? = null
 ): CandidateGenerationModule, Seeded(seed ?: Random.nextLong()) {
 
     private val letters = alphabet.distinct().toList().sorted()
-    private val code = List(length) { "${letters.random(random)}" }.joinToString(separator = "")
-    private val candidates = Candidates(listOf(code), listOf(code))
+    private val code: String
+    private val candidates: Candidates
+
+    init {
+        val codeLetters = mutableListOf<Char>()
+        val remainingLetters = letters.toMutableList()
+        while (codeLetters.size < length) {
+            val letter = remainingLetters.random(random)
+            codeLetters.add(letter)
+            if (codeLetters.count { it == letter } >= maxOccurrences) remainingLetters.remove(letter)
+        }
+
+        code = codeLetters.joinToString("")
+        candidates = Candidates(listOf(code), listOf(code))
+    }
 
     override fun generateCandidates(constraints: List<Constraint>) = candidates
 }

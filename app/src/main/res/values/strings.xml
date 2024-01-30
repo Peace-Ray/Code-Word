@@ -37,12 +37,14 @@
     <string name="game_error_word_length">%1$s not long enough</string>
     <string name="game_error_word_not_recognized">%1$s not recognized</string>
     <string name="game_error_word_not_valid">%1$s not valid</string>
-    <string name="game_error_word_constraint_exact">Letter %3$d must be %2$s</string>
-    <string name="game_error_word_constraint_included">%1$s must include %2$s</string>
-    <string name="game_error_word_constraint_no">%1$s must not include %2$s</string>
+    <string name="game_error_word_constraint_exact">Letter %3$d must be \'%2$s\'</string>
+    <string name="game_error_word_constraint_included">%1$s must include \'%2$s\'</string>
+    <string name="game_error_word_constraint_no">%1$s must not include \'%2$s\'</string>
     <string name="game_error_word_constraint_exact_no_letter">%1$s must include exact matches</string>
     <string name="game_error_word_constraint_included_no_letter">%1$s must have all included letters</string>
     <string name="game_error_word_constraint">%1$s must match previous clues</string>
+    <string name="game_error_word_letter_repetitions">Too many \'%1$s\'s</string>
+    <string name="game_error_word_letter_repetitions_no_letter">Too many letter repetitions</string>
     <string name="game_error_evaluation_inconsistent">Evaluation must be consistent with previous clues</string>
     <string name="game_error_unknown">Something went wrong</string>
 
@@ -75,11 +77,17 @@
     <string name="game_setup_daily_seed">Daily %1$s</string>
 
     <string name="game_setup_status_ongoing_daily">Resume the Daily Puzzle</string>
-    <string name="game_setup_status_new_daily">Today\'s Puzzle: %1$d-letter %2$s</string>
+    <string name="game_setup_status_new_daily">Today\'s Puzzle: %1$d-letter %2$s, %3$s</string>
+    <string name="game_setup_status_new_daily_no_letter_repetition">Today\'s Puzzle: %1$d-letter %2$s, feedback %3$s. No repeated letters.</string>
     <string name="game_setup_status_new_daily_no_specs">Today\'s Puzzle</string>
     <string name="game_setup_status_won_daily">You solved the Daily Puzzle! See you tomorrow</string>
     <string name="game_setup_status_lost_daily">See you tomorrow for a new Daily Puzzle</string>
     <string name="game_setup_status_loading_daily">Loading puzzle progress…</string>
+
+    <string name="game_setup_status_feedback_by_letter">feedback by letter</string>
+    <string name="game_setup_status_feedback_aggregated">exact and included counts</string>
+    <string name="game_setup_status_feedback_aggregated_exact">exact match count</string>
+    <string name="game_setup_status_feedback_aggregated_included">number of letters included</string>
 
     <string name="game_setup_status_ongoing_seeded">Resume this puzzle</string>
     <string name="game_setup_status_new_seeded">Start a new puzzle from this seed</string>
@@ -129,12 +137,28 @@
         <item>@string/game_setup_language_code</item>
     </string-array>
 
+    <string name="game_setup_feedback_prompt">Feedback:</string>
+    <string name="game_setup_feedback_perfect">By Letter</string>
+    <string name="game_setup_feedback_aggregated_counts"># Exact, # Included</string>
+    <string name="game_setup_feedback_included_counts"># Included Letters</string>
+    <string name="game_setup_feedback_exacts_counts"># Exact Letters</string>
+
+    <string-array name="game_setup_feedback_values">
+        <item>@string/game_setup_feedback_perfect</item>
+        <item>@string/game_setup_feedback_aggregated_counts</item>
+        <item>@string/game_setup_feedback_included_counts</item>
+        <item>@string/game_setup_feedback_exacts_counts</item>
+    </string-array>
+
     <string name="game_setup_code_length_prompt">Length: %1$d</string>
 
     <string name="game_setup_code_characters_prompt">Symbols: %1$d</string>
 
     <string name="game_setup_hard_mode_prompt">Hard mode</string>
     <string name="game_setup_hard_mode_description">Each guess must use all previous hints</string>
+
+    <string name="game_setup_code_character_repetitions_prompt">Repeat letters</string>
+    <string name="game_setup_code_character_repetitions_hint">Letters may occur more than once</string>
 
     <string name="game_setup_evaluator_cheats_prompt">Bad luck!</string>
     <string name="game_setup_evaluator_cheats_hint">Guesses tend to be wrong</string>
@@ -154,30 +178,112 @@
     <string name="game_info_daily_seed">Daily %1$s</string>
     <string name="game_info_puzzle_language">Secret: %2$d-letter %1$s</string>
     <string name="game_info_puzzle_characters">Code symbols: %1$d</string>
+    <string name="game_info_puzzle_evaluation_by_letter">Feedback: by letter</string>
+    <string name="game_info_puzzle_evaluation_aggregated">Feedback: # exact, # included</string>
+    <string name="game_info_puzzle_evaluation_exact">Feedback: # exact letters</string>
+    <string name="game_info_puzzle_evaluation_included">Feedback: # included letters</string>
+    <string name="game_info_puzzle_character_repetition_yes">Letters may repeat</string>
+    <string name="game_info_puzzle_character_repetition_no">No duplicate letters</string>
     <string name="game_info_puzzle_cheater">Bad luck!</string>
     <string name="game_info_puzzle_new_button">New Puzzle</string>
     <string name="game_info_explanation_unlimited">Guess the secret %1$s: type a %3$d-letter %2$s and press the ✔ button.</string>
     <string name="game_info_explanation">Guess the secret %1$s in %4$d tries: type a %3$d-letter %2$s and press the ✔ button.</string>
+    <string name="game_info_explanation_short">Guess the secret %1$s: type a %2$s and press the ✔ button.</string>
+    <string name="game_info_explanation_feedback_by_letter">Each letter is marked to show how close your guess was to the secret.</string>
+    <string name="game_info_explanation_feedback_aggregated">Your guess is marked to show how close it was to the secret.</string>
+    <string name="game_info_explanation_feedback_aggregated_included">Your guess is marked with the number of letters, in any position, it shares with the secret.</string>
+    <string name="game_info_explanation_feedback_aggregated_exact">Your guess is marked with the number of correct letters.</string>
+    <string name="game_info_explanation_full">%1$s\n\n%2$s</string>
 
     <string name="game_info_legend_guess">@string/template_code</string>
     <string name="game_info_legend_secret">@string/template_word</string>
-    <string name="game_info_legend_correct_letter">o</string>
-    <string name="game_info_legend_present_letter">d</string>
-    <string name="game_info_legend_no_letter_1">c</string>
-    <string name="game_info_legend_no_letter_2">e</string>
     <string name="game_info_legend_intro">For the guess \"CODE\":</string>
-    <string name="game_info_legend_correct">is in the right place.</string>
-    <string name="game_info_legend_present">is used somewhere else.</string>
-    <string name="game_info_legend_no">are not in the word.</string>
 
     <string name="game_info_legend_code_guess">abcd</string>
     <string name="game_info_legend_code_secret">cdbd</string>
-    <string name="game_info_legend_code_correct_letter">d</string>
-    <string name="game_info_legend_code_present_letter_1">b</string>
-    <string name="game_info_legend_code_present_letter_2">c</string>
     <string name="game_info_legend_code_intro">For the guess \"ABCD\":</string>
-    <string name="game_info_legend_code_correct">one in the right place.</string>
-    <string name="game_info_legend_code_present">two used somewhere else.</string>
+
+    <string name="game_info_legend_correct_shown_1">is in the right place.</string>
+    <string name="game_info_legend_correct_shown_more">are in the right place.</string>
+    <string name="game_info_legend_correct_count_1">one in the right place.</string>
+    <string name="game_info_legend_correct_count_2">two in the right place.</string>
+    <string name="game_info_legend_correct_count_3">in the right place.</string>
+    <string name="game_info_legend_included_shown_1">is used somewhere else.</string>
+    <string name="game_info_legend_included_shown_more">are used somewhere else.</string>
+    <string name="game_info_legend_included_count_1">one used somewhere else.</string>
+    <string name="game_info_legend_included_count_2">two used somewhere else.</string>
+    <string name="game_info_legend_included_count_3">used somewhere else.</string>
+    <string name="game_info_legend_included_or_exact_shown_1">is included.</string>
+    <string name="game_info_legend_included_or_exact_shown_more">are included.</string>
+    <string name="game_info_legend_included_or_exact_count_1">one is included.</string>
+    <string name="game_info_legend_included_or_exact_count_2">two are included.</string>
+    <string name="game_info_legend_included_or_exact_count_3">are included.</string>
+    <string name="game_info_legend_no_shown_1">is not in the word.</string>
+    <string name="game_info_legend_no_shown_more">are not in the word.</string>
+    <string name="game_info_legend_no_count_1">one is not in the word.</string>
+    <string name="game_info_legend_no_count_2">two are not in the word.</string>
+    <string name="game_info_legend_no_count_3">are not in the word.</string>
+    <string name="game_info_legend_not_correct_shown_1">is not.</string>
+    <string name="game_info_legend_not_correct_shown_more">are not.</string>
+    <string name="game_info_legend_not_correct_count_1">one is not.</string>
+    <string name="game_info_legend_not_correct_count_2">two are not.</string>
+    <string name="game_info_legend_not_correct_count_3">three are not.</string>
+    
+    <string-array name="game_info_legend_correct_shown">
+        <item>@string/game_info_legend_correct_shown_1</item>
+        <item>@string/game_info_legend_correct_shown_more</item>
+    </string-array>
+
+    <string-array name="game_info_legend_correct_count">
+        <item>@string/game_info_legend_correct_count_1</item>
+        <item>@string/game_info_legend_correct_count_2</item>
+        <item>@string/game_info_legend_correct_count_3</item>
+    </string-array>
+
+    <string-array name="game_info_legend_included_shown">
+        <item>@string/game_info_legend_included_shown_1</item>
+        <item>@string/game_info_legend_included_shown_more</item>
+    </string-array>
+
+    <string-array name="game_info_legend_included_count">
+        <item>@string/game_info_legend_included_count_1</item>
+        <item>@string/game_info_legend_included_count_2</item>
+        <item>@string/game_info_legend_included_count_3</item>
+    </string-array>
+
+    <string-array name="game_info_legend_included_or_exact_shown">
+        <item>@string/game_info_legend_included_or_exact_shown_1</item>
+        <item>@string/game_info_legend_included_or_exact_shown_more</item>
+    </string-array>
+
+    <string-array name="game_info_legend_included_or_exact_count">
+        <item>@string/game_info_legend_included_or_exact_count_1</item>
+        <item>@string/game_info_legend_included_or_exact_count_2</item>
+        <item>@string/game_info_legend_included_or_exact_count_3</item>
+    </string-array>
+
+    <string-array name="game_info_legend_no_shown">
+        <item>@string/game_info_legend_no_shown_1</item>
+        <item>@string/game_info_legend_no_shown_more</item>
+    </string-array>
+
+    <string-array name="game_info_legend_no_count">
+        <item>@string/game_info_legend_no_count_1</item>
+        <item>@string/game_info_legend_no_count_2</item>
+        <item>@string/game_info_legend_no_count_3</item>
+    </string-array>
+
+    <string-array name="game_info_legend_not_correct_shown">
+        <item>@string/game_info_legend_not_correct_shown_1</item>
+        <item>@string/game_info_legend_not_correct_shown_more</item>
+    </string-array>
+
+    <string-array name="game_info_legend_not_correct_count">
+        <item>@string/game_info_legend_not_correct_count_1</item>
+        <item>@string/game_info_legend_not_correct_count_2</item>
+        <item>@string/game_info_legend_not_correct_count_3</item>
+    </string-array>
+
 
     <string name="game_info_hard_mode_prompt">Hard mode</string>
     <string name="game_info_hard_mode_description">Each guess must use all previously revealed hints</string>

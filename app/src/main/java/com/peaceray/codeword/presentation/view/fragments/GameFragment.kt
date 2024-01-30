@@ -14,9 +14,10 @@ import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.FragmentGameBinding
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.game.data.ConstraintPolicy
+import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameContract
-import com.peaceray.codeword.presentation.datamodel.CharacterEvaluation
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
@@ -261,11 +262,11 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     private fun onMainViewContentWidthChange(width: Int) {
         val cells = guessAdapter.itemsPerGameRow
         if (cells > 0 && width > 0 && (cells != recyclerViewCellWidth || width != recyclerViewWidth)) {
-            Timber.v("cells $cells prevCells $recyclerViewCellWidth width $width prevWidth $recyclerViewWidth")
+            Timber.v("cells $cells prevCells $recyclerViewCellWidth width $width prevWidth $recyclerViewWidth length ${guessAdapter.length}")
             val availableWidth = width - (binding.constraintRecyclerView.paddingStart + binding.constraintRecyclerView.paddingEnd)
             val availableWidthPerCell = availableWidth / cells
             val letterLayout = GuessLetterCellLayout.create(resources, availableWidthPerCell.toFloat())
-            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, availableWidthPerCell.toFloat())
+            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, guessAdapter.length, availableWidthPerCell.toFloat())
 
             // set the layouts
             if (guessAdapter.cellLayout[GuessLetterAdapter.ItemStyle.LETTER_MARKUP]?.layoutId != letterLayout.layoutId ||
@@ -274,9 +275,12 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                 binding.constraintRecyclerView.layoutManager = null
                 guessAdapter.setCellLayouts(mapOf(
                     Pair(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.LETTER_ENTRY, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.EMPTY, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER, pipLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER, pipLayout),
                 ))
                 binding.constraintRecyclerView.adapter = guessAdapter
                 binding.constraintRecyclerView.layoutManager = guessLayoutManager
@@ -410,26 +414,39 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         setGameFieldSize(length, 0)
     }
 
-    override fun setCodeLanguage(characters: Iterable<Char>, locale: Locale) {
-        Timber.v("TODO: configure UI based on locale $locale characters $characters")
-        guessAdapter.setItemStyles(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
+    override fun setCodeType(
+        characters: Iterable<Char>,
+        locale: Locale?,
+        feedbackPolicy: ConstraintPolicy
+    ) {
+        // guessAdapter letter item styles
+        val itemStyles = mutableListOf<GuessLetterAdapter.ItemStyle>()
+        if (locale == null) {
+            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_CODE)
+        } else if (feedbackPolicy.isByLetter()) {
+            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
+        } else {
+            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_ENTRY)
+        }
 
+        // ...and aggregated pips
+        if (feedbackPolicy.isByWord()) {
+            itemStyles.add(when (feedbackPolicy) {
+                ConstraintPolicy.AGGREGATED_EXACT -> GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER
+                ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER
+                ConstraintPolicy.AGGREGATED -> GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
+                else -> throw IllegalStateException("Don't know the isByWord() policy $feedbackPolicy")
+            })
+        }
+
+        // configure guessAdapter
+        guessAdapter.setCodeCharacters(characters)
+        guessAdapter.setItemStyles(itemStyles.toList())
+
+        // update keyboard
         onKeyboardStyleUpdate(characters, locale)
 
         // update grid width if already set
-        updateLayoutManager()
-    }
-
-    override fun setCodeComposition(characters: Iterable<Char>) {
-        Timber.v("TODO: configure UI based on locale code characters $characters")
-        guessAdapter.setCodeCharacters(characters)
-        guessAdapter.setItemStyles(
-            GuessLetterAdapter.ItemStyle.LETTER_CODE,
-            GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
-        )
-
-        onKeyboardStyleUpdate(characters, null)
-
         updateLayoutManager()
     }
 
@@ -478,9 +495,9 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         if (animate) onPresenterPrompting()
     }
 
-    override fun setCharacterEvaluations(evaluations: Map<Char, CharacterEvaluation>) {
-        Timber.v("setCharacterEvaluations ${evaluations.size}")
-        keyboardView?.setCharacterEvaluations(evaluations)
+    override fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
+        Timber.v("setCharacterFeedback ${feedback.size}")
+        keyboardView?.setCharacterFeedback(feedback)
     }
 
     override fun promptForGuess(suggestedGuess: String?) {
@@ -546,32 +563,23 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     override fun showError(error: GameContract.ErrorType, violations: List<Constraint.Violation>?) {
         onPresenterPrompting()
 
-        val word = when (error) {
-            GameContract.ErrorType.CODE_EMPTY,
-            GameContract.ErrorType.CODE_LENGTH,
-            GameContract.ErrorType.CODE_INVALID,
-            GameContract.ErrorType.CODE_NOT_CONSTRAINED -> getString(R.string.template_code)
-            else -> getString(R.string.template_word)
+        val isWord = getGameSetup().vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST
+        val word = if (isWord) {
+            getString(R.string.template_word)
+        } else {
+            getString(R.string.template_code)
         }
 
         when (error) {
-            GameContract.ErrorType.WORD_EMPTY, GameContract.ErrorType.CODE_EMPTY -> {
+            GameContract.ErrorType.GUESS_EMPTY -> {
                 val text = getString(R.string.game_error_word_length_zero, word)
                 displayGuessError(text)
             }
-            GameContract.ErrorType.WORD_LENGTH, GameContract.ErrorType.CODE_LENGTH -> {
+            GameContract.ErrorType.GUESS_LENGTH -> {
                 val text = getString(R.string.game_error_word_length, word)
                 displayGuessError(text)
             }
-            GameContract.ErrorType.WORD_NOT_RECOGNIZED -> {
-                val text = getString(R.string.game_error_word_not_recognized, word)
-                displayGuessError(text)
-            }
-            GameContract.ErrorType.CODE_INVALID -> {
-                val text = getString(R.string.game_error_word_not_valid)
-                displayGuessError(text)
-            }
-            GameContract.ErrorType.WORD_NOT_CONSTRAINED, GameContract.ErrorType.CODE_NOT_CONSTRAINED -> {
+            GameContract.ErrorType.GUESS_NOT_CONSTRAINED -> {
                 val violation = violations?.firstOrNull()
                 val text = when {
                     violation?.markup == Constraint.MarkupType.EXACT && violation.character != null ->
@@ -585,6 +593,21 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                     violation?.markup == Constraint.MarkupType.INCLUDED ->
                         getString(R.string.game_error_word_constraint_included_no_letter, word)
                     else -> getString(R.string.game_error_word_constraint, word)
+                }
+                displayGuessError(text)
+            }
+            GameContract.ErrorType.GUESS_LETTER_REPETITIONS -> {
+                val violation = violations?.firstOrNull()
+                val text = if (violation?.character != null) {
+                    getString(R.string.game_error_word_letter_repetitions, violation.character)
+                } else {
+                    getString(R.string.game_error_word_letter_repetitions_no_letter)
+                }
+                displayGuessError(text)
+            }
+            GameContract.ErrorType.GUESS_INVALID -> {
+                val text = if (isWord) getString(R.string.game_error_word_not_recognized, word) else {
+                    getString(R.string.game_error_word_not_valid)
                 }
                 displayGuessError(text)
             }

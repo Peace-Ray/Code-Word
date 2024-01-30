@@ -55,7 +55,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="start"
-        android:minHeight="@dimen/setup_control_height"
+        android:minHeight="@dimen/setup_control_height_short"
         android:paddingTop="@dimen/setup_control_spacing_half"
         android:paddingBottom="@dimen/setup_control_spacing_half"
         >
@@ -69,6 +69,33 @@
 
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/codeLanguageSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/feedbackPolicyContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:minHeight="@dimen/setup_control_height_short"
+        android:paddingTop="@dimen/setup_control_spacing_half"
+        android:paddingBottom="@dimen/setup_control_spacing_half"
+        >
+
+        <TextView
+            android:id="@+id/feedbackPolicyPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/game_setup_feedback_prompt"
+            />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/feedbackPolicySpinner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:spinnerMode="dropdown"
@@ -135,6 +162,17 @@
             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <CheckBox
+        android:id="@+id/codeCharacterRepetitionsCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/game_setup_evaluator_cheats_prompt"
+        android:paddingStart="@dimen/check_box_text_padding"
+        android:paddingEnd="@dimen/check_box_text_padding"
+        android:minHeight="@dimen/setup_control_height"
+        android:theme="@style/Widget.CodeWord.CompoundButton.CheckBox"
+        />
 
     <CheckBox
         android:id="@+id/evaluatorCheatsCheckBox"

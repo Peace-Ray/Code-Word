@@ -248,9 +248,11 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         val lastGuess = _constraints.size + _guesses.size - 1
         val length = if (placeholders) length else _guesses.lastOrNull()?.candidate?.length ?: 0
         
-        return if (firstGuess == lastGuess) { 
+        return if (firstGuess == lastGuess) {
+            Timber.v("firstGuess == lastGuess: guessSliceToItemRange")
             guessSliceToItemRange(firstGuess, 0, length)
         } else {
+            Timber.v("firstGuess != lastGuess: guessRangeToItemRange + guessSliceToItemRange")
             val rangeTo = guessRangeToItemRange(firstGuess, lastGuess - firstGuess)
             val range = guessSliceToItemRange(lastGuess, 0, length)
             Pair(rangeTo.first, (range.first - rangeTo.first) + range.second)
