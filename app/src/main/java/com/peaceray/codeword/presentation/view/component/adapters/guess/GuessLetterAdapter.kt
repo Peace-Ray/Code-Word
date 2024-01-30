@@ -196,6 +196,9 @@ class GuessLetterAdapter @Inject constructor(
             ItemStyle.AGGREGATED_PIP_LINE -> {
                 require(layout is GuessAggregateConstraintLineLayout)
             }
+            ItemStyle.EMPTY -> {
+                // nothing to do here; empty is empty
+            }
         }
 
         // update layout entry
