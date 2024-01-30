@@ -35,7 +35,7 @@ class AggregatedConstraintViewHolder(
         }
 
         val context = itemView.context
-        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_large_elevation)
+        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_elevation)
     }
     //---------------------------------------------------------------------------------------------
     //endregion

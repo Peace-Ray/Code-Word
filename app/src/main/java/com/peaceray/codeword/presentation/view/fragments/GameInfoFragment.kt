@@ -235,13 +235,14 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         val pipLayout: GuessAggregateConstraintCellLayout
         val showPips: Boolean
         val letterAppearance: GuessLetterAppearance
+        val pipAppearance: GuessAggregatedAppearance
         when (gameSetup.evaluation.type) {
             ConstraintPolicy.AGGREGATED_EXACT,
             ConstraintPolicy.AGGREGATED_INCLUDED,
             ConstraintPolicy.AGGREGATED -> {
                 // small legend size
                 letterLayout = GuessLetterCellLayout.create(resources, CellLayout.SizeCategory.SMALL)
-                pipLayout = GuessAggregateConstraintCellLayout.create(resources, CellLayout.SizeCategory.SMALL)
+                pipLayout = GuessAggregateConstraintCellLayout.create(resources, legendGuess.length, CellLayout.SizeCategory.SMALL)
                 showPips = true
 
                 // item styles
@@ -263,13 +264,19 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 } else {
                     GuessLetterEntryAppearance(requireContext(), letterLayout)
                 }
+                pipAppearance = when (gameSetup.evaluation.type) {
+                    ConstraintPolicy.AGGREGATED_EXACT -> GuessAggregatedExactAppearance(requireContext(), pipLayout)
+                    ConstraintPolicy.AGGREGATED_INCLUDED -> GuessAggregatedIncludedAppearance(requireContext(), pipLayout)
+                    ConstraintPolicy.AGGREGATED -> GuessAggregatedCountsAppearance(requireContext(), pipLayout)
+                    else -> throw IllegalArgumentException("Can't ever happen; unsupported evaluation ${gameSetup.evaluation.type}")
+                }
             }
             ConstraintPolicy.POSITIVE,
             ConstraintPolicy.ALL,
             ConstraintPolicy.PERFECT -> {
                 // medium legend size
                 letterLayout = GuessLetterCellLayout.create(resources, CellLayout.SizeCategory.MEDIUM)
-                pipLayout = GuessAggregateConstraintCellLayout.create(resources, CellLayout.SizeCategory.MEDIUM)
+                pipLayout = GuessAggregateConstraintCellLayout.create(resources, legendGuess.length, CellLayout.SizeCategory.MEDIUM)
                 showPips = false
 
                 // item styles
@@ -277,6 +284,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
                 // appearances
                 letterAppearance = GuessLetterMarkupAppearance(requireContext(), letterLayout)
+                pipAppearance = GuessAggregatedCountsAppearance(requireContext(), pipLayout)
             }
             else -> throw IllegalArgumentException("ConstraintPolicy ${gameSetup.evaluation.type} is not supported")
         }
@@ -312,7 +320,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                         Constraint.MarkupType.INCLUDED -> createGuess(legendConstraint.candidate.length, 0, letters.size)
                         Constraint.MarkupType.NO -> createGuess(legendConstraint.candidate.length, 0, 0)
                     }
-                    createPipsViewHolder(gameSetup, views.pipView.getChildAt(0)).bind(guess)
+                    createPipsViewHolder(views.pipView.getChildAt(0), pipAppearance).bind(guess)
                 } else {
                     views.pipView?.visibility = View.GONE
                 }
@@ -373,13 +381,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         binding.sectionHowToPlay.recyclerView.adapter = legendAdapter
     }
 
-    private fun createPipsViewHolder(gameSetup: GameSetup, itemView: View): GuessAggregatedPipGridViewHolder {
-        val appearance: GuessAggregatedAppearance = when (gameSetup.evaluation.type) {
-            ConstraintPolicy.AGGREGATED_EXACT -> GuessAggregatedExactAppearance(itemView.context)
-            ConstraintPolicy.AGGREGATED_INCLUDED -> GuessAggregatedIncludedAppearance(itemView.context)
-            ConstraintPolicy.AGGREGATED -> GuessAggregatedCountsAppearance(itemView.context)
-            else -> throw IllegalArgumentException("Unsupported evaluation type ${gameSetup.evaluation.type}")
-        }
+    private fun createPipsViewHolder(itemView: View, appearance: GuessAggregatedAppearance): GuessAggregatedPipGridViewHolder {
         val vh = GuessAggregatedPipGridViewHolder(itemView, colorSwatchManager, appearance)
         legendPipViewHolders.add(vh)
         return vh

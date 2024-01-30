@@ -262,11 +262,11 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     private fun onMainViewContentWidthChange(width: Int) {
         val cells = guessAdapter.itemsPerGameRow
         if (cells > 0 && width > 0 && (cells != recyclerViewCellWidth || width != recyclerViewWidth)) {
-            Timber.v("cells $cells prevCells $recyclerViewCellWidth width $width prevWidth $recyclerViewWidth")
+            Timber.v("cells $cells prevCells $recyclerViewCellWidth width $width prevWidth $recyclerViewWidth length ${guessAdapter.length}")
             val availableWidth = width - (binding.constraintRecyclerView.paddingStart + binding.constraintRecyclerView.paddingEnd)
             val availableWidthPerCell = availableWidth / cells
             val letterLayout = GuessLetterCellLayout.create(resources, availableWidthPerCell.toFloat())
-            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, availableWidthPerCell.toFloat())
+            val pipLayout = GuessAggregateConstraintCellLayout.create(resources, guessAdapter.length, availableWidthPerCell.toFloat())
 
             // set the layouts
             if (guessAdapter.cellLayout[GuessLetterAdapter.ItemStyle.LETTER_MARKUP]?.layoutId != letterLayout.layoutId ||

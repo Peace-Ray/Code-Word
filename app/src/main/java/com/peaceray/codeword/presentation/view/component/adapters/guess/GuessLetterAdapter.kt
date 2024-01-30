@@ -122,9 +122,9 @@ class GuessLetterAdapter @Inject constructor(
             Pair(ItemStyle.LETTER_CODE, letterLayout),
             Pair(ItemStyle.LETTER_ENTRY, letterLayout),
             Pair(ItemStyle.AGGREGATED_PIP_LINE, GuessAggregateConstraintLineLayout.create(resources)),
-            Pair(ItemStyle.AGGREGATED_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources)),
-            Pair(ItemStyle.EXACT_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources)),
-            Pair(ItemStyle.INCLUDED_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources)),
+            Pair(ItemStyle.AGGREGATED_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
+            Pair(ItemStyle.EXACT_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
+            Pair(ItemStyle.INCLUDED_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
             Pair(ItemStyle.EMPTY, letterLayout)
         )
     }
@@ -146,9 +146,9 @@ class GuessLetterAdapter @Inject constructor(
         letterStyleAppearance[ItemStyle.LETTER_CODE] = GuessLetterCodeAppearance(context, cellLayout[ItemStyle.LETTER_CODE] as GuessLetterCellLayout)
         letterStyleAppearance[ItemStyle.LETTER_ENTRY] = GuessLetterEntryAppearance(context, cellLayout[ItemStyle.LETTER_ENTRY] as GuessLetterCellLayout)
 
-        aggregatedStyleAppearance[ItemStyle.AGGREGATED_PIP_CLUSTER] = GuessAggregatedCountsAppearance(context)
-        aggregatedStyleAppearance[ItemStyle.EXACT_PIP_CLUSTER] = GuessAggregatedExactAppearance(context)
-        aggregatedStyleAppearance[ItemStyle.INCLUDED_PIP_CLUSTER] = GuessAggregatedIncludedAppearance(context)
+        aggregatedStyleAppearance[ItemStyle.AGGREGATED_PIP_CLUSTER] = GuessAggregatedCountsAppearance(context, cellLayout[ItemStyle.AGGREGATED_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
+        aggregatedStyleAppearance[ItemStyle.EXACT_PIP_CLUSTER] = GuessAggregatedExactAppearance(context, cellLayout[ItemStyle.EXACT_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
+        aggregatedStyleAppearance[ItemStyle.INCLUDED_PIP_CLUSTER] = GuessAggregatedIncludedAppearance(context, cellLayout[ItemStyle.INCLUDED_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
     }
 
     // game details (cached for recreation of subfields, such as styleAppearance)
@@ -161,6 +161,8 @@ class GuessLetterAdapter @Inject constructor(
     ): this(layoutInflater, colorSwatchManager) {
         setItemStyles(itemStyles)
     }
+
+
 
     fun setCellLayout(itemStyle: ItemStyle, cellLayout: CellLayout?) {
         val layout = (cellLayout ?: _cellDefaultLayout[itemStyle])!!
@@ -179,14 +181,21 @@ class GuessLetterAdapter @Inject constructor(
                 require(layout is GuessLetterCellLayout)
                 letterStyleAppearance[itemStyle] = GuessLetterEntryAppearance(layoutInflater.context, layout)
             }
-            ItemStyle.EXACT_PIP_CLUSTER ->
+            ItemStyle.EXACT_PIP_CLUSTER -> {
                 require(layout is GuessAggregateConstraintCellLayout)
-            ItemStyle.INCLUDED_PIP_CLUSTER ->
+                aggregatedStyleAppearance[itemStyle] = GuessAggregatedExactAppearance(layoutInflater.context, layout)
+            }
+            ItemStyle.INCLUDED_PIP_CLUSTER -> {
                 require(layout is GuessAggregateConstraintCellLayout)
-            ItemStyle.AGGREGATED_PIP_CLUSTER ->
+                aggregatedStyleAppearance[itemStyle] = GuessAggregatedIncludedAppearance(layoutInflater.context, layout)
+            }
+            ItemStyle.AGGREGATED_PIP_CLUSTER -> {
                 require(layout is GuessAggregateConstraintCellLayout)
-            ItemStyle.AGGREGATED_PIP_LINE ->
+                aggregatedStyleAppearance[itemStyle] = GuessAggregatedCountsAppearance(layoutInflater.context, layout)
+            }
+            ItemStyle.AGGREGATED_PIP_LINE -> {
                 require(layout is GuessAggregateConstraintLineLayout)
+            }
         }
 
         // update layout entry

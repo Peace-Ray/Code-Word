@@ -12,7 +12,15 @@ interface GuessAggregatedAppearance {
     @ColorInt fun getColorStroke(guess: Guess, markup: Constraint.MarkupType?, swatch: ColorSwatch): Int
 
     // dimensions
-    @Dimension fun getElevation(guess: Guess, markup: Constraint.MarkupType?): Float
+    val hasStableDimensions: Boolean
+    @Dimension fun getPipSize(guess: Guess, markup: Constraint.MarkupType?): Float
+    @Dimension fun getPipMargin(guess: Guess, markup: Constraint.MarkupType?): Float
+
+    // details
+    @Dimension fun getPipStrokeWidth(guess: Guess, markup: Constraint.MarkupType?): Int
+    @Dimension fun getPipCornerRadius(guess: Guess, markup: Constraint.MarkupType?): Float
+    @Dimension fun getPipElevation(guess: Guess, markup: Constraint.MarkupType?): Float
+
 
     // pip / text counts
     fun getTotalCount(guess: Guess): Int

@@ -14,8 +14,6 @@
         android:layout_height="@dimen/aggregate_markup_pip_small_size"
         android:layout_margin="@dimen/aggregate_markup_pip_small_margin"
         app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="@dimen/aggregate_markup_pip_small_corner_radius"
-        app:strokeWidth="@dimen/aggregate_markup_pip_small_stroke_width"
         />
 
 </FrameLayout>

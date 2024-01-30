@@ -2,7 +2,10 @@ package com.peaceray.codeword.presentation.view.component.viewholders.guess
 
 import android.graphics.PorterDuff
 import android.view.View
+import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageView
+import androidx.core.view.setMargins
+import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
@@ -12,6 +15,8 @@ import com.peaceray.codeword.presentation.datamodel.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
 import com.peaceray.codeword.presentation.view.component.views.PipGridLayout
+import timber.log.Timber
+import kotlin.math.round
 
 class GuessAggregatedPipGridViewHolder(
     itemView: View,
@@ -24,13 +29,6 @@ class GuessAggregatedPipGridViewHolder(
     private val pipGrid: PipGridLayout = itemView.findViewById(R.id.pipGridLayout)
     private val noPipImageView: ImageView = itemView.findViewById(R.id.noPipImageView)
     private val constraintPipViews = mutableListOf<View>()
-
-    private val dimenPipElevation: Float
-
-    init {
-        val context = itemView.context
-        dimenPipElevation = context.resources.getDimension(R.dimen.aggregate_markup_pip_large_elevation)
-    }
     //---------------------------------------------------------------------------------------------
     //endregion
 
@@ -66,8 +64,8 @@ class GuessAggregatedPipGridViewHolder(
         // configure pip visible count
         pipGrid.setPipsVisibility(if (guess.constraint == null) 0 else appearance.getTotalCount(guess))
 
-        // configure pip colors
-        setConstraintColors(guess, colorSwatchManager.colorSwatch)
+        // configure pip details
+        setConstraintDetails(guess, colorSwatchManager.colorSwatch)
     }
 
     private fun refreshPipViews() {
@@ -77,9 +75,22 @@ class GuessAggregatedPipGridViewHolder(
             val pip = child.findViewById(R.id.pipView) ?: child
             constraintPipViews.add(pip)
         }
+
+        if (appearance.hasStableDimensions) {
+            constraintPipViews.forEach { view ->
+                view.updateLayoutParams {
+                    val size = round(appearance.getPipSize(guess, null)).toInt()
+                    width = size
+                    height = size
+                    if (this is MarginLayoutParams) {
+                        setMargins(round(appearance.getPipMargin(guess, null)).toInt())
+                    }
+                }
+            }
+        }
     }
 
-    private fun setConstraintColors(guess: Guess, swatch: ColorSwatch) {
+    private fun setConstraintDetails(guess: Guess, swatch: ColorSwatch) {
         val exact = appearance.getExactCount(guess)
         val inclu = appearance.getIncludedCount(guess)
         List(guess.length) {
@@ -89,17 +100,28 @@ class GuessAggregatedPipGridViewHolder(
                 else -> Constraint.MarkupType.NO
             }
         }.zip(constraintPipViews).forEach { (markUp, pipView) ->
-            val bg = if (!guess.isEvaluation) swatch.container.background else swatch.evaluation.color(markUp)
-            val stroke = if (!guess.isEvaluation) swatch.evaluation.untried else bg
-            val elevation = if (!guess.isEvaluation) 0.0f else dimenPipElevation
+            // dimensions
+            if (!appearance.hasStableDimensions) {
+                pipView.updateLayoutParams {
+                    val size = appearance.getPipSize(guess, markUp).toInt()
+                    width = size
+                    height = size
+                    if (this is MarginLayoutParams) {
+                        setMargins(appearance.getPipMargin(guess, markUp).toInt())
+                    }
+                }
+            }
 
+            // colors / details
             if (pipView is MaterialCardView) {
+                pipView.radius = appearance.getPipCornerRadius(guess, markUp)
                 pipView.setCardBackgroundColor(appearance.getColorFill(guess, markUp, swatch))
                 pipView.strokeColor = appearance.getColorStroke(guess, markUp, swatch)
-                pipView.elevation = appearance.getElevation(guess, markUp)
+                pipView.strokeWidth = appearance.getPipStrokeWidth(guess, markUp)
+                pipView.elevation = appearance.getPipElevation(guess, markUp)
             } else {
                 pipView.setBackgroundColor(appearance.getColorFill(guess, markUp, swatch))
-                pipView.elevation = elevation
+                pipView.elevation = appearance.getPipElevation(guess, markUp)
             }
         }
 
