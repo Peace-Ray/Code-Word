@@ -2,7 +2,6 @@ package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
-import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
 import com.peaceray.codeword.domain.manager.game.play.GamePlayManager
 import com.peaceray.codeword.domain.manager.game.play.GamePlaySession
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
@@ -22,16 +21,11 @@ import java.util.*
 import javax.inject.Inject
 
 /**
- * A Presenter for interactive CodeGame. Retrieves the appropriate Solver and Evaluator implementations
- * from Managers (if any) and handles message passing (game moves) between the player and bots.
- *
- * The Evaluator and Solver perform complicated, long-running operations; their construction is also
- * non-trivial. To allow responsive UI, this Presenter uses RxJava when interacting with these
- * intensive operations.
+ * A Presenter for interactive Games. Uses a GamePlaySession to interact with a game and,
+ * sometimes, its Evaluator and Solver.
  */
 class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter<GameContract.View>() {
     @Inject lateinit var gameCreationManager: GameCreationManager
-    @Inject lateinit var gamePersistenceManager: GamePersistenceManager
     @Inject lateinit var gamePlayManager: GamePlayManager
     @Inject lateinit var gameRecordManager: GameRecordManager
 
