@@ -1,8 +1,7 @@
 package com.peaceray.codeword.domain.api
 
 import com.peaceray.codeword.data.model.version.SupportedVersions
-import com.peaceray.codeword.data.model.version.Versions
-import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.GET
 
 /**
@@ -23,6 +22,6 @@ import retrofit2.http.GET
 interface CodeWordApi {
 
     @GET("versions")
-    fun getVersions(): Call<SupportedVersions>
+    suspend fun getVersions(): Response<SupportedVersions>
 
 }

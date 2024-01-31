@@ -10,6 +10,10 @@ import com.peaceray.codeword.domain.api.CodeWordApi
 import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.version.VersionsManager
 import com.peaceray.codeword.glue.ForApplication
+import com.peaceray.codeword.glue.ForRemoteIO
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 import timber.log.Timber
 import java.lang.Exception
 import javax.inject.Inject
@@ -19,6 +23,7 @@ import javax.inject.Singleton
 class VersionsManagerImpl @Inject constructor(
     @ForApplication val context: Context,
     val gameSetupManager: GameSetupManager,
+    @ForRemoteIO val ioDispatcher: CoroutineDispatcher,
     val api: CodeWordApi
 ): VersionsManager {
 
@@ -109,7 +114,8 @@ class VersionsManagerImpl @Inject constructor(
      * additional lifespan requirements, the most restrictive of which will be used.
      * @return The versions supported, according to the canonical record (external server).
      */
-    override fun getSupportedVersions(
+    @Throws(IllegalStateException::class, HttpException::class)
+    override suspend fun getSupportedVersions(
         cacheLifespan: Long,
         allowRemote: Boolean
     ): SupportedVersions {
@@ -124,10 +130,16 @@ class VersionsManagerImpl @Inject constructor(
         // unavailable or expired; make an API call
         if (!allowRemote) throw IllegalStateException("Cannot provide SupportedVersions without a remote call, but allowRemote = false")
 
-        val response = api.getVersions().execute()
-        versions = response.body()!!
-        Timber.v("getSupportedVersions has remote versions $versions")
+        versions = withContext(ioDispatcher) {
+            val response = api.getVersions()
+            val body = if (response.isSuccessful) response.body() else null
+            if (body != null) body else {
+                Timber.e("An error occurred calling getVersions ${response.errorBody()}")
+                throw HttpException(response)
+            }
+        }
 
+        Timber.v("getSupportedVersions has remote versions $versions")
         // cache retrieved value
         preferences.edit()
             .putSupportedVersions(versions)
@@ -147,7 +159,8 @@ class VersionsManagerImpl @Inject constructor(
      * @return Whether this application meets or exceeds the minimum supported seed and application
      * versions.
      */
-    override fun isApplicationSupported(
+    @Throws(IllegalStateException::class, HttpException::class)
+    override suspend fun isApplicationSupported(
         cacheLifespan: Long,
         allowRemote: Boolean
     ): Boolean {
@@ -168,7 +181,8 @@ class VersionsManagerImpl @Inject constructor(
      * @return Whether this application meets or exceeds the current seed and application
      * versions.
      */
-    override fun isApplicationCurrent(
+    @Throws(IllegalStateException::class, HttpException::class)
+    override suspend fun isApplicationCurrent(
         cacheLifespan: Long,
         allowRemote: Boolean
     ): Boolean {

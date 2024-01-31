@@ -1,7 +1,6 @@
 package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.presentation.contracts.BaseContract
-import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
