@@ -16,10 +16,13 @@ import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvi
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.utils.wrappers.WrappedNullable
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -49,6 +52,8 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         get() = ready && !forfeit && game.state == Game.State.EVALUATING && gameSetup.evaluator == GameSetup.Evaluator.PLAYER
 
     private val locale: Locale = Locale.getDefault()
+
+    private var disposable: Disposable = Disposable.disposed()
 
     private val solverObservable: Single<Solver> by lazy {
         Single.defer {
@@ -95,8 +100,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             .cache()
     }
 
-    private var disposable: Disposable = Disposable.disposed()
-
     override fun onAttached() {
         super.onAttached()
 
@@ -136,49 +139,35 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
         // load (or create) the game, provide the lateinit field, then set char evaluations
         ready = false
-        Single.defer { Single.just(gameSessionManager.getGame(gameSeed, gameSetup)) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { game ->
-                    Timber.v("Game loaded at round ${game.round} with currentGuess ${game.currentGuess}")
-                    this.game = game
+        viewScope.launch {
+            try {
+                game = gameSessionManager.getGame(gameSeed, gameSetup)
+                Timber.v("Game loaded at round ${game.round} with currentGuess ${game.currentGuess}")
+            } catch (err: Exception) {
+                game = gameSessionManager.getGame(gameSeed, gameSetup, create = true)
+            }
+            // if forfeit, apply immediately; otherwise prompt a user action
+            if (forfeit) {
+                recordGameOutcome(false)
+            } else {
+                // apply updated settings
+                val update = view?.getUpdatedGameSetup()
+                if (update != null) applyGameSetupUpdate(update)
 
-                    // if forfeit, apply immediately; otherwise prompt a user action
-                    if (forfeit) {
-                        recordGameOutcome(false)
-                    } else {
-                        // apply updated settings
-                        val update = view?.getUpdatedGameSetup()
-                        if (update != null) applyGameSetupUpdate(update)
-
-                        // begin game
-                        this.ready = true
-                        view?.setConstraints(game.constraints, true)
-                        if (game.currentGuess != null) {
-                            view?.setGuess(game.currentGuess!!, true)
-                        } else {
-                            cachedPartialGuess = view?.getCachedGuess()
-                            if ((cachedPartialGuess?.length ?: 0) > 0) view?.setGuess(cachedPartialGuess!!, true)
-                        }
-                        advanceGameCharacterFeedback(false)
-                    }
-                },
-                { error ->
-                    Timber.e(error, "Error loading game session; attempting a fresh start")
-                    this.game = gameSessionManager.getGame(gameSeed, gameSetup, create = true)
-                    this.ready = true
-                    view?.setConstraints(game.constraints, true)
-                    if (game.currentGuess != null) view?.setGuess(game.currentGuess!!, true)
-                    advanceGameCharacterFeedback(false)
+                // begin game
+                ready = true
+                view?.setConstraints(game.constraints, true)
+                if (game.currentGuess != null) {
+                    view?.setGuess(game.currentGuess!!, true)
+                } else {
+                    cachedPartialGuess = view?.getCachedGuess()
+                    if ((cachedPartialGuess?.length
+                            ?: 0) > 0
+                    ) view?.setGuess(cachedPartialGuess!!, true)
                 }
-            )
-    }
-
-    override fun onDetached() {
-        super.onDetached()
-
-        disposable.dispose()
+                advanceGameCharacterFeedback(false)
+            }
+        }
     }
 
     override fun onUpdatedGameSetup(gameSetup: GameSetup) {
@@ -247,23 +236,23 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
     //region Game Progression
     //---------------------------------------------------------------------------------------------
-    private var saveDisposable = Disposable.disposed()
+    private var saveScope: CoroutineScope? = null
+    private fun saveGame() {
+        Timber.v("Saving the game...")
+        val saveData = GameSaveData(gameSeed, gameSetup, game)
+        saveScope?.cancel("A new saved game is being prepared")
+        saveScope = CoroutineScope(Dispatchers.Main)
+        saveScope?.launch {
+            Timber.v("...within saveScope")
+            gameSessionManager.saveGame(saveData)
+            Timber.v("...Saved!")
+        }
+    }
 
     private fun advanceGame(save: Boolean = true) {
         Timber.v("advanceGame")
 
-        if (save) {
-            Timber.v("Saving the game...")
-            val saveData = GameSaveData(gameSeed, gameSetup, game)
-            saveDisposable.dispose()
-            saveDisposable = Completable.fromAction { gameSessionManager.saveGame(saveData) }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { Timber.v("Saved!") },
-                    { error -> Timber.e(error, "An error occurred saving the game") }
-                )
-        }
+        if (save) saveGame()
         advanceGameWithoutSaving()
     }
 
@@ -375,16 +364,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     view?.setGameFieldSize(gameSetup.vocabulary.length, gameSetup.board.rounds)
                 }
 
-                Timber.v("Saving the game...")
-                val save = GameSaveData(gameSeed, gameSetup, game)
-                saveDisposable.dispose()
-                saveDisposable = Completable.fromAction { gameSessionManager.saveGame(save) }
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                        { Timber.v("Saved!") },
-                        { error -> Timber.e(error, "An error occurred saving the game") }
-                    )
+                saveGame()
             }
         }
     }

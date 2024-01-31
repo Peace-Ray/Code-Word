@@ -17,3 +17,15 @@ annotation class ForActivity
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class ForFragment
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ForLocalIO
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ForRemoteIO
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ForComputation

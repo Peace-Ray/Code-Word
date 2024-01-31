@@ -25,6 +25,12 @@ import com.peaceray.codeword.game.data.Settings
 import com.peaceray.codeword.game.validators.Validator
 import com.peaceray.codeword.game.validators.Validators
 import com.peaceray.codeword.glue.ForApplication
+import com.peaceray.codeword.glue.ForLocalIO
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
@@ -34,12 +40,13 @@ import javax.inject.Singleton
 class GameSessionManagerImpl @Inject constructor(
     @ForApplication val context: Context,
     @ForApplication val assets: AssetManager,
-    val botSettingsManager: BotSettingsManager
+    @ForLocalIO private val ioDispatcher: CoroutineDispatcher,
+    private val botSettingsManager: BotSettingsManager
 ): GameSessionManager {
 
     //region Game Setup
     //---------------------------------------------------------------------------------------------
-    override fun getGame(seed: String?, setup: GameSetup, create: Boolean): Game {
+    override suspend fun getGame(seed: String?, setup: GameSetup, create: Boolean): Game {
         if (!create) {
             return loadGame(seed, setup)?.second ?: getGame(seed, setup, create = true)
         }
@@ -466,29 +473,36 @@ class GameSessionManagerImpl @Inject constructor(
     }
 
     private var lastSaveData: GameSaveData? = null
+    private val saveMutex = Mutex()
 
-    private fun getLoadFiles(seed: String?): List<File> {
+    private suspend fun getLoadFiles(seed: String?): List<File> {
         val currentFile = File(context.filesDir, GAME_SAVE_FILENAME)
         return if (seed == null) listOf(currentFile) else {
             val saneSeed = seed.replace('/', '_')
             val saneRecord = "$saneSeed.$GAME_RECORD_EXT"
             val recordDir = File(context.filesDir, GAME_RECORD_DIRNAME)
-            val recordFile = if (recordDir.isDirectory) File(recordDir, saneRecord) else null
-            if (recordFile?.exists() != true) listOf(currentFile) else listOf(
-                recordFile,
-                currentFile
-            )
+
+            withContext(ioDispatcher) {
+                val recordFile = if (recordDir.isDirectory) File(recordDir, saneRecord) else null
+                if (recordFile?.exists() != true) listOf(currentFile) else listOf(
+                    recordFile,
+                    currentFile
+                )
+            }
         }
     }
 
-    private fun getLoadFile(seed: String?): File {
+    private suspend fun getLoadFile(seed: String?): File {
         val currentFile = File(context.filesDir, GAME_SAVE_FILENAME)
         return if (seed == null) currentFile else {
             val saneSeed = seed.replace('/', '_')
             val saneRecord = "$saneSeed.$GAME_RECORD_EXT"
             val recordDir = File(context.filesDir, GAME_RECORD_DIRNAME)
-            val recordFile = if (recordDir.isDirectory) File(recordDir, saneRecord) else null
-            if (recordFile?.exists() == true) recordFile else currentFile
+
+            withContext(ioDispatcher) {
+                val recordFile = if (recordDir.isDirectory) File(recordDir, saneRecord) else null
+                if (recordFile?.exists() == true) recordFile else currentFile
+            }
         }
     }
 
@@ -512,33 +526,38 @@ class GameSessionManagerImpl @Inject constructor(
         val saneSeed = gameSaveData.seed.replace('/', '_')
         val saneRecord = "$saneSeed.$GAME_RECORD_EXT"
         val recordDir = File(context.filesDir, GAME_RECORD_DIRNAME)
+
         if (!recordDir.isDirectory) recordDir.mkdir()
 
         return listOf(
-            File(context.filesDir, GAME_SAVE_FILENAME),
+            File(recordDir, GAME_SAVE_FILENAME),
             File(recordDir, saneRecord)
         )
     }
 
-    private fun loadGameSaveData(seed: String?, setup: GameSetup?): GameSaveData? {
-        try {
-            synchronized(this) {
-                if (isGameSaveData(seed, setup, lastSaveData)) return lastSaveData
-                val file = getLoadFile(seed)
-                Timber.v("loading game file from ${file.absolutePath}")
-                if (file.exists()) {
-                    val serialized = file.readText()
-                    Timber.v("loaded game file; has length ${serialized.length}")
-                    val save = deserialize(serialized)
-                    if (isGameSaveData(seed, setup, save)) return save
-                    Timber.v("rejected game file (no match)")
+    private suspend fun loadGameSaveData(seed: String?, setup: GameSetup?): GameSaveData? {
+        // held in memory
+        val lastSave = lastSaveData
+        if (isGameSaveData(seed, setup, lastSave)) return lastSave
+
+        // from disk
+        return withContext(ioDispatcher) {
+            saveMutex.withLock {
+                try {
+                    val file = getLoadFile(seed)
+                    Timber.v("loading game file from ${file.absolutePath}")
+                    if (!file.exists()) null else {
+                        val serialized = file.readText()
+                        Timber.v("loaded game file; has length ${serialized.length}")
+                        val save = deserialize(serialized)
+                        if (isGameSaveData(seed, setup, save)) save else null
+                    }
+                } catch (err: Exception) {
+                    Timber.w(err, "An error occurred loading a persisted game save (seed $seed)")
+                    null
                 }
             }
-        } catch (err: Exception) {
-            Timber.w(err, "An error occurred loading a persisted game save (seed $seed)")
         }
-
-        return null
     }
 
     private fun isGameSaveData(seed: String?, setup: GameSetup?, save: GameSaveData?): Boolean {
@@ -547,14 +566,14 @@ class GameSessionManagerImpl @Inject constructor(
                 && (setup == null || save.setup == setup)
     }
 
-    override fun loadState(seed: String?, setup: GameSetup?): Game.State? {
+    override suspend fun loadState(seed: String?, setup: GameSetup?): Game.State? {
         val save = loadGameSaveData(seed, setup)
         return if (save == null) null else getGameState(save)
     }
 
-    override fun loadSave(seed: String?, setup: GameSetup?): GameSaveData? = loadGameSaveData(seed, setup)
+    override suspend fun loadSave(seed: String?, setup: GameSetup?): GameSaveData? = loadGameSaveData(seed, setup)
 
-    override fun loadGame(seed: String?, setup: GameSetup?): Pair<GameSaveData, Game>? {
+    override suspend fun loadGame(seed: String?, setup: GameSetup?): Pair<GameSaveData, Game>? {
         val save = loadGameSaveData(seed, setup)
         return if (save == null) null else Pair(save, Game.atMove(
             save.settings,
@@ -565,46 +584,52 @@ class GameSessionManagerImpl @Inject constructor(
         ))
     }
 
-    override fun saveGame(seed: String?, setup: GameSetup, game: Game) {
+    override suspend fun saveGame(seed: String?, setup: GameSetup, game: Game) {
         val gameSaveData = GameSaveData(seed, setup, game)
         saveGame(gameSaveData)
     }
 
-    override fun saveGame(saveData: GameSaveData) {
-        val serialized = serialize(saveData)
-        synchronized(this) {
-            lastSaveData = saveData
-            getSaveFiles(saveData).forEach {
-                Timber.v("writing game file to ${it.absolutePath}")
-                it.writeText(serialized)
+    override suspend fun saveGame(saveData: GameSaveData) {
+        withContext(ioDispatcher) {
+            val serialized = serialize(saveData)
+            saveMutex.withLock {
+                lastSaveData = saveData
+                getSaveFiles(saveData).forEach {
+                    Timber.v("saveGame writing game file to ${it.absolutePath}")
+                    it.writeText(serialized)
+                }
             }
         }
     }
 
-    override fun clearSavedGame(seed: String?, setup: GameSetup) {
-        try {
-            synchronized(this) {
-                if (isGameSaveData(seed, setup, lastSaveData)) lastSaveData = null
-                getLoadFiles(seed).filter {
-                    val serialized = it.readText()
-                    val save = deserialize(serialized)
-                    isGameSaveData(seed, setup, save)
-                }.forEach { it.delete() }
+    override suspend fun clearSavedGame(seed: String?, setup: GameSetup) {
+        withContext(ioDispatcher) {
+            try {
+               saveMutex.withLock {
+                    if (isGameSaveData(seed, setup, lastSaveData)) lastSaveData = null
+                    getLoadFiles(seed).filter {
+                        val serialized = it.readText()
+                        val save = deserialize(serialized)
+                        isGameSaveData(seed, setup, save)
+                    }.forEach { it.delete() }
+                }
+            } catch (err: Exception) {
+                Timber.e(err, "An error occurred deleting saved game ${seed}")
             }
-        } catch (err: Exception) {
-            Timber.e(err, "An error occurred deleting saved game ${seed}")
         }
     }
 
-    override fun clearSavedGames() {
-        try {
-            synchronized(this) {
-                lastSaveData = null
-                File(context.filesDir, GAME_SAVE_FILENAME).delete()
-                File(context.filesDir, GAME_RECORD_DIRNAME).deleteRecursively()
+    override suspend fun clearSavedGames() {
+        withContext(ioDispatcher) {
+            try {
+                saveMutex.withLock {
+                    lastSaveData = null
+                    File(context.filesDir, GAME_SAVE_FILENAME).delete()
+                    File(context.filesDir, GAME_RECORD_DIRNAME).deleteRecursively()
+                }
+            } catch (err: Exception) {
+                Timber.e(err, "An error occurred deleting saved games")
             }
-        } catch (err: Exception) {
-            Timber.e(err, "An error occurred deleting saved games")
         }
     }
 

@@ -2,20 +2,14 @@ package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.data.model.version.Versions
 import com.peaceray.codeword.domain.manager.game.GameDefaultsManager
 import com.peaceray.codeword.domain.manager.game.GameSessionManager
 import com.peaceray.codeword.domain.manager.game.GameSetupManager
-import com.peaceray.codeword.domain.manager.version.VersionsManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.ConstraintPolicy
-import com.peaceray.codeword.presentation.contracts.FeatureAvailabilityContract
 import com.peaceray.codeword.presentation.contracts.GameSetupContract
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -39,9 +33,6 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
     private lateinit var review: GameStatusReview
     private var game: Game? = null
 
-    // RxJava disposable
-    private var disposable: Disposable = Disposable.disposed()
-
     // Persisted View state
     private var savedViewState: SavedViewState? = null
 
@@ -54,12 +45,16 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             updateFeatureRanges()
             updateViewSetup(this.review)
         } else {
-            Timber.v("Constructing fresh view state from $savedViewState")
-            // read the type and configure data
-            updateTypeAndSetup(view!!.getType(), view!!.getQualifiers())
+            this.type = view!!.getType()
+            this.qualifiers = view!!.getQualifiers()
+            viewScope.launch {
+                Timber.v("Constructing fresh view state; ignoring $savedViewState")
+                // read the type and configure data
+                updateTypeAndSetup(type, qualifiers)
 
-            // configure view and (asynchronously) load status
-            updateGameSetupAndView(this.seed, this.gameSetup)
+                // configure view and (asynchronously) load status
+                updateGameSetupAndView(seed, gameSetup)
+            }
         }
 
         savedViewState = null
@@ -89,7 +84,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
 
     //region Type, Feature, Progress Support
     //---------------------------------------------------------------------------------------------
-    private fun updateTypeAndSetup(type: GameSetupContract.Type, qualifiers: Set<GameSetupContract.Qualifier>) {
+    private suspend fun updateTypeAndSetup(type: GameSetupContract.Type, qualifiers: Set<GameSetupContract.Qualifier>) {
         // set type
         this.type = type
         this.qualifiers = qualifiers
@@ -189,28 +184,26 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         updateViewSetup(this.review)
 
         // replace placeholder with actual status
-        disposable.dispose()
-        disposable = computeSessionProgress(seed)
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { progress ->
-                    if (seed == this.seed && gameSetup == this.gameSetup) {
-                        this.review = createGameStatusReview(this.type, seed, gameSetup, progress)
-                        updateFeatureSupport()
-                        updateFeatureRanges()
-                        updateViewSetup(this.review)
-                    } else {
-                        Timber.w("Would have set progress to $progress but gameSetup has changed")
-                    }
-                },
-                { error ->
-                    Timber.e(error, "An error occurred loading game session progress")
-                    if (seed == this.seed && gameSetup == this.gameSetup) {
-                        this.review = createGameStatusReview(this.type, seed, gameSetup, GameStatusReview.Status.NEW)
-                        updateViewSetup(this.review)
-                    }
+        viewScope.launch {
+            val progress = try {
+                getSessionProgress(seed)
+            } catch (error: Exception) {
+                // TODO catch only specific exceptions?
+                Timber.e(error, "An error occurred loading game session progress")
+                GameStatusReview.Status.NEW
+            }
+
+            if (seed == this@GameSetupPresenter.seed && gameSetup == this@GameSetupPresenter.gameSetup) {
+                review = createGameStatusReview(type, seed, gameSetup, progress)
+                if (progress != GameStatusReview.Status.NEW) {
+                    updateFeatureSupport()
+                    updateFeatureRanges()
                 }
-            )
+                updateViewSetup(review)
+            } else {
+                Timber.w("Would have set progress to $progress but gameSetup has changed")
+            }
+        }
     }
 
     private fun updateFeatureSupport() {
@@ -333,17 +326,14 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         )
     }
 
-    private fun computeSessionProgress(seed: String?): Single<GameStatusReview.Status> {
-        return if (seed == null) Single.just(GameStatusReview.Status.NEW) else {
-            Single.defer {
-                val progress = when (gameSessionManager.loadState(seed)) {
-                    Game.State.GUESSING, Game.State.EVALUATING -> GameStatusReview.Status.ONGOING
-                    Game.State.WON -> GameStatusReview.Status.WON
-                    Game.State.LOST -> GameStatusReview.Status.LOST
-                    else -> GameStatusReview.Status.NEW
-                }
-                Single.just(progress)
-            }.subscribeOn(Schedulers.io())
+    private suspend fun getSessionProgress(seed: String?): GameStatusReview.Status {
+        return if (seed == null) GameStatusReview.Status.NEW else {
+            when (gameSessionManager.loadState(seed)) {
+                Game.State.GUESSING, Game.State.EVALUATING -> GameStatusReview.Status.ONGOING
+                Game.State.WON -> GameStatusReview.Status.WON
+                Game.State.LOST -> GameStatusReview.Status.LOST
+                else -> GameStatusReview.Status.NEW
+            }
         }
     }
 
@@ -472,10 +462,10 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
     //---------------------------------------------------------------------------------------------
     override fun onTypeSelected(type: GameSetupContract.Type, qualifiers: Set<GameSetupContract.Qualifier>) {
         if (this.type != type || this.qualifiers != qualifiers) {
-            updateTypeAndSetup(type, qualifiers)
-
-            // configure view
-            updateGameSetupAndView(this.seed, this.gameSetup)
+            viewScope.launch {
+                updateTypeAndSetup(type, qualifiers)
+                updateGameSetupAndView(seed, gameSetup)
+            }
         }
     }
 
@@ -485,7 +475,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         val seed = this.seed
         val gameSetup = this.gameSetup
 
-        val launch: (GameStatusReview.Status?) -> Unit = {
+        val launchGame: (GameStatusReview.Status?) -> Unit = {
             val review = createGameStatusReview(type, seed, gameSetup, it)
             val canLaunch = isLaunchAllowed(type, qualifiers, review)
             if (canLaunch.first) performLaunch(type, review) else {
@@ -493,16 +483,16 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             }
         }
 
-        disposable.dispose()
-        disposable = computeSessionProgress(seed)
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { progress -> launch(progress) },
-                { error ->
-                    Timber.e(error, "An error occurred checking game progress")
-                    launch(null)
-                }
-            )
+        viewScope.launch {
+            val progress = try {
+                getSessionProgress(seed)
+            } catch (error: Exception) {
+                // TODO use specific type of Exception
+                Timber.e(error, "An error occurred checking game progress")
+                null
+            }
+            launchGame(progress)
+        }
     }
 
     override fun onCancelButtonClicked() {

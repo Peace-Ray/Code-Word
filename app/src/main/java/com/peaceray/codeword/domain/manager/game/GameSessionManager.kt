@@ -24,7 +24,7 @@ interface GameSessionManager {
      * @param create Whether to create the new game in a "first-move" state, regardless of
      * persisted record.
      */
-    fun getGame(seed: String?, setup: GameSetup, create: Boolean = false): Game
+    suspend fun getGame(seed: String?, setup: GameSetup, create: Boolean = false): Game
 
     /**
      * Construct and return a [Game] instance based on the provided GameSaveData, including
@@ -89,7 +89,7 @@ interface GameSessionManager {
      * @param setup The GameSetup describing the game settings
      * @return The current game state, if found, or null.
      */
-    fun loadState(seed: String? = null, setup: GameSetup? = null): Game.State?
+    suspend fun loadState(seed: String? = null, setup: GameSetup? = null): Game.State?
 
     /**
      * Loads the persisted game described by the setup, if available. Throws an exception if IO
@@ -99,7 +99,7 @@ interface GameSessionManager {
      * @param setup The GameSetup describing the game settings
      * @return The GameSaveData at its most recently saved state, or null if not available.
      */
-    fun loadSave(seed: String? = null, setup: GameSetup? = null): GameSaveData?
+    suspend fun loadSave(seed: String? = null, setup: GameSetup? = null): GameSaveData?
 
     /**
      * Loads the persisted game described by the setup, if available. Throws an exception if IO
@@ -109,7 +109,7 @@ interface GameSessionManager {
      * @param setup The GameSetup describing the game settings
      * @return The GameSaveData and Game at its most recently saved state, or null if not available.
      */
-    fun loadGame(seed: String? = null, setup: GameSetup? = null): Pair<GameSaveData, Game>?
+    suspend fun loadGame(seed: String? = null, setup: GameSetup? = null): Pair<GameSaveData, Game>?
 
     /**
      * Persist the current state of the game; after this call, [getGame] will return a Game instance
@@ -120,7 +120,7 @@ interface GameSessionManager {
      * @param seed The seed string identifying the game, if any
      * @param setup The GameSetup describing the game settings
      */
-    fun saveGame(seed: String?, setup: GameSetup, game: Game)
+    suspend fun saveGame(seed: String?, setup: GameSetup, game: Game)
 
     /**
      * Persist the current state of the game; after this call, [getGame] will return a Game instance
@@ -130,14 +130,14 @@ interface GameSessionManager {
      *
      * @param saveData Immutable game state save data
      */
-    fun saveGame(saveData: GameSaveData)
+    suspend fun saveGame(saveData: GameSaveData)
 
     /**
      * Clear any persisted games from the record; after this call, [getGame] will return
      * a Game instance with no moves applied (even if an identical [setup] to previously
      * persisted game is provided).
      */
-    fun clearSavedGames()
+    suspend fun clearSavedGames()
 
     /**
      * Clear any persisted game(s) from the record that match the provided seed and/or setup.
@@ -145,7 +145,7 @@ interface GameSessionManager {
      * @param seed The seed string identifying the game, if any
      * @param setup The GameSetup describing the game settings
      */
-    fun clearSavedGame(seed: String?, setup: GameSetup)
+    suspend fun clearSavedGame(seed: String?, setup: GameSetup)
 
     //-----------------------------------------------------------------------------------------
     //endregion

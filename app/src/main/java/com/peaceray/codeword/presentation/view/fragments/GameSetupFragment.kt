@@ -309,8 +309,10 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             )
 
             if (!presenter.onRolesEntered(solver, evaluator)) {
-                val item = getSpinnerItemFromPlayerRoles(gameSetup!!.solver, gameSetup!!.evaluator)
-                binding.sectionPuzzleType.playerRoleSpinner.setSelection(playerRoleAdapter.getPosition(item))
+                gameSetup?.let {
+                    val item = getSpinnerItemFromPlayerRoles(it.solver, it.evaluator)
+                    binding.sectionPuzzleType.playerRoleSpinner.setSelection(playerRoleAdapter.getPosition(item))
+                }
             }
         }
 
@@ -375,8 +377,10 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             val language = getCodeLanguageFromSpinnerItem(langValue)
 
             if (!presenter.onLanguageEntered(language)) {
-                val item = getSpinnerItemFromCodeLanguage(gameSetup!!.vocabulary.language)
-                binding.sectionPuzzleType.codeLanguageSpinner.setSelection(codeLanguageAdapter.getPosition(item))
+                gameSetup?.let {
+                    val item = getSpinnerItemFromCodeLanguage(it.vocabulary.language)
+                    binding.sectionPuzzleType.codeLanguageSpinner.setSelection(codeLanguageAdapter.getPosition(item))
+                }
             }
         }
 
@@ -422,8 +426,10 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             val policy = getConstraintPolicyFromSpinnerItem(policyValue)
 
             if (!presenter.onConstraintPolicyEntered(policy)) {
-                val item = getSpinnerItemFromConstraintPolicy(gameSetup!!.evaluation.type)
-                binding.sectionPuzzleType.feedbackPolicySpinner.setSelection(feedbackPolicyAdapter.getPosition(item))
+                gameSetup?.let {
+                    val item = getSpinnerItemFromConstraintPolicy(it.evaluation.type)
+                    binding.sectionPuzzleType.feedbackPolicySpinner.setSelection(feedbackPolicyAdapter.getPosition(item))
+                }
             }
         }
 
