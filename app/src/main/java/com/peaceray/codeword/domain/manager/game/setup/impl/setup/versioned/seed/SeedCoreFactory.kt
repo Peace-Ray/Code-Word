@@ -1,4 +1,4 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed
 
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.utils.extensions.fromFakeB58
@@ -77,7 +77,8 @@ class SeedCoreFactory {
         }
     }
 
-    fun getSeedVersion(seedCore: String? = null) = SeedVersion.forNumberEncoding(getSeedVersionInteger(seedCore))
+    fun getSeedVersion(seedCore: String? = null) =
+        SeedVersion.forNumberEncoding(getSeedVersionInteger(seedCore))
 
     fun getRandomSeed(seedCore: String? = null): Long {
         if (seedCore == null) {

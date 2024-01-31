@@ -1,4 +1,4 @@
-package com.peaceray.codeword.domain.manager.game.impl.session.legacy
+package com.peaceray.codeword.domain.manager.game.persistence.impl.legacy
 
 import android.os.Parcelable
 import com.peaceray.codeword.data.model.code.CodeLanguage

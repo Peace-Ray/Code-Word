@@ -12,7 +12,7 @@ import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.*
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint

@@ -1,8 +1,8 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned
 
 import com.peaceray.codeword.data.model.game.GameType
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.VersionedBySeed
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.VersionedBySeed
 
 /**
  * A [GameTypeFactory] specifically for Seeded games. An abstract class; concrete implementations

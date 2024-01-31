@@ -1,10 +1,10 @@
 package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.*
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.presentation.contracts.GameOutcomeContract
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -20,7 +20,7 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
     //region Fields and View Attachment
     //---------------------------------------------------------------------------------------------
     @Inject lateinit var gameSetupManager: GameSetupManager
-    @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gameCreationManager: GameCreationManager
     @Inject lateinit var gameRecordManager: GameRecordManager
 
     lateinit var uuid: UUID
@@ -75,7 +75,7 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
                 listOf(),
                 null,
                 null,
-                gameSessionManager.getSettings(gameSetup).rounds,
+                gameCreationManager.getSettings(gameSetup).rounds,
                 Date()
                 ))
         }

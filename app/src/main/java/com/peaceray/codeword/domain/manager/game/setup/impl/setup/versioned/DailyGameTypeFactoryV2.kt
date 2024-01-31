@@ -1,8 +1,8 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameType
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.random.ConsistentRandom
 import java.lang.IllegalArgumentException
@@ -15,7 +15,7 @@ import java.lang.IllegalArgumentException
  * Generates Daily GameTypes using the game's randomSeed to select between available modes.
  * In this version, the Daily may be an English word of 3-6 letters, or a Code sequence of 3-5.
  */
-internal class DailyGameTypeFactoryV1: DailyGameTypeFactory(SeedVersion.V1) {
+internal class DailyGameTypeFactoryV2: DailyGameTypeFactory(SeedVersion.V1) {
     override fun getGameType(randomSeed: Long, seedDetail: String): GameType {
         if (seedDetail.isNotBlank()) {
             throw IllegalArgumentException("seedDetail must be blank for Dailies")
@@ -34,16 +34,35 @@ internal class DailyGameTypeFactoryV1: DailyGameTypeFactory(SeedVersion.V1) {
         // from different values. And it feels better.
         random.nextInt()
 
-        // pick a game mode
+        // random draws for language, length/characters, and policy
         val a = random.nextFloat()
+        val b = random.nextFloat()
+
         return when {
-            a < 0.10 -> GameType(CodeLanguage.ENGLISH, 3, 26, 3, ConstraintPolicy.PERFECT)
-            a < 0.35 -> GameType(CodeLanguage.ENGLISH, 4, 26, 4, ConstraintPolicy.PERFECT)
-            a < 0.60 -> GameType(CodeLanguage.ENGLISH, 5, 26, 5, ConstraintPolicy.PERFECT)
-            a < 0.70 -> GameType(CodeLanguage.ENGLISH, 6, 26, 6, ConstraintPolicy.PERFECT)
-            a < 0.80 -> GameType(CodeLanguage.CODE, 3, 8, 3, ConstraintPolicy.AGGREGATED)
-            a < 0.90 -> GameType(CodeLanguage.CODE, 4, 6, 4, ConstraintPolicy.AGGREGATED)
-            else -> GameType(CodeLanguage.CODE, 5, 6, 5, ConstraintPolicy.AGGREGATED)
+            a < 0.5 -> {
+                // ENGLISH, per-letter annotation
+                when {
+                    b < 0.4 -> GameType(CodeLanguage.ENGLISH, 4, 26, 4, ConstraintPolicy.PERFECT)
+                    b < 0.8 -> GameType(CodeLanguage.ENGLISH, 5, 26, 5, ConstraintPolicy.PERFECT)
+                    else -> GameType(CodeLanguage.ENGLISH, 6, 26, 6, ConstraintPolicy.PERFECT)
+                }
+            }
+            a < 0.7 -> {
+                // INCLUDED annotation
+                when {
+                    b < 0.4 -> GameType(CodeLanguage.ENGLISH, 4, 26, 1, ConstraintPolicy.AGGREGATED_INCLUDED)
+                    b < 0.8 -> GameType(CodeLanguage.ENGLISH, 5, 26, 1, ConstraintPolicy.AGGREGATED_INCLUDED)
+                    else -> GameType(CodeLanguage.ENGLISH, 6, 26, 1, ConstraintPolicy.AGGREGATED_INCLUDED)
+                }
+            }
+            else -> {
+                // code sequence: AGGREGATED
+                when {
+                    b < 0.333 -> GameType(CodeLanguage.CODE, 3, 8, 3, ConstraintPolicy.AGGREGATED)
+                    b < 0.667 -> GameType(CodeLanguage.CODE, 4, 6, 4, ConstraintPolicy.AGGREGATED)
+                    else -> GameType(CodeLanguage.CODE, 5, 6, 5, ConstraintPolicy.AGGREGATED)
+                }
+            }
         }
     }
 }

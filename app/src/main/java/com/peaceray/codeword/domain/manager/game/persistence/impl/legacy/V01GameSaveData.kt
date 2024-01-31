@@ -1,4 +1,4 @@
-package com.peaceray.codeword.domain.manager.game.impl.session.legacy
+package com.peaceray.codeword.domain.manager.game.persistence.impl.legacy
 
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint

@@ -1,4 +1,4 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned
 
 import com.peaceray.codeword.data.model.game.GameType
 

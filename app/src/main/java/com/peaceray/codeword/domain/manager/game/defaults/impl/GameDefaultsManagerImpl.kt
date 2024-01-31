@@ -1,19 +1,17 @@
-package com.peaceray.codeword.domain.manager.game.impl
+package com.peaceray.codeword.domain.manager.game.defaults.impl
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.GameDefaultsManager
+import com.peaceray.codeword.domain.manager.game.defaults.GameDefaultsManager
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.glue.ForApplication
-import dagger.hilt.android.scopes.ActivityScoped
 import timber.log.Timber
 import java.lang.Exception
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.min
 
 @Singleton
 class GameDefaultsManagerImpl @Inject constructor(

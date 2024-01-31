@@ -1,4 +1,4 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed
 
 /**
  * The SeedVersions available when interpreting game seeds.

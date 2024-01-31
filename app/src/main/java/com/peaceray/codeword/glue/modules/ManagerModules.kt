@@ -1,11 +1,13 @@
 package com.peaceray.codeword.glue.modules
 
-import com.peaceray.codeword.domain.manager.game.GameDefaultsManager
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
-import com.peaceray.codeword.domain.manager.game.impl.GameDefaultsManagerImpl
-import com.peaceray.codeword.domain.manager.game.impl.session.GameSessionManagerImpl
-import com.peaceray.codeword.domain.manager.game.impl.setup.BaseGameSetupManager
+import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.domain.manager.game.creation.impl.GameCreationManagerImpl
+import com.peaceray.codeword.domain.manager.game.defaults.GameDefaultsManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.defaults.impl.GameDefaultsManagerImpl
+import com.peaceray.codeword.domain.manager.game.persistence.impl.GamePersistenceManagerImpl
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.BaseGameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.domain.manager.record.impl.GameRecordManagerImpl
 import com.peaceray.codeword.domain.manager.settings.BotSettingsManager
@@ -30,21 +32,16 @@ import dagger.hilt.components.SingletonComponent
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class GameDefaultsManagerModule {
+abstract class GameManagerModule {
+    @Binds
+    abstract fun bindGameCreationManager(manager: GameCreationManagerImpl): GameCreationManager
+
     @Binds
     abstract fun bindGameDefaultsManager(manager: GameDefaultsManagerImpl): GameDefaultsManager
-}
 
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class GameSessionManagerModule {
     @Binds
-    abstract fun bindGameSessionManager(manager: GameSessionManagerImpl): GameSessionManager
-}
+    abstract fun bindGamePersistenceManager(manager: GamePersistenceManagerImpl): GamePersistenceManager
 
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class GameSetupManagerModule {
     @Binds
     abstract fun bindGameSetupManager(manager: BaseGameSetupManager): GameSetupManager
 }

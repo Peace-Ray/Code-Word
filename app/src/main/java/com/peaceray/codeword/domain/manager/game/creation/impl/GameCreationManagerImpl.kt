@@ -1,20 +1,25 @@
-package com.peaceray.codeword.domain.manager.game.impl.session
+package com.peaceray.codeword.domain.manager.game.creation.impl
 
 import android.content.Context
 import android.content.res.AssetManager
-import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.impl.session.legacy.V01GameSaveData
-import com.peaceray.codeword.domain.manager.game.impl.session.legacy.V01GameSetup
+import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
 import com.peaceray.codeword.domain.manager.settings.BotSettingsManager
 import com.peaceray.codeword.game.Game
-import com.peaceray.codeword.game.bot.*
-import com.peaceray.codeword.game.bot.modules.generation.*
-import com.peaceray.codeword.game.bot.modules.generation.enumeration.*
-import com.peaceray.codeword.game.bot.modules.generation.vocabulary.*
+import com.peaceray.codeword.game.bot.Evaluator
+import com.peaceray.codeword.game.bot.ModularFlexibleEvaluator
+import com.peaceray.codeword.game.bot.ModularHonestEvaluator
+import com.peaceray.codeword.game.bot.ModularSolver
+import com.peaceray.codeword.game.bot.Solver
+import com.peaceray.codeword.game.bot.modules.generation.CandidateGenerationModule
+import com.peaceray.codeword.game.bot.modules.generation.CascadingGenerator
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.CodeEnumeratingGenerator
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.OneCodeEnumeratingGenerator
+import com.peaceray.codeword.game.bot.modules.generation.enumeration.SolutionTruncatedEnumerationCodeGenerator
+import com.peaceray.codeword.game.bot.modules.generation.vocabulary.OneCodeGenerator
+import com.peaceray.codeword.game.bot.modules.generation.vocabulary.VocabularyListGenerator
 import com.peaceray.codeword.game.bot.modules.scoring.InformationGainScorer
 import com.peaceray.codeword.game.bot.modules.scoring.KnuthMinimumInvertedScorer
 import com.peaceray.codeword.game.bot.modules.scoring.UnitScorer
@@ -25,48 +30,77 @@ import com.peaceray.codeword.game.data.Settings
 import com.peaceray.codeword.game.validators.Validator
 import com.peaceray.codeword.game.validators.Validators
 import com.peaceray.codeword.glue.ForApplication
+import com.peaceray.codeword.glue.ForComputation
 import com.peaceray.codeword.glue.ForLocalIO
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import timber.log.Timber
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GameSessionManagerImpl @Inject constructor(
+class GameCreationManagerImpl @Inject constructor(
     @ForApplication val context: Context,
     @ForApplication val assets: AssetManager,
+    @ForComputation private val computationDispatcher: CoroutineDispatcher,
     @ForLocalIO private val ioDispatcher: CoroutineDispatcher,
+    private val gamePersistenceManager: GamePersistenceManager,
     private val botSettingsManager: BotSettingsManager
-): GameSessionManager {
+): GameCreationManager {
 
-    //region Game Setup
-    //---------------------------------------------------------------------------------------------
-    override suspend fun getGame(seed: String?, setup: GameSetup, create: Boolean): Game {
-        if (!create) {
-            return loadGame(seed, setup)?.second ?: getGame(seed, setup, create = true)
-        }
+    //region Game Creation
+    //-----------------------------------------------------------------------------------------
 
+    override suspend fun createGame(setup: GameSetup): Game {
         return Game(getSettings(setup), getValidator(setup))
     }
 
-    override fun getGame(save: GameSaveData) = Game.atMove(
-        save.settings,
-        getValidator(save.setup),
-        save.uuid,
-        save.constraints,
-        save.currentGuess
-    )
+    override suspend fun getGame(seed: String?, setup: GameSetup): Game {
+        // load a save; may dispatch for IO
+        val save = gamePersistenceManager.load(seed, setup)
+        // create a game; may dispatch for IO and/or computation
+        return if (save != null) getGame(save) else createGame(setup)
+    }
+
+    override suspend fun getGame(save: GameSaveData): Game {
+        // create validator; may use its own coroutine context
+        val validator = getValidator(save.setup)
+
+        // advance the game to the saved move w/in a computation context
+        return withContext(computationDispatcher) {
+            Game.atMove(
+                save.settings,
+                getValidator(save.setup),
+                save.uuid,
+                save.constraints,
+                save.currentGuess
+            )
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------
+    //endregion
+
+    //region Game Examination
+    //-----------------------------------------------------------------------------------------
 
     override fun getSettings(setup: GameSetup) = Settings(
         letters = setup.vocabulary.length,
         rounds = if (setup.board.rounds > 0) setup.board.rounds else 100000,
         constraintPolicy = setup.evaluation.enforced
     )
+
+    override fun getCodeCharacters(setup: GameSetup): Iterable<Char> {
+        return when(setup.vocabulary.type) {
+            GameSetup.Vocabulary.VocabularyType.LIST -> getCharRange(26)
+            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> getCharRange(setup.vocabulary.characters)
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------
+    //endregion
+
+    //region Game Players
+    //-----------------------------------------------------------------------------------------
 
     override fun getSolver(setup: GameSetup): Solver {
         // TODO caching
@@ -75,7 +109,8 @@ class GameSessionManagerImpl @Inject constructor(
             GameSetup.Solver.BOT -> {
                 var weight: (String) -> Double = { 1.0 }
                 if (setup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
-                    val commonWords = getWordList(setup.vocabulary.length, WordListType.SECRETS, portion = 0.9f).toHashSet()
+                    val commonWords = getWordList(setup.vocabulary.length,
+                        WordListType.SECRETS, portion = 0.9f).toHashSet()
                     val notRareWords = getWordList(setup.vocabulary.length,
                         WordListType.SECRETS, portion = 0.99f).toHashSet()
                     weight = { if (it in commonWords) 100.0 else if (it in notRareWords) 10.0 else 1.0 }
@@ -130,14 +165,7 @@ class GameSessionManagerImpl @Inject constructor(
         }
     }
 
-    override fun getCodeCharacters(setup: GameSetup): Iterable<Char> {
-        return when(setup.vocabulary.type) {
-            GameSetup.Vocabulary.VocabularyType.LIST -> getCharRange(26)
-            GameSetup.Vocabulary.VocabularyType.ENUMERATED -> getCharRange(setup.vocabulary.characters)
-        }
-    }
-
-    //---------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------
     //endregion
 
     //region Intermediate Object Creation
@@ -354,282 +382,6 @@ class GameSessionManagerImpl @Inject constructor(
                 cachedWordLists[key] = loader(key)
             }
             return cachedWordLists[key]!!
-        }
-    }
-
-    //---------------------------------------------------------------------------------------------
-    //endregion
-
-    //region Serialization and Legacy Support
-    //---------------------------------------------------------------------------------------------
-
-    private val gson = Gson()
-
-    private enum class LegacyVersion {
-        /**
-         * Launch version. Did not support vocabulary filters (e.g. "no letter repetitions").
-         * This version was not saved wrapped in VersionedSerialization.
-         */
-        V01,
-
-        /**
-         * Add vocabulary filters and different Constraint types, e.g. "no letter repetitions"
-         * and "report Included counts only".
-         * First use of VersionedSerialization.
-         */
-        V02;
-
-        companion object {
-            val CURRENT = V02
-        }
-    }
-
-    private data class VersionedSerialization(
-        val version: LegacyVersion,
-        val serialization: String
-    )
-
-    private fun serialize(saveData: GameSaveData): String {
-        val versionedSerialization = VersionedSerialization(
-            LegacyVersion.CURRENT,
-            gson.toJson(saveData)
-        )
-        return gson.toJson(versionedSerialization)
-    }
-
-    private fun deserialize(text: String): GameSaveData {
-        val versionedSerialization: VersionedSerialization
-        try {
-            versionedSerialization = gson.fromJson(text, VersionedSerialization::class.java)
-        } catch (error: JsonSyntaxException) {
-            // treat as V1
-            return deserializeLegacySave(LegacyVersion.V01, text)
-        }
-
-        return if (versionedSerialization.version == LegacyVersion.CURRENT) {
-            gson.fromJson(versionedSerialization.serialization, GameSaveData::class.java)
-        } else {
-            deserializeLegacySave(versionedSerialization.version, versionedSerialization.serialization)
-        }
-    }
-
-    private fun deserializeLegacySave(version: LegacyVersion, serialization: String): GameSaveData = when (version) {
-        LegacyVersion.V01 -> convertLegacySave(gson.fromJson(serialization, V01GameSaveData::class.java))
-        LegacyVersion.V02 -> gson.fromJson(serialization, GameSaveData::class.java)
-    }
-
-    private fun convertLegacySave(legacyData: V01GameSaveData): GameSaveData {
-        val legacySetup = legacyData.setup
-        val gameSetup = GameSetup(
-            board = GameSetup.Board(rounds = legacySetup.board.rounds),
-            evaluation = GameSetup.Evaluation(
-                type = legacySetup.evaluation.type,
-                enforced = legacySetup.evaluation.enforced
-            ),
-            vocabulary = GameSetup.Vocabulary(
-                language = legacySetup.vocabulary.language,
-                type = when (legacySetup.vocabulary.type) {
-                    V01GameSetup.Vocabulary.VocabularyType.LIST -> GameSetup.Vocabulary.VocabularyType.LIST
-                    V01GameSetup.Vocabulary.VocabularyType.ENUMERATED -> GameSetup.Vocabulary.VocabularyType.ENUMERATED
-                },
-                length = legacySetup.vocabulary.length,
-                characters = legacySetup.vocabulary.characters,
-                characterOccurrences = legacySetup.vocabulary.length,
-                secret = legacySetup.vocabulary.secret
-            ),
-            solver = when (legacySetup.solver) {
-                V01GameSetup.Solver.PLAYER -> GameSetup.Solver.PLAYER
-                V01GameSetup.Solver.BOT -> GameSetup.Solver.BOT
-            },
-            evaluator = when (legacySetup.evaluator) {
-                V01GameSetup.Evaluator.PLAYER -> GameSetup.Evaluator.PLAYER
-                V01GameSetup.Evaluator.HONEST -> GameSetup.Evaluator.HONEST
-                V01GameSetup.Evaluator.CHEATER -> GameSetup.Evaluator.CHEATER
-            },
-            randomSeed = legacySetup.randomSeed,
-            daily = legacySetup.daily,
-            version = legacySetup.version
-        )
-
-        return GameSaveData(
-            seed = legacyData.seed,
-            setup = gameSetup,
-            settings = legacyData.settings,
-            constraints = legacyData.constraints,
-            currentGuess = legacyData.currentGuess,
-            uuid = legacyData.uuid
-        )
-    }
-
-    //---------------------------------------------------------------------------------------------
-    //endregion
-
-    //region Game Persistence
-    //---------------------------------------------------------------------------------------------
-    companion object {
-        const val GAME_SAVE_FILENAME = "gameSave.json"
-        const val GAME_RECORD_DIRNAME = "gameRecords"
-        const val GAME_RECORD_EXT = "json"
-    }
-
-    private var lastSaveData: GameSaveData? = null
-    private val saveMutex = Mutex()
-
-    private suspend fun getLoadFiles(seed: String?): List<File> {
-        val currentFile = File(context.filesDir, GAME_SAVE_FILENAME)
-        return if (seed == null) listOf(currentFile) else {
-            val saneSeed = seed.replace('/', '_')
-            val saneRecord = "$saneSeed.$GAME_RECORD_EXT"
-            val recordDir = File(context.filesDir, GAME_RECORD_DIRNAME)
-
-            withContext(ioDispatcher) {
-                val recordFile = if (recordDir.isDirectory) File(recordDir, saneRecord) else null
-                if (recordFile?.exists() != true) listOf(currentFile) else listOf(
-                    recordFile,
-                    currentFile
-                )
-            }
-        }
-    }
-
-    private suspend fun getLoadFile(seed: String?): File {
-        val currentFile = File(context.filesDir, GAME_SAVE_FILENAME)
-        return if (seed == null) currentFile else {
-            val saneSeed = seed.replace('/', '_')
-            val saneRecord = "$saneSeed.$GAME_RECORD_EXT"
-            val recordDir = File(context.filesDir, GAME_RECORD_DIRNAME)
-
-            withContext(ioDispatcher) {
-                val recordFile = if (recordDir.isDirectory) File(recordDir, saneRecord) else null
-                if (recordFile?.exists() == true) recordFile else currentFile
-            }
-        }
-    }
-
-    private fun getGameState(save: GameSaveData): Game.State {
-        return when {
-            save.constraints.any { it.correct } -> Game.State.WON
-            save.constraints.size == save.settings.rounds -> Game.State.LOST
-            save.currentGuess != null -> Game.State.EVALUATING
-            else -> Game.State.GUESSING
-        }
-    }
-
-    private fun getSaveFiles(gameSaveData: GameSaveData): List<File> {
-        // val state = getGameState(gameSaveData)
-        if (gameSaveData.seed == null) {
-            // no seed, or not yet done; only save as current game, not in records
-            return listOf(File(context.filesDir, GAME_SAVE_FILENAME))
-        }
-
-        // seeded and complete games are also saved in the records
-        val saneSeed = gameSaveData.seed.replace('/', '_')
-        val saneRecord = "$saneSeed.$GAME_RECORD_EXT"
-        val recordDir = File(context.filesDir, GAME_RECORD_DIRNAME)
-
-        if (!recordDir.isDirectory) recordDir.mkdir()
-
-        return listOf(
-            File(recordDir, GAME_SAVE_FILENAME),
-            File(recordDir, saneRecord)
-        )
-    }
-
-    private suspend fun loadGameSaveData(seed: String?, setup: GameSetup?): GameSaveData? {
-        // held in memory
-        val lastSave = lastSaveData
-        if (isGameSaveData(seed, setup, lastSave)) return lastSave
-
-        // from disk
-        return withContext(ioDispatcher) {
-            saveMutex.withLock {
-                try {
-                    val file = getLoadFile(seed)
-                    Timber.v("loading game file from ${file.absolutePath}")
-                    if (!file.exists()) null else {
-                        val serialized = file.readText()
-                        Timber.v("loaded game file; has length ${serialized.length}")
-                        val save = deserialize(serialized)
-                        if (isGameSaveData(seed, setup, save)) save else null
-                    }
-                } catch (err: Exception) {
-                    Timber.w(err, "An error occurred loading a persisted game save (seed $seed)")
-                    null
-                }
-            }
-        }
-    }
-
-    private fun isGameSaveData(seed: String?, setup: GameSetup?, save: GameSaveData?): Boolean {
-        return save != null
-                && (seed == null || save.seed == seed)
-                && (setup == null || save.setup == setup)
-    }
-
-    override suspend fun loadState(seed: String?, setup: GameSetup?): Game.State? {
-        val save = loadGameSaveData(seed, setup)
-        return if (save == null) null else getGameState(save)
-    }
-
-    override suspend fun loadSave(seed: String?, setup: GameSetup?): GameSaveData? = loadGameSaveData(seed, setup)
-
-    override suspend fun loadGame(seed: String?, setup: GameSetup?): Pair<GameSaveData, Game>? {
-        val save = loadGameSaveData(seed, setup)
-        return if (save == null) null else Pair(save, Game.atMove(
-            save.settings,
-            getValidator(save.setup),
-            save.uuid,
-            save.constraints,
-            save.currentGuess
-        ))
-    }
-
-    override suspend fun saveGame(seed: String?, setup: GameSetup, game: Game) {
-        val gameSaveData = GameSaveData(seed, setup, game)
-        saveGame(gameSaveData)
-    }
-
-    override suspend fun saveGame(saveData: GameSaveData) {
-        withContext(ioDispatcher) {
-            val serialized = serialize(saveData)
-            saveMutex.withLock {
-                lastSaveData = saveData
-                getSaveFiles(saveData).forEach {
-                    Timber.v("saveGame writing game file to ${it.absolutePath}")
-                    it.writeText(serialized)
-                }
-            }
-        }
-    }
-
-    override suspend fun clearSavedGame(seed: String?, setup: GameSetup) {
-        withContext(ioDispatcher) {
-            try {
-               saveMutex.withLock {
-                    if (isGameSaveData(seed, setup, lastSaveData)) lastSaveData = null
-                    getLoadFiles(seed).filter {
-                        val serialized = it.readText()
-                        val save = deserialize(serialized)
-                        isGameSaveData(seed, setup, save)
-                    }.forEach { it.delete() }
-                }
-            } catch (err: Exception) {
-                Timber.e(err, "An error occurred deleting saved game ${seed}")
-            }
-        }
-    }
-
-    override suspend fun clearSavedGames() {
-        withContext(ioDispatcher) {
-            try {
-                saveMutex.withLock {
-                    lastSaveData = null
-                    File(context.filesDir, GAME_SAVE_FILENAME).delete()
-                    File(context.filesDir, GAME_RECORD_DIRNAME).deleteRecursively()
-                }
-            } catch (err: Exception) {
-                Timber.e(err, "An error occurred deleting saved games")
-            }
         }
     }
 

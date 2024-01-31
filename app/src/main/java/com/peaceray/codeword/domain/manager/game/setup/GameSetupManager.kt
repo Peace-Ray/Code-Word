@@ -1,4 +1,4 @@
-package com.peaceray.codeword.domain.manager.game
+package com.peaceray.codeword.domain.manager.game.setup
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.code.CodeLanguageDetails

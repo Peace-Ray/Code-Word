@@ -19,8 +19,8 @@ import androidx.lifecycle.lifecycleScope
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.ActivityMainBinding
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.genie.GenieSettingsManager
 import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
 import com.peaceray.codeword.presentation.view.fragments.GameFragment
@@ -55,7 +55,7 @@ class MainActivity : CodeWordActivity(),
     }
 
     @Inject lateinit var gameSetupManager: GameSetupManager
-    @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gamePersistenceManager: GamePersistenceManager
     @Inject lateinit var tutorialManager: TutorialManager
     @Inject lateinit var genieSettingsManager: GenieSettingsManager
     private lateinit var binding: ActivityMainBinding
@@ -231,7 +231,7 @@ class MainActivity : CodeWordActivity(),
         // operation to a Presenter, especially if more asynchronous operations are added.
         lifecycleScope.launch {
             val loaded = try {
-                gameSessionManager.loadSave()
+                gamePersistenceManager.load()
             } catch (err: Exception) {
                 Timber.w(err, "An error occurred loading game save")
                 null

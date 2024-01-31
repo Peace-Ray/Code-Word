@@ -7,15 +7,13 @@ import com.peaceray.codeword.BuildConfig
 import com.peaceray.codeword.data.model.version.SupportedVersions
 import com.peaceray.codeword.data.model.version.Versions
 import com.peaceray.codeword.domain.api.CodeWordApi
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.version.VersionsManager
 import com.peaceray.codeword.glue.ForApplication
-import okio.IOException
 import timber.log.Timber
 import java.lang.Exception
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.exp
 
 @Singleton
 class VersionsManagerImpl @Inject constructor(

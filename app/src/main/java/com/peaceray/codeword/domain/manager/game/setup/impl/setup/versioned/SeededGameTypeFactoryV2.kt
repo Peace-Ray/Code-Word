@@ -1,9 +1,9 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameType
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.language.CodeLanguageDetailsFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.language.CodeLanguageDetailsFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.random.ConsistentRandom
 import com.peaceray.codeword.utils.extensions.fromFakeB58
@@ -17,7 +17,7 @@ import com.peaceray.codeword.utils.extensions.toFakeB58
  * Generates Seeded GameTypes using the game's seedDetail to specify parameters. In this version,
  * games may use English words or Code sequences.
  */
-internal class SeededGameTypeFactoryV1: SeededGameTypeFactory(SeedVersion.V1) {
+internal class SeededGameTypeFactoryV2: SeededGameTypeFactory(SeedVersion.V2) {
     private val languageDetailsFactory: CodeLanguageDetailsFactory by lazy {
         CodeLanguageDetailsFactory.getFactory(seedVersion)
     }
@@ -44,6 +44,9 @@ internal class SeededGameTypeFactoryV1: SeededGameTypeFactory(SeedVersion.V1) {
 
         val lengthIndex = extract(details.codeLengthsSupported.size)
         val charsIndex = extract(details.codeCharactersSupported.size)
+        val hasRepetitionAsInt = extract(2)
+
+        val constraintIndex = extract(details.evaluationsSupported.size)
 
         if (detailNumber != 1L) {
             throw IllegalArgumentException("seedDetail not valid")
@@ -51,17 +54,14 @@ internal class SeededGameTypeFactoryV1: SeededGameTypeFactory(SeedVersion.V1) {
 
         val length = details.codeLengthsSupported[lengthIndex]
         val characters = details.codeCharactersSupported[charsIndex]
+        val constraint = details.evaluationsSupported[constraintIndex]
 
         return GameType(
             language,
             length,
             characters,
-            length,
-            when (language) {
-                CodeLanguage.ENGLISH -> ConstraintPolicy.PERFECT
-                CodeLanguage.CODE -> ConstraintPolicy.AGGREGATED
-                null -> ConstraintPolicy.PERFECT
-            }
+            if (hasRepetitionAsInt != 0) length else 1,
+            constraint
         )
     }
 
@@ -74,7 +74,9 @@ internal class SeededGameTypeFactoryV1: SeededGameTypeFactory(SeedVersion.V1) {
         val tuples = listOf(
             Pair(languageDetailsFactory.languages.indexOf(gameType.language), languageDetailsFactory.languages.size),
             Pair(details.codeLengthsSupported.indexOf(gameType.length), details.codeLengthsSupported.size),
-            Pair(details.codeCharactersSupported.indexOf(gameType.characters), details.codeCharactersSupported.size)
+            Pair(details.codeCharactersSupported.indexOf(gameType.characters), details.codeCharactersSupported.size),
+            Pair(if (gameType.characterOccurrences == 1) 0 else 1, 2),
+            Pair(details.evaluationsSupported.indexOf(gameType.feedback), details.evaluationsSupported.size)
         )
 
         // now encode as a number, with more fundamental features appearing in lower positions.

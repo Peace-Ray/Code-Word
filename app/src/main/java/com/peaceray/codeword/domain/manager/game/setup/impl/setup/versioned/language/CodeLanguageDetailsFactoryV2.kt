@@ -1,8 +1,8 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup.versioned.language
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.language
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.code.CodeLanguageDetails
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import java.util.SortedSet
 

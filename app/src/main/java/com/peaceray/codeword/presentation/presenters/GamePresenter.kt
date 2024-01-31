@@ -2,7 +2,8 @@ package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
+import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
@@ -37,7 +38,8 @@ import javax.inject.Inject
  * intensive operations.
  */
 class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter<GameContract.View>() {
-    @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gameCreationManager: GameCreationManager
+    @Inject lateinit var gamePersistenceManager: GamePersistenceManager
     @Inject lateinit var gameRecordManager: GameRecordManager
 
     var gameSeed: String? = null
@@ -58,7 +60,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     private val solverObservable: Single<Solver> by lazy {
         Single.defer {
             Timber.v("Creating Solver")
-            val solver = gameSessionManager.getSolver(gameSetup)
+            val solver = gameCreationManager.getSolver(gameSetup)
             Single.just(solver)
         }.subscribeOn(Schedulers.io())
             .cache()
@@ -67,7 +69,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     private val evaluatorObservable: Single<Evaluator> by lazy {
         Single.defer {
             Timber.v("Creating Evaluator")
-            val evaluator = gameSessionManager.getEvaluator(gameSetup)
+            val evaluator = gameCreationManager.getEvaluator(gameSetup)
             Single.just(evaluator)
         }.subscribeOn(Schedulers.io())
             .cache()
@@ -79,7 +81,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     private val feedbackProviderObservable: Single<FeedbackProvider> by lazy {
         Single.defer {
             Timber.v("Creating FeedbackProvider")
-            val characters = gameSessionManager.getCodeCharacters(gameSetup)
+            val characters = gameCreationManager.getCodeCharacters(gameSetup)
             val markupPolicies = when (gameSetup.evaluation.type) {
                 ConstraintPolicy.IGNORE -> setOf()
                 ConstraintPolicy.AGGREGATED_EXACT,
@@ -118,7 +120,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             GameSetup.Vocabulary.VocabularyType.ENUMERATED -> null
         }
         view?.setCodeType(
-            gameSessionManager.getCodeCharacters(gameSetup),
+            gameCreationManager.getCodeCharacters(gameSetup),
             locale,
             gameSetup.evaluation.type
         )
@@ -141,10 +143,10 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         ready = false
         viewScope.launch {
             try {
-                game = gameSessionManager.getGame(gameSeed, gameSetup)
+                game = gameCreationManager.getGame(gameSeed, gameSetup)
                 Timber.v("Game loaded at round ${game.round} with currentGuess ${game.currentGuess}")
             } catch (err: Exception) {
-                game = gameSessionManager.getGame(gameSeed, gameSetup, create = true)
+                game = gameCreationManager.createGame(gameSetup)
             }
             // if forfeit, apply immediately; otherwise prompt a user action
             if (forfeit) {
@@ -191,7 +193,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     override fun onGuessUpdated(before: String, after: String) {
         Timber.v("onGuessUpdate for characters $before -> $after")
         // all codes lowercase
-        val charset = gameSessionManager.getCodeCharacters(gameSetup)
+        val charset = gameCreationManager.getCodeCharacters(gameSetup)
         val ok = readyForPlayerGuess
                 && after.length <= gameSetup.vocabulary.length
                 && after.toLowerCase(locale).all { it in charset }
@@ -244,7 +246,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         saveScope = CoroutineScope(Dispatchers.Main)
         saveScope?.launch {
             Timber.v("...within saveScope")
-            gameSessionManager.saveGame(saveData)
+            gamePersistenceManager.save(saveData)
             Timber.v("...Saved!")
         }
     }
@@ -352,7 +354,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
     private fun applyGameSetupUpdate(updatedGameSetup: GameSetup) {
         if (gameSetup != updatedGameSetup) {
-            val settings = gameSessionManager.getSettings(updatedGameSetup)
+            val settings = gameCreationManager.getSettings(updatedGameSetup)
             if (game.canUpdateSettings(settings)) {
                 game.updateSettings(settings)
                 gameSetup = updatedGameSetup

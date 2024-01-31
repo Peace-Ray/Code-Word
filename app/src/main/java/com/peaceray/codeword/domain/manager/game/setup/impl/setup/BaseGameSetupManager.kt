@@ -1,16 +1,16 @@
-package com.peaceray.codeword.domain.manager.game.impl.setup
+package com.peaceray.codeword.domain.manager.game.setup.impl.setup
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.code.CodeLanguageDetails
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.game.GameType
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.DailyGameTypeFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.GameTypeFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.SeededGameTypeFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.language.CodeLanguageDetailsFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedCoreFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.DailyGameTypeFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.GameTypeFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.SeededGameTypeFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.language.CodeLanguageDetailsFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedCoreFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import timber.log.Timber
 import java.lang.Exception

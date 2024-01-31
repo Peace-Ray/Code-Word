@@ -2,9 +2,10 @@ package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.GameDefaultsManager
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.domain.manager.game.defaults.GameDefaultsManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.contracts.GameSetupContract
@@ -22,7 +23,8 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
     //region Fields and View Attachment
     //---------------------------------------------------------------------------------------------
     @Inject lateinit var gameSetupManager: GameSetupManager
-    @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gameCreationManager: GameCreationManager
+    @Inject lateinit var gamePersistenceManager: GamePersistenceManager
     @Inject lateinit var gameDefaultsManager: GameDefaultsManager
 
     // game setup fields
@@ -140,16 +142,16 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
 
         // load game
         game = if (seedAndSetup != null) {
-            gameSessionManager.getGame(seedAndSetup.first, seedAndSetup.second, false)
+            gameCreationManager.getGame(seedAndSetup.first, seedAndSetup.second)
         } else if (seed != null && (type == GameSetupContract.Type.DAILY || type == GameSetupContract.Type.SEEDED)) {
-            val loadedGame = gameSessionManager.loadGame(seed, null)
-            if (loadedGame != null) {
+            val loadedSave = gamePersistenceManager.load(seed, null)
+            if (loadedSave != null) {
                 // replace existing setup
-                gameSetup = loadedGame.first.setup
+                gameSetup = loadedSave.setup
 
                 Timber.d("Updated setup from session manager to $gameSetup")
             }
-            loadedGame?.second
+            loadedSave?.let { gameCreationManager.getGame(it) }
         } else {
             null
         }
@@ -158,12 +160,12 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         when (gameSetup.vocabulary.type) {
             GameSetup.Vocabulary.VocabularyType.LIST -> {
                 view?.setCodeLanguage(
-                    gameSessionManager.getCodeCharacters(gameSetup),
+                    gameCreationManager.getCodeCharacters(gameSetup),
                     gameSetup.vocabulary.language.locale!!
                 )
             }
             GameSetup.Vocabulary.VocabularyType.ENUMERATED -> {
-                view?.setCodeComposition(gameSessionManager.getCodeCharacters(gameSetup))
+                view?.setCodeComposition(gameCreationManager.getCodeCharacters(gameSetup))
             }
         }
     }
@@ -328,7 +330,9 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
 
     private suspend fun getSessionProgress(seed: String?): GameStatusReview.Status {
         return if (seed == null) GameStatusReview.Status.NEW else {
-            when (gameSessionManager.loadState(seed)) {
+            val loadedState = gamePersistenceManager.loadState(seed)
+            Timber.v("gamePersistenceManager loaded state for $seed : $loadedState")
+            when (loadedState) {
                 Game.State.GUESSING, Game.State.EVALUATING -> GameStatusReview.Status.ONGOING
                 Game.State.WON -> GameStatusReview.Status.WON
                 Game.State.LOST -> GameStatusReview.Status.LOST
