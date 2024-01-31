@@ -7,6 +7,8 @@ import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceMana
 import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.game.defaults.impl.GameDefaultsManagerImpl
 import com.peaceray.codeword.domain.manager.game.persistence.impl.GamePersistenceManagerImpl
+import com.peaceray.codeword.domain.manager.game.play.GamePlayManager
+import com.peaceray.codeword.domain.manager.game.play.impl.GamePlayManagerImpl
 import com.peaceray.codeword.domain.manager.game.setup.impl.setup.BaseGameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.domain.manager.record.impl.GameRecordManagerImpl
@@ -41,6 +43,9 @@ abstract class GameManagerModule {
 
     @Binds
     abstract fun bindGamePersistenceManager(manager: GamePersistenceManagerImpl): GamePersistenceManager
+
+    @Binds
+    abstract fun bindGamePlayManager(manager: GamePlayManagerImpl): GamePlayManager
 
     @Binds
     abstract fun bindGameSetupManager(manager: BaseGameSetupManager): GameSetupManager

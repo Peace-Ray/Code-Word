@@ -95,7 +95,7 @@ interface GameCreationManager {
      * @param setup The GameSetup to use in instance configuration.
      * @return A Solver instance appropriate for the game
      */
-    fun getSolver(setup: GameSetup): Solver
+    suspend fun getSolver(setup: GameSetup): Solver
 
     /**
      * Construct and return an [Evaluator] based on the provided setup. It is an error to call this
@@ -107,7 +107,7 @@ interface GameCreationManager {
      * @param setup The GameSetup to use in instance configuration.
      * @return An Evaluation instance appropriate for the game
      */
-    fun getEvaluator(setup: GameSetup): Evaluator
+    suspend fun getEvaluator(setup: GameSetup): Evaluator
 
     //-----------------------------------------------------------------------------------------
     //endregion

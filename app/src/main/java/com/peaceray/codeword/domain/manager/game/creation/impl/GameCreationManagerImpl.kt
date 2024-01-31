@@ -33,6 +33,8 @@ import com.peaceray.codeword.glue.ForApplication
 import com.peaceray.codeword.glue.ForComputation
 import com.peaceray.codeword.glue.ForLocalIO
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -102,7 +104,7 @@ class GameCreationManagerImpl @Inject constructor(
     //region Game Players
     //-----------------------------------------------------------------------------------------
 
-    override fun getSolver(setup: GameSetup): Solver {
+    override suspend fun getSolver(setup: GameSetup): Solver {
         // TODO caching
 
         return when(setup.solver) {
@@ -129,7 +131,7 @@ class GameCreationManagerImpl @Inject constructor(
         }
     }
 
-    override fun getEvaluator(setup: GameSetup): Evaluator {
+    override suspend fun getEvaluator(setup: GameSetup): Evaluator {
         // TODO caching
 
         val randomSeed = getRandomSeed(setup)
@@ -170,7 +172,7 @@ class GameCreationManagerImpl @Inject constructor(
 
     //region Intermediate Object Creation
     //---------------------------------------------------------------------------------------------
-    private fun getValidator(setup: GameSetup, vocabulary: Boolean = true, occurrences: Boolean = true): Validator {
+    private suspend fun getValidator(setup: GameSetup, vocabulary: Boolean = true, occurrences: Boolean = true): Validator {
         val validators = mutableListOf<Validator>()
 
         if (vocabulary) {
@@ -199,7 +201,7 @@ class GameCreationManagerImpl @Inject constructor(
         }
     }
 
-    private fun getGenerator(setup: GameSetup, evaluator: Boolean = false): CandidateGenerationModule {
+    private suspend fun getGenerator(setup: GameSetup, evaluator: Boolean = false): CandidateGenerationModule {
         val guessPolicy = setup.evaluation.enforced
         val solutionPolicy = setup.evaluation.type
         val seed = getRandomSeed(setup)
@@ -333,8 +335,9 @@ class GameCreationManagerImpl @Inject constructor(
 
     // TODO if adding new vocabulary files, e.g. for different languages, consider cache eviction
     private val cachedWordLists = mutableMapOf<String, List<String>>()
+    private val cachedWordListMutex = Mutex()
 
-    private fun getWordList(length: Int = 5, type: WordListType, truncate: Int? = null, portion: Float? = null): List<String> {
+    private suspend fun getWordList(length: Int = 5, type: WordListType, truncate: Int? = null, portion: Float? = null): List<String> {
         val keyBase = "en-US/standard/length-${length}"
 
         var portionTruncate = 1.0f
@@ -370,18 +373,14 @@ class GameCreationManagerImpl @Inject constructor(
         return if (endIndex == words.size - 1) words else words.slice(0..endIndex)
     }
 
-    private fun readWordList(assetPath: String): List<String> {
-        return getCached(assetPath) { key ->
-            assets.open("words/$key").bufferedReader().use { it.readLines() }
-        }
-    }
-
-    private fun getCached(key: String, loader: (String) -> List<String>): List<String> {
-        synchronized(cachedWordLists) {
-            if (!cachedWordLists.containsKey(key)) {
-                cachedWordLists[key] = loader(key)
+    private suspend fun readWordList(assetPath: String): List<String> {
+        cachedWordListMutex.withLock {
+            if (!cachedWordLists.containsKey(assetPath)) {
+                cachedWordLists[assetPath] = withContext(ioDispatcher) {
+                    assets.open("words/$assetPath").bufferedReader().use { it.readLines() }
+                }
             }
-            return cachedWordLists[key]!!
+            return cachedWordLists[assetPath]!!
         }
     }
 

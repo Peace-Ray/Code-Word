@@ -20,13 +20,15 @@ abstract class CachingGenerationModule(seed: Long): CandidateGenerationModule, S
             if (cachedCandidates != null && constraints == cachedConstraints) {
                 return cachedCandidates!!
             }
+        }
 
-            val candidates = onCacheMiss(cachedCandidates, cachedConstraints, constraints)
+        val candidates = onCacheMiss(cachedCandidates, cachedConstraints, constraints)
+        synchronized(this) {
             cachedCandidates = candidates
             cachedConstraints = constraints
-
-            return candidates
         }
+
+        return candidates
     }
 
     abstract fun onCacheMiss(previousCandidates: Candidates?, previousConstraints: List<Constraint>, constraints: List<Constraint>): Candidates
