@@ -191,7 +191,8 @@ interface GameSetupContract: BaseContract {
 
         /**
          * Sets the availability for all features. Any Feature not included in the provided mapping
-         * has the [defaultAvailability]. Optionally, qualifiers may be specified to explain the
+         * has the [defaultAvailability], which should be 'null' if you want the previously set
+         * availability to be maintained. Optionally, qualifiers may be specified to explain the
          * availability of each such Feature.
          *
          * @param availabilities: An incomplete mapping of Feature to Availability; missing Features
@@ -199,12 +200,12 @@ interface GameSetupContract: BaseContract {
          * @param qualifiers: An incomplete mapping of Feature to Qualifier; missing Features have
          * no Qualifier.
          * @param defaultAvailability The Availability applied to any Feature not present in
-         * [availabilities.keys].
+         * [availabilities.keys]. If 'null', the mapping is not changed.
          */
         fun setFeatureAvailability(
             availabilities: Map<Feature, Availability>,
             qualifiers: Map<Feature, Qualifier>,
-            defaultAvailability: Availability = Availability.DISABLED
+            defaultAvailability: Availability? = Availability.DISABLED
         )
 
         /**

@@ -886,11 +886,12 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
     override fun setFeatureAvailability(
         availabilities: Map<GameSetupContract.Feature, GameSetupContract.Availability>,
         qualifiers: Map<GameSetupContract.Feature, GameSetupContract.Qualifier>,
-        defaultAvailability: GameSetupContract.Availability
+        defaultAvailability: GameSetupContract.Availability?
     ) {
-        // iterate through all features, not just those provided
-        for (feature in GameSetupContract.Feature.values()) {
-            onSetFeatureAvailability(feature, availabilities[feature] ?: defaultAvailability, qualifiers[feature])
+        // iterate through all features, not just those provided in the map
+        for (feature in GameSetupContract.Feature.entries) {
+            val availability = availabilities[feature] ?: defaultAvailability
+            if (availability != null) onSetFeatureAvailability(feature, availability, qualifiers[feature])
         }
         // update tooltip
         updateInformationTooltip(availabilities, qualifiers)
