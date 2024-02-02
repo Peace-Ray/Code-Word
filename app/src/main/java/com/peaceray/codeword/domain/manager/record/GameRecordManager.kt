@@ -27,13 +27,13 @@ interface GameRecordManager {
      * @param game The Game that just finished
      * @param secret The secret for this game, if known
      */
-    fun record(seed: String?, setup: GameSetup, game: Game, secret: String?)
+    suspend fun record(seed: String?, setup: GameSetup, game: Game, secret: String?)
 
     /**
      * Record the result of a completed game. The call may make synchronous database updates,
      * so it is recommended to perform this call off the main thread.
      */
-    fun record(gameSaveData: GameSaveData, secret: String?)
+    suspend fun record(gameSaveData: GameSaveData, secret: String?)
 
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -44,7 +44,7 @@ interface GameRecordManager {
     /**
      * Returns whether a GameOutcome exists for the indicated game UUID.
      */
-    fun hasOutcome(uuid: UUID): Boolean
+    suspend fun hasOutcome(uuid: UUID): Boolean
 
     /**
      * Retrieve a GameOutcome for the indicated game UUID, or 'null' if no such outcome
@@ -52,12 +52,12 @@ interface GameRecordManager {
      *
      * @param uuid The unique game identifier
      */
-    fun getOutcome(uuid: UUID): GameOutcome?
+    suspend fun getOutcome(uuid: UUID): GameOutcome?
 
     /**
      * Get a PerformanceRecord for all games of all types with the indicated roles
      */
-    fun getTotalPerformance(solver: GameSetup.Solver, evaluator: GameSetup.Evaluator): TotalPerformanceRecord
+    suspend fun getTotalPerformance(solver: GameSetup.Solver, evaluator: GameSetup.Evaluator): TotalPerformanceRecord
 
     /**
      * Retrieve a performance record for games of this setup.
@@ -67,7 +67,7 @@ interface GameRecordManager {
      * as possible. For example, for dailies [strict] = false retrieves results of both daily
      * puzzles and non-dailies with equivalent settings.
      */
-    fun getPerformance(setup: GameSetup, strict: Boolean): GameTypePerformanceRecord
+    suspend fun getPerformance(setup: GameSetup, strict: Boolean): GameTypePerformanceRecord
 
     /**
      * Retrieve a performance record for games of this type.
@@ -77,7 +77,7 @@ interface GameRecordManager {
      * as possible. For example, for dailies [strict] = false retrieves results of both daily
      * puzzles and non-dailies with equivalent settings.
      */
-    fun getPerformance(outcome: GameOutcome, strict: Boolean): GameTypePerformanceRecord
+    suspend fun getPerformance(outcome: GameOutcome, strict: Boolean): GameTypePerformanceRecord
 
     /**
      * Retrieve a record of win streaks for the player on this game type. Not all streaks are
@@ -85,7 +85,7 @@ interface GameRecordManager {
      *
      * @param setup The GameSetup in question
      */
-    fun getPlayerStreak(setup: GameSetup): GameTypePlayerStreak
+    suspend fun getPlayerStreak(setup: GameSetup): GameTypePlayerStreak
 
     /**
      * Retrieve a record of win streaks for the player on this game type. Not all streaks are
@@ -93,7 +93,7 @@ interface GameRecordManager {
      *
      * @param outcome The GameOutcome with the setup in question
      */
-    fun getPlayerStreak(outcome: GameOutcome): GameTypePlayerStreak
+    suspend fun getPlayerStreak(outcome: GameOutcome): GameTypePlayerStreak
 
     //---------------------------------------------------------------------------------------------
     //endregion

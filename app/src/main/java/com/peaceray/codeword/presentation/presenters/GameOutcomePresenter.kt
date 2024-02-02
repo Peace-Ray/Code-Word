@@ -1,16 +1,12 @@
 package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.*
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.presentation.contracts.GameOutcomeContract
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
@@ -20,13 +16,11 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
     //region Fields and View Attachment
     //---------------------------------------------------------------------------------------------
     @Inject lateinit var gameSetupManager: GameSetupManager
-    @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gameCreationManager: GameCreationManager
     @Inject lateinit var gameRecordManager: GameRecordManager
 
     lateinit var uuid: UUID
     var outcome: GameOutcome? = null
-
-    var disposable: Disposable = Disposable.disposed()
 
     override fun onAttached() {
         super.onAttached()
@@ -37,13 +31,11 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
         setPlaceholders()
 
         // load the actual game outcome (this call chains into loading the history)
-        loadOutcome(uuid)
+        viewScope.launch { loadOutcome(uuid) }
     }
 
     override fun onDetached() {
         super.onDetached()
-
-        disposable.dispose()
     }
 
     //---------------------------------------------------------------------------------------------
@@ -75,7 +67,7 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
                 listOf(),
                 null,
                 null,
-                gameSessionManager.getSettings(gameSetup).rounds,
+                gameCreationManager.getSettings(gameSetup).rounds,
                 Date()
                 ))
         }
@@ -92,34 +84,24 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
         }
     }
 
-    private fun loadOutcome(uuid: UUID) {
-        disposable = Single.defer { Single.just(gameRecordManager.getOutcome(uuid)!!) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                {
-                    outcome = it
-                    view?.setGameOutcome(it)
-                    loadHistory(it)
-                },
-                {
-                    Timber.e(it, "Not able to load game outcome")
-                    view?.close()
-                }
-            )
+    private suspend fun loadOutcome(uuid: UUID) {
+        val recordedOutcome = gameRecordManager.getOutcome(uuid)
+        if (recordedOutcome != null) {
+            outcome = recordedOutcome
+            view?.setGameOutcome(recordedOutcome)
+            loadHistory(recordedOutcome)
+        } else {
+            Timber.e("Not able to load game outcome")
+            view?.close()
+        }
     }
 
-    private fun loadHistory(outcome: GameOutcome) {
-        disposable = Single.defer { Single.just(Triple(
-            gameRecordManager.getPerformance(outcome, outcome.daily),   // strict if daily, otherwise include both types
-            gameRecordManager.getTotalPerformance(outcome.solver, outcome.evaluator),
-            gameRecordManager.getPlayerStreak(outcome)
-        )) }.subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { view?.setGameHistory(it.first, it.second, it.third) },
-                { Timber.e(it, "Not able to load game history") }
-            )
+    private suspend fun loadHistory(outcome: GameOutcome) {
+        val performance = gameRecordManager.getPerformance(outcome, outcome.daily)
+        val totalPerformance = gameRecordManager.getTotalPerformance(outcome.solver, outcome.evaluator)
+        val streak = gameRecordManager.getPlayerStreak(outcome)
+
+        view?.setGameHistory(performance, totalPerformance, streak)
     }
 
     //---------------------------------------------------------------------------------------------

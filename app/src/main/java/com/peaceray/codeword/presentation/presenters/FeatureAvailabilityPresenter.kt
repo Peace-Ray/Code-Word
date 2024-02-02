@@ -4,10 +4,10 @@ import com.peaceray.codeword.data.model.version.SupportedVersions
 import com.peaceray.codeword.data.model.version.Versions
 import com.peaceray.codeword.domain.manager.version.VersionsManager
 import com.peaceray.codeword.presentation.contracts.FeatureAvailabilityContract
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -20,7 +20,6 @@ class FeatureAvailabilityPresenter @Inject constructor():
     // progress holders: features, progress, disposable operations
     private val features: MutableSet<FeatureAvailabilityContract.Feature> = mutableSetOf()
     private val featuresPending: MutableSet<FeatureAvailabilityContract.Feature> = mutableSetOf()
-    private val disposables: MutableSet<Disposable> = mutableSetOf()
 
     override fun onAttached() {
         super.onAttached()
@@ -38,18 +37,14 @@ class FeatureAvailabilityPresenter @Inject constructor():
     override fun onDetached() {
         super.onDetached()
 
-        for (disposable in disposables) {
-            disposable.dispose()
-        }
         features.clear()
         featuresPending.clear()
-        disposables.clear()
     }
 
     private fun checkFeatureAvailability(feature: FeatureAvailabilityContract.Feature) {
         when (feature) {
-            FeatureAvailabilityContract.Feature.APPLICATION -> {
-                versionsObservable.subscribeToReport(feature) { f, supportedVersions ->
+            FeatureAvailabilityContract.Feature.APPLICATION -> viewScope.launch{
+                versionsDeferred.awaitAndReport(feature) { f, supportedVersions ->
                     reportFeatureAvailabilityByVersion(
                         f,
                         applicationVersion.application,
@@ -58,8 +53,8 @@ class FeatureAvailabilityPresenter @Inject constructor():
                     )
                 }
             }
-            FeatureAvailabilityContract.Feature.SEED -> {
-                versionsObservable.subscribeToReport(feature) { f, supportedVersions ->
+            FeatureAvailabilityContract.Feature.SEED -> viewScope.launch{
+                versionsDeferred.awaitAndReport(feature) { f, supportedVersions ->
                     reportFeatureAvailabilityByVersion(
                         f,
                         applicationVersion.seed,
@@ -68,8 +63,8 @@ class FeatureAvailabilityPresenter @Inject constructor():
                     )
                 }
             }
-            FeatureAvailabilityContract.Feature.DAILY -> {
-                versionsObservable.subscribeToReport(feature) { f, supportedVersions ->
+            FeatureAvailabilityContract.Feature.DAILY -> viewScope.launch{
+                versionsDeferred.awaitAndReport(feature) { f, supportedVersions ->
                     reportFeatureAvailabilityByVersion(
                         f,
                         applicationVersion.seed,
@@ -81,21 +76,22 @@ class FeatureAvailabilityPresenter @Inject constructor():
         }
     }
 
-    private fun <T : Any> Single<T>.subscribeToReport(
+    private suspend fun <T : Any> Deferred<T>.awaitAndReport(
         feature: FeatureAvailabilityContract.Feature,
         report: (FeatureAvailabilityContract.Feature, T) -> Unit
     ) {
-        observeOn(AndroidSchedulers.mainThread()).let {
-            disposables.add(it.subscribe(
-                { t ->
-                    report(feature, t)
-                    onFeatureComplete(feature)
-                }, { error ->
-                    Timber.e(error, "Couldn't check availability of $feature feature.")
-                    view?.setFeatureAvailability(feature, FeatureAvailabilityContract.Availability.UNKNOWN)
-                    onFeatureComplete(feature)
-                }
-            ))
+        try {
+            val t = await()
+            report(feature, t)
+            onFeatureComplete(feature)
+        } catch (error: IllegalStateException) {
+            Timber.e(error, "Couldn't check availability of $feature feature")
+            view?.setFeatureAvailability(feature, FeatureAvailabilityContract.Availability.UNKNOWN)
+            onFeatureComplete(feature)
+        } catch (error: HttpException) {
+            Timber.e(error, "Couldn't check availability of $feature feature")
+            view?.setFeatureAvailability(feature, FeatureAvailabilityContract.Availability.UNKNOWN)
+            onFeatureComplete(feature)
         }
     }
 
@@ -130,9 +126,8 @@ class FeatureAvailabilityPresenter @Inject constructor():
         if (feature in VERSIONED_FEATURES && VERSIONED_FEATURES.all { it !in featuresPending }) {
             // checked at least one versioned feature and all are now complete.
             // schedule a refresh so the cached version remains at most 3 days old.
-            makeVersionsObservable(cacheLifespan = SUPPORTED_VERSIONS_REFRESH_MILLIS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe()
+
+            makeVersionsDeferred(cacheLifespan = SUPPORTED_VERSIONS_REFRESH_MILLIS)
         }
     }
 
@@ -166,19 +161,18 @@ class FeatureAvailabilityPresenter @Inject constructor():
         versionsManager.applicationVersions
     }
 
-    private val versionsObservable: Single<SupportedVersions> by lazy {
-        makeVersionsObservable(cacheLifespan = SUPPORTED_VERSIONS_FORCE_REFRESH_MILLIS)
-            .cache()
+    private val versionsDeferred: Deferred<SupportedVersions> by lazy {
+        makeVersionsDeferred(cacheLifespan = SUPPORTED_VERSIONS_FORCE_REFRESH_MILLIS)
     }
 
-    private fun makeVersionsObservable(cacheLifespan: Long, allowRemote: Boolean = true): Single<SupportedVersions> {
+    private fun makeVersionsDeferred(cacheLifespan: Long, allowRemote: Boolean = true): Deferred<SupportedVersions> {
         Timber.v("Creating SupportedVersions Observable with cacheLifespan $cacheLifespan allowRemote $allowRemote")
-        return Single.defer {
-            Single.just(versionsManager.getSupportedVersions(
+        return viewScope.async {
+            versionsManager.getSupportedVersions(
                 cacheLifespan = cacheLifespan,
                 allowRemote = allowRemote
-            ))
-        }.subscribeOn(Schedulers.io())
+            )
+        }
     }
 
     //---------------------------------------------------------------------------------------------

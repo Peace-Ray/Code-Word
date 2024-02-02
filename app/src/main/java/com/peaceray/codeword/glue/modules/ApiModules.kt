@@ -2,9 +2,6 @@ package com.peaceray.codeword.glue.modules
 
 import com.peaceray.codeword.BuildConfig
 import com.peaceray.codeword.domain.api.CodeWordApi
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
-import com.peaceray.codeword.domain.manager.game.impl.setup.BaseGameSetupManager
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -5,15 +5,13 @@ import android.content.Intent
 import android.content.res.Resources
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.record.GameOutcome
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.glue.ForActivity
-import com.peaceray.codeword.glue.ForApplication
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.manager.share.ShareManager
 import javax.inject.Inject
-import javax.inject.Singleton
 
 class ShareManagerImpl @Inject constructor(
     @ForActivity private val context: Context,

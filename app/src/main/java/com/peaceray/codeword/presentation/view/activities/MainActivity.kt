@@ -15,11 +15,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.ActivityMainBinding
-import com.peaceray.codeword.domain.manager.game.GameSessionManager
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.genie.GenieSettingsManager
 import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
 import com.peaceray.codeword.presentation.view.fragments.GameFragment
@@ -28,9 +29,7 @@ import com.peaceray.codeword.presentation.view.fragments.dialog.CodeWordDialogFr
 import com.peaceray.codeword.presentation.view.fragments.dialog.GameInfoDialogFragment
 import com.peaceray.codeword.presentation.view.fragments.dialog.GameOutcomeDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.Exception
 import java.util.*
@@ -56,7 +55,7 @@ class MainActivity : CodeWordActivity(),
     }
 
     @Inject lateinit var gameSetupManager: GameSetupManager
-    @Inject lateinit var gameSessionManager: GameSessionManager
+    @Inject lateinit var gamePersistenceManager: GamePersistenceManager
     @Inject lateinit var tutorialManager: TutorialManager
     @Inject lateinit var genieSettingsManager: GenieSettingsManager
     private lateinit var binding: ActivityMainBinding
@@ -223,11 +222,16 @@ class MainActivity : CodeWordActivity(),
 
     //region Game Launch
     //---------------------------------------------------------------------------------------------
+
+
     private fun loadGame() {
-        // load or create gameSetup
-        Single.defer {
+        // TODO Best Practices would limit the creation of Coroutines to the Presenter layer
+        // (equiv. the ViewModel layer). However, the MainActivity uses one single asynchronous
+        // operation and does not have a Presenter. Apply best practices here by moving this
+        // operation to a Presenter, especially if more asynchronous operations are added.
+        lifecycleScope.launch {
             val loaded = try {
-                gameSessionManager.loadSave()
+                gamePersistenceManager.load()
             } catch (err: Exception) {
                 Timber.w(err, "An error occurred loading game save")
                 null
@@ -238,13 +242,8 @@ class MainActivity : CodeWordActivity(),
                 Timber.v("created setup with seed $seed")
                 Pair(seed, gameSetup)
             }
-            Single.just(game)
-        }.subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { game -> startGame(game.first, game.second) },
-                { err -> Timber.e(err, "An error occurred preparing a game")}
-            )
+            startGame(game.first, game.second)
+        }
     }
 
     private fun startGame(seed: String?, gameSetup: GameSetup) {

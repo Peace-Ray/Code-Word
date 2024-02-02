@@ -2,9 +2,9 @@ package com.peaceray.codeword.game
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedCoreFactory
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedFactoryEncoder
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedVersion
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedCoreFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedFactoryEncoder
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.utils.extensions.toFakeB58
 import org.junit.Assert.*

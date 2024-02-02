@@ -1,10 +1,21 @@
 package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.presentation.contracts.BaseContract
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import timber.log.Timber
 
 open class BasePresenter<T: BaseContract.View>: BaseContract.Presenter<T> {
     protected var view: T? = null
+        private set
+
+    /**
+     * A CoroutineScope useful for launching suspend functions that should be canceled
+     * when the view is detached. Will be active (not canceled) up until the completion
+     * of a child class's [onDetached] function.
+     */
+    protected lateinit var viewScope: CoroutineScope
         private set
 
     open fun onAttached() {
@@ -22,6 +33,7 @@ open class BasePresenter<T: BaseContract.View>: BaseContract.Presenter<T> {
         }
 
         this.view = view
+        this.viewScope = CoroutineScope(Dispatchers.Main)
         onAttached()
     }
 
@@ -30,6 +42,7 @@ open class BasePresenter<T: BaseContract.View>: BaseContract.Presenter<T> {
         if (this.view == view) {
             onDetached()
             this.view = null
+            this.viewScope.cancel("View Detached")
         } else {
             Timber.w("detachView called for unattached $view")
         }

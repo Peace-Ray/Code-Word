@@ -2,8 +2,8 @@ package com.peaceray.codeword.game
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.impl.setup.BaseGameSetupManager
-import com.peaceray.codeword.domain.manager.game.impl.setup.versioned.seed.SeedCoreFactory
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.BaseGameSetupManager
+import com.peaceray.codeword.domain.manager.game.setup.impl.setup.versioned.seed.SeedCoreFactory
 import com.peaceray.codeword.game.bot.modules.generation.enumeration.OneCodeEnumeratingGenerator
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import org.junit.Assert.*

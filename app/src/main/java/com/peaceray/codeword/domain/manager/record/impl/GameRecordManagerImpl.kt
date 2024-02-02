@@ -12,12 +12,18 @@ import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.*
-import com.peaceray.codeword.domain.manager.game.GameSetupManager
+import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.domain.manager.record.GameRecordManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.glue.ForApplication
+import com.peaceray.codeword.glue.ForComputation
+import com.peaceray.codeword.glue.ForLocalIO
 import com.peaceray.codeword.utils.histogram.IntHistogram
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
@@ -32,7 +38,8 @@ import javax.inject.Singleton
 @Singleton
 class GameRecordManagerImpl @Inject constructor(
     @ForApplication val context: Context,
-    val gameSetupManager: GameSetupManager
+    val gameSetupManager: GameSetupManager,
+    @ForLocalIO val ioDispatcher: CoroutineDispatcher
 ): GameRecordManager {
 
     //region Database Helpers
@@ -230,90 +237,94 @@ class GameRecordManagerImpl @Inject constructor(
     //region GameRecordManager
     //---------------------------------------------------------------------------------------------
     private val dbHelper: GameRecordDbHelper by lazy { GameRecordDbHelper(context) }
+    private val recordMutex = Mutex()
 
-    override fun record(seed: String?, setup: GameSetup, game: Game, secret: String?) {
+    override suspend fun record(seed: String?, setup: GameSetup, game: Game, secret: String?) {
         record(GameSaveData(seed, setup, game), secret)
     }
 
-    override fun record(gameSaveData: GameSaveData, secret: String?) {
+    override suspend fun record(gameSaveData: GameSaveData, secret: String?) {
         Timber.d("record")
         val gameType = gameSetupManager.getType(gameSaveData.setup)
 
         val gameEntry = GameRecordContract.GameOutcomeEntry
         val streakEntry = GameRecordContract.PlayerStreakEntry
-        synchronized(this) {
-            // Multiple table updates to make. The game outcome itself must be written or
-            // updated. The PerformanceRecord table must be updated twice -- once for "all puzzles",
-            // once for the specific game type played. If the game itself had previously been
-            // recorded, the PerformanceRecord update must have the previously recorded turn count
-            // decremented as the new turn count is incremented. Finally, update the
-            // player streak for the game type.
 
-            // Insert or update the game outcome; keep the previous value (if any) for performance
-            // record increments.
-            val previousOutcome = getOutcome(gameSaveData.uuid)
-            if (previousOutcome == null) {
-                Timber.d("Inserting game outcome")
-                dbHelper.writableDatabase.insertWithOnConflict(
-                    gameEntry.TABLE_NAME,
-                    "",
-                    putValues(ContentValues(), gameSaveData, secret),
-                    SQLiteDatabase.CONFLICT_IGNORE
-                )
-            } else {
-                Timber.d("Updating game outcome")
-                dbHelper.writableDatabase.update(
-                    gameEntry.TABLE_NAME,
-                    putValues(ContentValues(), gameSaveData, secret),
-                    "${gameEntry.COLUMN_NAME_GAME_UUID} = ?",
-                    arrayOf(gameSaveData.uuid.toString())
-                )
-            }
+        withContext(ioDispatcher) {
+            recordMutex.withLock {
+                // Multiple table updates to make. The game outcome itself must be written or
+                // updated. The PerformanceRecord table must be updated twice -- once for "all puzzles",
+                // once for the specific game type played. If the game itself had previously been
+                // recorded, the PerformanceRecord update must have the previously recorded turn count
+                // decremented as the new turn count is incremented. Finally, update the
+                // player streak for the game type.
 
-            // Update performance record for this and "all puzzles"
-            recordGamePerformance(previousOutcome, gameSaveData, gameType)
-
-            // Record player streak ONLY if the player guessed and their opponent was honest,
-            // and only once per game (unless transforming a win into a loss automagically...?)
-            if (
-                gameSaveData.setup.solver == GameSetup.Solver.PLAYER &&
-                gameSaveData.setup.evaluator == GameSetup.Evaluator.HONEST &&
-                (previousOutcome == null || gameSaveData.lost)
-            ) {
-                // create if not extent (ignore conflict)
-                val streakCV = ContentValues()
-                streakCV.put(streakEntry.COLUMN_NAME_GAME_TYPE, gameType.toString())
-                dbHelper.writableDatabase.insertWithOnConflict(
-                    streakEntry.TABLE_NAME,
-                    "",
-                    streakCV,
-                    SQLiteDatabase.CONFLICT_IGNORE
-                )
-
-                // set relevant columns
-                val sql = streakEntry.run {
-                    val updates = mutableListOf<String>()
-                    if (gameSaveData.won) {
-                        updates.add("$COLUMN_NAME_BEST_STREAK = max($COLUMN_NAME_BEST_STREAK, $COLUMN_NAME_STREAK + 1)")
-                        updates.add("$COLUMN_NAME_STREAK = $COLUMN_NAME_STREAK + 1")
-                        if (gameSaveData.setup.daily) {
-                            updates.add("$COLUMN_NAME_BEST_DAILY_STREAK = max($COLUMN_NAME_BEST_DAILY_STREAK, $COLUMN_NAME_DAILY_STREAK + 1)")
-                            updates.add("$COLUMN_NAME_DAILY_STREAK = $COLUMN_NAME_DAILY_STREAK + 1")
-                        }
-                    } else {
-                        updates.add("$COLUMN_NAME_STREAK = 0")
-                        if (gameSaveData.setup.daily) {
-                            updates.add("$COLUMN_NAME_DAILY_STREAK = 0")
-                        }
-                    }
-
-                    "UPDATE $TABLE_NAME SET ${updates.joinToString(",")} WHERE $COLUMN_NAME_GAME_TYPE = ?;"
+                // Insert or update the game outcome; keep the previous value (if any) for performance
+                // record increments.
+                val previousOutcome = getOutcome(gameSaveData.uuid)
+                if (previousOutcome == null) {
+                    Timber.d("Inserting game outcome")
+                    dbHelper.writableDatabase.insertWithOnConflict(
+                        gameEntry.TABLE_NAME,
+                        "",
+                        putValues(ContentValues(), gameSaveData, secret),
+                        SQLiteDatabase.CONFLICT_IGNORE
+                    )
+                } else {
+                    Timber.d("Updating game outcome")
+                    dbHelper.writableDatabase.update(
+                        gameEntry.TABLE_NAME,
+                        putValues(ContentValues(), gameSaveData, secret),
+                        "${gameEntry.COLUMN_NAME_GAME_UUID} = ?",
+                        arrayOf(gameSaveData.uuid.toString())
+                    )
                 }
 
-                val stmt = dbHelper.writableDatabase.compileStatement(sql)
-                stmt.bindString(1, gameType.toString())
-                val rows = stmt.executeUpdateDelete()
-                if (rows != 1) Timber.e("Failed to create or update ${streakEntry.TABLE_NAME} row")
+                // Update performance record for this and "all puzzles"
+                recordGamePerformance(previousOutcome, gameSaveData, gameType)
+
+                // Record player streak ONLY if the player guessed and their opponent was honest,
+                // and only once per game (unless transforming a win into a loss automagically...?)
+                if (
+                    gameSaveData.setup.solver == GameSetup.Solver.PLAYER &&
+                    gameSaveData.setup.evaluator == GameSetup.Evaluator.HONEST &&
+                    (previousOutcome == null || gameSaveData.lost)
+                ) {
+                    // create if not extent (ignore conflict)
+                    val streakCV = ContentValues()
+                    streakCV.put(streakEntry.COLUMN_NAME_GAME_TYPE, gameType.toString())
+                    dbHelper.writableDatabase.insertWithOnConflict(
+                        streakEntry.TABLE_NAME,
+                        "",
+                        streakCV,
+                        SQLiteDatabase.CONFLICT_IGNORE
+                    )
+
+                    // set relevant columns
+                    val sql = streakEntry.run {
+                        val updates = mutableListOf<String>()
+                        if (gameSaveData.won) {
+                            updates.add("$COLUMN_NAME_BEST_STREAK = max($COLUMN_NAME_BEST_STREAK, $COLUMN_NAME_STREAK + 1)")
+                            updates.add("$COLUMN_NAME_STREAK = $COLUMN_NAME_STREAK + 1")
+                            if (gameSaveData.setup.daily) {
+                                updates.add("$COLUMN_NAME_BEST_DAILY_STREAK = max($COLUMN_NAME_BEST_DAILY_STREAK, $COLUMN_NAME_DAILY_STREAK + 1)")
+                                updates.add("$COLUMN_NAME_DAILY_STREAK = $COLUMN_NAME_DAILY_STREAK + 1")
+                            }
+                        } else {
+                            updates.add("$COLUMN_NAME_STREAK = 0")
+                            if (gameSaveData.setup.daily) {
+                                updates.add("$COLUMN_NAME_DAILY_STREAK = 0")
+                            }
+                        }
+
+                        "UPDATE $TABLE_NAME SET ${updates.joinToString(",")} WHERE $COLUMN_NAME_GAME_TYPE = ?;"
+                    }
+
+                    val stmt = dbHelper.writableDatabase.compileStatement(sql)
+                    stmt.bindString(1, gameType.toString())
+                    val rows = stmt.executeUpdateDelete()
+                    if (rows != 1) Timber.e("Failed to create or update ${streakEntry.TABLE_NAME} row")
+                }
             }
         }
     }
@@ -395,67 +406,81 @@ class GameRecordManagerImpl @Inject constructor(
         }
     }
 
-    override fun hasOutcome(uuid: UUID) =
-        readGameOutcome(uuid, arrayOf(GameRecordContract.GameOutcomeEntry.COLUMN_NAME_GAME_UUID)) != null
+    override suspend fun hasOutcome(uuid: UUID): Boolean {
+        return withContext(ioDispatcher) {
+            readGameOutcome(uuid, arrayOf(GameRecordContract.GameOutcomeEntry.COLUMN_NAME_GAME_UUID)) != null
+        }
+    }
 
-    override fun getOutcome(uuid: UUID) = GameRecordContract.GameOutcomeEntry.run { readGameOutcome(uuid)?.let {
-        GameOutcome(
-            uuid = uuid,
-            type = GameType.fromString(it.getAsString(COLUMN_NAME_GAME_TYPE)),
-            daily = it.getAsBoolean(COLUMN_NAME_DAILY),
-            hard = it.getAsBoolean(COLUMN_NAME_HARD),
-            solver = GameSetup.Solver.valueOf(it.getAsString(COLUMN_NAME_SOLVER_ROLE)),
-            evaluator = GameSetup.Evaluator.valueOf(it.getAsString(COLUMN_NAME_EVALUATOR_ROLE)),
-            seed = it.getAsStringOrNull(COLUMN_NAME_SEED),
-            outcome = GameOutcome.Outcome.valueOf(it.getAsString(COLUMN_NAME_OUTCOME)),
-            round = it.getAsInteger(COLUMN_NAME_CURRENT_ROUND),
-            constraints = it.getAsString(COLUMN_NAME_CONSTRAINTS)
-                .split("|")
-                .filter { it.isNotBlank() }
-                .map { c -> Constraint.fromString(c) },
-            guess = it.getAsStringOrNull(COLUMN_NAME_GUESS),
-            secret = it.getAsStringOrNull(COLUMN_NAME_SECRET),
-            rounds = it.getAsInteger(COLUMN_NAME_ROUNDS),
-            recordedAt = Date(it.getAsLong(COLUMN_NAME_RECORDED_AT))
-        )
-    } }
 
-    override fun getTotalPerformance(
+    override suspend fun getOutcome(uuid: UUID): GameOutcome? {
+        return withContext(ioDispatcher) {
+            GameRecordContract.GameOutcomeEntry.run { readGameOutcome(uuid)?.let {
+                GameOutcome(
+                    uuid = uuid,
+                    type = GameType.fromString(it.getAsString(COLUMN_NAME_GAME_TYPE)),
+                    daily = it.getAsBoolean(COLUMN_NAME_DAILY),
+                    hard = it.getAsBoolean(COLUMN_NAME_HARD),
+                    solver = GameSetup.Solver.valueOf(it.getAsString(COLUMN_NAME_SOLVER_ROLE)),
+                    evaluator = GameSetup.Evaluator.valueOf(it.getAsString(COLUMN_NAME_EVALUATOR_ROLE)),
+                    seed = it.getAsStringOrNull(COLUMN_NAME_SEED),
+                    outcome = GameOutcome.Outcome.valueOf(it.getAsString(COLUMN_NAME_OUTCOME)),
+                    round = it.getAsInteger(COLUMN_NAME_CURRENT_ROUND),
+                    constraints = it.getAsString(COLUMN_NAME_CONSTRAINTS)
+                        .split("|")
+                        .filter { it.isNotBlank() }
+                        .map { c -> Constraint.fromString(c) },
+                    guess = it.getAsStringOrNull(COLUMN_NAME_GUESS),
+                    secret = it.getAsStringOrNull(COLUMN_NAME_SECRET),
+                    rounds = it.getAsInteger(COLUMN_NAME_ROUNDS),
+                    recordedAt = Date(it.getAsLong(COLUMN_NAME_RECORDED_AT))
+                )
+            } }
+        }
+    }
+
+    override suspend fun getTotalPerformance(
         solver: GameSetup.Solver,
         evaluator: GameSetup.Evaluator
     ): TotalPerformanceRecord {
         val type = GameRecordContract.GameTypePerformanceEntry.COLUMN_VALUE_GAME_TYPE_ALL
-        return GameRecordContract.GameTypePerformanceEntry.run {
-            val columns = arrayOf(
-                COLUMN_NAME_WINNING_TURN_COUNTS,
-                COLUMN_NAME_LOSING_TURN_COUNTS,
-                COLUMN_NAME_FORFEIT_TURN_COUNTS
-            )
+        return withContext(ioDispatcher) {
+            GameRecordContract.GameTypePerformanceEntry.run {
+                val columns = arrayOf(
+                    COLUMN_NAME_WINNING_TURN_COUNTS,
+                    COLUMN_NAME_LOSING_TURN_COUNTS,
+                    COLUMN_NAME_FORFEIT_TURN_COUNTS
+                )
 
-            // read the strict record
-            val record = TotalPerformanceRecord()
-            readGameTypePerformance(type, false, solver.name, evaluator.name, columns)?.let {
-                record.winningTurnCounts.resetFromString(it.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
-                record.losingTurnCounts.resetFromString(it.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
-                record.forfeitTurnCounts.resetFromString(it.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
-            }
+                // read the strict record
+                val record = TotalPerformanceRecord()
+                readGameTypePerformance(type, false, solver.name, evaluator.name, columns)?.let {
+                    record.winningTurnCounts.resetFromString(it.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
+                    record.losingTurnCounts.resetFromString(it.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
+                    record.forfeitTurnCounts.resetFromString(it.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                }
 
-            readGameTypePerformance(type, true, solver.name, evaluator.name, columns)?.let {
-                record.winningTurnCounts += IntHistogram.fromString(it.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
-                record.losingTurnCounts += IntHistogram.fromString(it.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
-                record.forfeitTurnCounts += IntHistogram.fromString(it.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                readGameTypePerformance(type, true, solver.name, evaluator.name, columns)?.let {
+                    record.winningTurnCounts += IntHistogram.fromString(it.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
+                    record.losingTurnCounts += IntHistogram.fromString(it.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
+                    record.forfeitTurnCounts += IntHistogram.fromString(it.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                }
+                record
             }
-            record
         }
     }
 
-    override fun getPerformance(outcome: GameOutcome, strict: Boolean): GameTypePerformanceRecord {
-        return getPerformance(outcome.type, outcome.daily, outcome.solver, outcome.evaluator, strict)
+    override suspend fun getPerformance(outcome: GameOutcome, strict: Boolean): GameTypePerformanceRecord {
+        return withContext(ioDispatcher) {
+            getPerformance(outcome.type, outcome.daily, outcome.solver, outcome.evaluator, strict)
+        }
     }
 
-    override fun getPerformance(setup: GameSetup, strict: Boolean): GameTypePerformanceRecord {
+    override suspend fun getPerformance(setup: GameSetup, strict: Boolean): GameTypePerformanceRecord {
         val gameType = gameSetupManager.getType(setup)
-        return getPerformance(gameType, setup.daily, setup.solver, setup.evaluator, strict)
+        return withContext(ioDispatcher) {
+            getPerformance(gameType, setup.daily, setup.solver, setup.evaluator, strict)
+        }
     }
 
     private fun getPerformance(gameType: GameType, daily: Boolean, solver: GameSetup.Solver, evaluator: GameSetup.Evaluator, strict: Boolean) =
@@ -491,13 +516,17 @@ class GameRecordManagerImpl @Inject constructor(
             record
         }
 
-    override fun getPlayerStreak(outcome: GameOutcome): GameTypePlayerStreak {
-        return getPlayerStreak(outcome.type, outcome.solver, outcome.evaluator)
+    override suspend fun getPlayerStreak(outcome: GameOutcome): GameTypePlayerStreak {
+        return withContext(ioDispatcher) {
+            getPlayerStreak(outcome.type, outcome.solver, outcome.evaluator)
+        }
     }
 
-    override fun getPlayerStreak(setup: GameSetup): GameTypePlayerStreak {
+    override suspend fun getPlayerStreak(setup: GameSetup): GameTypePlayerStreak {
         val gameType = gameSetupManager.getType(setup)
-        return getPlayerStreak(gameType, setup.solver, setup.evaluator)
+        return withContext(ioDispatcher) {
+            getPlayerStreak(gameType, setup.solver, setup.evaluator)
+        }
     }
 
     private fun getPlayerStreak(gameType: GameType, solver: GameSetup.Solver, evaluator: GameSetup.Evaluator): GameTypePlayerStreak {
@@ -635,26 +664,24 @@ class GameRecordManagerImpl @Inject constructor(
     }
 
     private fun readGameOutcome(uuid: UUID, columns: Array<String> = GameRecordManagerImpl.GameRecordContract.GameOutcomeEntry.COLUMNS): ContentValues? {
-        val entry = GameRecordContract.GameOutcomeEntry
-        synchronized(this) {
-            return dbHelper.readableDatabase.query(
-                entry.TABLE_NAME,
-                columns,
-                "${entry.COLUMN_NAME_GAME_UUID} = ?",
-                arrayOf(uuid.toString()),
-                "", "", "", "1"
-            ).use {
-                if (!it.moveToFirst()) null else {
-                    val values = ContentValues()
-                    for (i in columns.indices) {
-                        when (val column = columns[i]) {
-                            entry.COLUMN_NAME_ROUNDS -> put(values, column, it.getIntOrNull(i))
-                            entry.COLUMN_NAME_RECORDED_AT -> put(values, column, it.getLongOrNull(i))
-                            else -> put(values, column, it.getStringOrNull(i))
-                        }
+    val entry = GameRecordContract.GameOutcomeEntry
+        return dbHelper.readableDatabase.query(
+            entry.TABLE_NAME,
+            columns,
+            "${entry.COLUMN_NAME_GAME_UUID} = ?",
+            arrayOf(uuid.toString()),
+            "", "", "", "1"
+        ).use {
+            if (!it.moveToFirst()) null else {
+                val values = ContentValues()
+                for (i in columns.indices) {
+                    when (val column = columns[i]) {
+                        entry.COLUMN_NAME_ROUNDS -> put(values, column, it.getIntOrNull(i))
+                        entry.COLUMN_NAME_RECORDED_AT -> put(values, column, it.getLongOrNull(i))
+                        else -> put(values, column, it.getStringOrNull(i))
                     }
-                    values
                 }
+                values
             }
         }
     }
@@ -691,25 +718,23 @@ class GameRecordManagerImpl @Inject constructor(
 
         Timber.d("retrieve ${select} ${selectArgs}")
 
-        synchronized(this) {
-            return dbHelper.readableDatabase.query(
-                entry.TABLE_NAME,
-                columns,
-                select.joinToString(" AND "),
-                selectArgs.toTypedArray(),
-                "", "", "", "1"
-            ).use {
-                if (!it.moveToFirst()) null else {
-                    val values = ContentValues()
-                    for (i in columns.indices) {
-                        when (val column = columns[i]) {
-                            BaseColumns._ID -> put(values, column, it.getLongOrNull(i))
-                            else -> put(values, column, it.getStringOrNull(i))
-                        }
+        return dbHelper.readableDatabase.query(
+            entry.TABLE_NAME,
+            columns,
+            select.joinToString(" AND "),
+            selectArgs.toTypedArray(),
+            "", "", "", "1"
+        ).use {
+            if (!it.moveToFirst()) null else {
+                val values = ContentValues()
+                for (i in columns.indices) {
+                    when (val column = columns[i]) {
+                        BaseColumns._ID -> put(values, column, it.getLongOrNull(i))
+                        else -> put(values, column, it.getStringOrNull(i))
                     }
-                    Timber.d("retrieved ${values}")
-                    values
                 }
+                Timber.d("retrieved ${values}")
+                values
             }
         }
     }
@@ -719,24 +744,22 @@ class GameRecordManagerImpl @Inject constructor(
         columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS
     ): ContentValues? {
         val entry = GameRecordContract.PlayerStreakEntry
-        synchronized(this) {
-            return dbHelper.readableDatabase.query(
-                entry.TABLE_NAME,
-                columns,
-                "${entry.COLUMN_NAME_GAME_TYPE} = ?",
-                arrayOf(gameType.toString()),
-                "", "", "", "1"
-            ).use {
-                if (!it.moveToFirst()) null else {
-                    val values = ContentValues()
-                    for (i in columns.indices) {
-                        when (val column = columns[i]) {
-                            BaseColumns._ID -> put(values, column, it.getLongOrNull(i))
-                            else -> put(values, column, it.getInt(i))
-                        }
+        return dbHelper.readableDatabase.query(
+            entry.TABLE_NAME,
+            columns,
+            "${entry.COLUMN_NAME_GAME_TYPE} = ?",
+            arrayOf(gameType.toString()),
+            "", "", "", "1"
+        ).use {
+            if (!it.moveToFirst()) null else {
+                val values = ContentValues()
+                for (i in columns.indices) {
+                    when (val column = columns[i]) {
+                        BaseColumns._ID -> put(values, column, it.getLongOrNull(i))
+                        else -> put(values, column, it.getInt(i))
                     }
-                    values
                 }
+                values
             }
         }
     }

@@ -607,6 +607,10 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             GameSetupContract.Feature.LAUNCH -> {
                 // TODO communicate this to Listener? Set button enabled?
             }
+
+            else -> {
+                Timber.v("Can't adjust visibility of feature $feature to $visible")
+            }
         }
     }
 
@@ -616,6 +620,9 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             GameSetupContract.Feature.SEED -> seedViewHolder.bind(mutable = mutable)
             GameSetupContract.Feature.PLAYER_ROLE,
             GameSetupContract.Feature.CODE_LANGUAGE,
+            GameSetupContract.Feature.CODE_EVALUATION_POLICY -> {
+                Timber.v("Can't set mutability of feature $feature to $mutable")
+            }
             GameSetupContract.Feature.CODE_LENGTH,
             GameSetupContract.Feature.CODE_CHARACTERS,
             GameSetupContract.Feature.CODE_CHARACTER_REPETITION,
@@ -790,11 +797,12 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
     override fun setFeatureAvailability(
         availabilities: Map<GameSetupContract.Feature, GameSetupContract.Availability>,
         qualifiers: Map<GameSetupContract.Feature, GameSetupContract.Qualifier>,
-        defaultAvailability: GameSetupContract.Availability
+        defaultAvailability: GameSetupContract.Availability?
     ) {
         // iterate through all features, not just those provided
-        for (feature in GameSetupContract.Feature.values()) {
-            setFeatureAvailability(feature, availabilities[feature] ?: defaultAvailability, qualifiers[feature])
+        for (feature in GameSetupContract.Feature.entries) {
+            val availability = availabilities[feature] ?: defaultAvailability
+            if (availability != null) setFeatureAvailability(feature, availability, qualifiers[feature])
         }
     }
 
@@ -808,6 +816,9 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             GameSetupContract.Qualifier.VERSION_UPDATE_RECOMMENDED,
             GameSetupContract.Qualifier.VERSION_UPDATE_REQUIRED -> {
                 // TODO note or display Qualifier for this Feature
+            }
+            GameSetupContract.Qualifier.VERSION_CHECK_FAILED -> {
+                // TODO note that a version check failed? Probably not necessary for GameInfo
             }
             null -> {
                 // TODO clear Qualifier for this feature

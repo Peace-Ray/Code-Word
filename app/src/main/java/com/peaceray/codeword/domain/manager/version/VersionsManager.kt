@@ -2,6 +2,7 @@ package com.peaceray.codeword.domain.manager.version
 
 import com.peaceray.codeword.data.model.version.SupportedVersions
 import com.peaceray.codeword.data.model.version.Versions
+import retrofit2.HttpException
 
 /**
  * A Manager for application and seed "versions". Reports the installed application and available
@@ -41,7 +42,8 @@ interface VersionsManager {
      * will only retrieve cached values, throwing an exception if unavailable or expired.
      * @return The versions supported, according to the canonical record (external server).
      */
-    fun getSupportedVersions(
+    @Throws(IllegalStateException::class, HttpException::class)
+    suspend fun getSupportedVersions(
         cacheLifespan: Long = Long.MAX_VALUE,
         allowRemote: Boolean = true
     ): SupportedVersions
@@ -59,7 +61,8 @@ interface VersionsManager {
      * @return Whether this application meets or exceeds the minimum supported seed and application
      * versions.
      */
-    fun isApplicationSupported(
+    @Throws(IllegalStateException::class, HttpException::class)
+    suspend fun isApplicationSupported(
         cacheLifespan: Long = Long.MAX_VALUE,
         allowRemote: Boolean = true
     ): Boolean
@@ -78,7 +81,8 @@ interface VersionsManager {
      * @return Whether this application meets or exceeds the current seed and application
      * versions.
      */
-    fun isApplicationCurrent(
+    @Throws(IllegalStateException::class, HttpException::class)
+    suspend fun isApplicationCurrent(
         cacheLifespan: Long = Long.MAX_VALUE,
         allowRemote: Boolean = true
     ): Boolean

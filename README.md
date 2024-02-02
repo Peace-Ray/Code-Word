@@ -48,8 +48,7 @@ Code Word draws from a long history of code-breaking games and related work.
 
 Code Word began as a hobby project to overengineer a Wordle solver. That project still exists as the core of the game's logic, available in a CLI by running ConsoleGame.kt.
 
-Code Word is implemented in Kotlin, using layered Model-View-Presenter application architecture. Hilt is used for dependency injection and RxJava for asynchronous computation and IO operations. I plan to replace
-RxJava with Kotlin coroutines in a future update; in practice, the use case does not justify the complexity of the tool.
+Code Word is implemented in Kotlin, using layered Model-View-Presenter application architecture. Hilt is used for dependency injection, and Kotlin coroutines for asynchronous computation and IO operations. Originally RxJava was used for the latter purpose, but the use case did not justify the complexity of the tool.
 
 Thank you to Josh Wardle for creating Wordle and inspiring this project (and many others)!
 
