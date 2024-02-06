@@ -2,7 +2,7 @@ package com.peaceray.codeword.data.model.record
 
 import com.peaceray.codeword.data.model.game.GameType
 
-abstract class PlayerStreak {
+sealed class PlayerStreak {
     var current: Int = 0
     var best: Int = 0
     var currentDaily: Int = 0

@@ -1,7 +1,12 @@
 package com.peaceray.codeword.glue.modules
 
 import com.peaceray.codeword.BuildConfig
+import com.peaceray.codeword.data.manager.game.defaults.GameDefaultsManager
+import com.peaceray.codeword.data.manager.game.defaults.impl.GameDefaultsManagerImpl
 import com.peaceray.codeword.data.source.CodeWordApi
+import com.peaceray.codeword.data.source.CodeWordDb
+import com.peaceray.codeword.data.source.impl.CodeWordDbImpl
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,4 +50,11 @@ object CodeWordApiModule {
     @Singleton
     fun provideCodeWordApi(retrofit: Retrofit) = retrofit.create(CodeWordApi::class.java)
 
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class CodeWordDbModule {
+    @Binds
+    abstract fun bindCodeWordDb(db: CodeWordDbImpl): CodeWordDb
 }

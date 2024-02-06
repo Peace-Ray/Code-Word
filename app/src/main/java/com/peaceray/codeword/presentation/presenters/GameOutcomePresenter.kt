@@ -76,9 +76,10 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
     private fun setPlaceholderHistory(seed: String?, gameSetup: GameSetup?) {
         if (gameSetup != null) {
             val type = gameSetupManager.getType(gameSetup)
+            val daily = gameSetup.daily
             view?.setGameHistory(
-                GameTypePerformanceRecord(type),
-                TotalPerformanceRecord(),
+                GameTypePerformanceRecord(type, daily),
+                TotalPerformanceRecord(daily),
                 GameTypePlayerStreak(type)
             )
         }

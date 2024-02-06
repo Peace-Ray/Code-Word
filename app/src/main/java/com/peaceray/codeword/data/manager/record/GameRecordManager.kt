@@ -19,8 +19,7 @@ interface GameRecordManager {
     //---------------------------------------------------------------------------------------------
 
     /**
-     * Record the result of a completed game. This call may make synchronous database updates,
-     * so it is recommended to perform this call off the main thread.
+     * Record the result of a completed game.
      *
      * @param seed The seed used to create this game, if any
      * @param setup The GameSetup
@@ -30,8 +29,10 @@ interface GameRecordManager {
     suspend fun record(seed: String?, setup: GameSetup, game: Game, secret: String?)
 
     /**
-     * Record the result of a completed game. The call may make synchronous database updates,
-     * so it is recommended to perform this call off the main thread.
+     * Record the result of a completed game.
+     *
+     * @param gameSaveData The complete save data for the game
+     * @param secret The secret, if known
      */
     suspend fun record(gameSaveData: GameSaveData, secret: String?)
 
