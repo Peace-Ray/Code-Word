@@ -40,6 +40,7 @@ Game design, art, and code by Jake Rosin.
 Code Word draws from a long history of code-breaking games and related work.
 
 * [Wordle™](https://www.nytimes.com/games/wordle/index.html): the viral hit by Josh Wardle. Wordle's daily puzzle is a 5-letter English word allowing six guesses. Trademark of The New York Times Corporation.
+* [Jotto™](http://jotto.augiehill.com/): five-letter English words like Wordle, but with only the number of included letters (not their positions) provided as feedback. Trademark of Michael Rosenfeld.
 * [Mastermind®](https://webgamesonline.com/mastermind/): a two-player board game using colored pegs. Trademark of the Pressman Toy Corporation.
 * [Bulls and Cows](https://www.mathsisfun.com/games/bulls-and-cows.html): a guess-the-number game with multiple software implementations.
 * [Absurdle](https://qntm.org/files/absurdle/absurdle.html): this adversarial version of Wordle by qntm features a cheating opponent who changes the secret in response to your guesses.
