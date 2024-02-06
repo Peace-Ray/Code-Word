@@ -1,0 +1,58 @@
+Code Word: a code-breaking game by Jake Rosin
+
+  Copyright (C) 2023-2024 Peace Ray
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Original Media Assets
+
+  Code Word Art Assets and Documentation (C) by Peace Ray
+    (all media assets not listed elsewhere in this notice)
+
+  These works are licensed under a
+  Creative Commons Attribution-ShareAlike 4.0 International License; see
+  project file licenses/CC-BY-SA-4.0.txt.
+
+  You should have received a copy of the license along with this
+  work. If not, see <http://creativecommons.org/licenses/by-sa/4.0/>.
+
+Included Media Assets
+
+  Code word contains original and derivative media assets released under various
+  licenses.
+
+  Material Symbols (C) Google
+  Apache License, Version 2.0
+    (See http://www.apache.org/licenses/LICENSE-2.0 or the
+    project file licenses/Apache-2.0.txt)
+  Images derived from the Material Symbols are used to label Code Word menu
+  and navigation buttons. In some cases they were modified to represent
+  actions specific to the Code Word app. The following images,
+  located in app/src/main/res and subdirectories, are derived from Material
+  Symbol icons (all files with these prefixes):
+
+    round_close
+    round_content_copy
+    round_done
+    round_help
+    round_info
+    round_keyboard_backspace
+    round_keyboard_return
+    round_puzzle_create
+    round_puzzle_info
+    round_refresh
+    round_settings
+    round_share
+
+Code Word, Peace Ray, and the tiles logo are trademarks of Peace Ray LLC.
