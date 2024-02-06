@@ -19,9 +19,9 @@ import androidx.lifecycle.lifecycleScope
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.ActivityMainBinding
-import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
-import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
-import com.peaceray.codeword.domain.manager.genie.GenieSettingsManager
+import com.peaceray.codeword.data.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
+import com.peaceray.codeword.data.manager.genie.GenieSettingsManager
 import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
 import com.peaceray.codeword.presentation.view.fragments.GameFragment
 import com.peaceray.codeword.presentation.view.fragments.GameInfoFragment

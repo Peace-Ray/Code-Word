@@ -2,7 +2,7 @@ package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.version.SupportedVersions
 import com.peaceray.codeword.data.model.version.Versions
-import com.peaceray.codeword.domain.manager.version.VersionsManager
+import com.peaceray.codeword.data.manager.version.VersionsManager
 import com.peaceray.codeword.presentation.contracts.FeatureAvailabilityContract
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async

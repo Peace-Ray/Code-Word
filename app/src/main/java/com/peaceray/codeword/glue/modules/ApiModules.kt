@@ -1,7 +1,7 @@
 package com.peaceray.codeword.glue.modules
 
 import com.peaceray.codeword.BuildConfig
-import com.peaceray.codeword.domain.api.CodeWordApi
+import com.peaceray.codeword.data.source.CodeWordApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
