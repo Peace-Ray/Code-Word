@@ -13,7 +13,6 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.appcompat.widget.AppCompatSpinner
-import androidx.core.view.iterator
 import androidx.core.view.postDelayed
 import androidx.core.view.size
 import androidx.fragment.app.Fragment
@@ -22,7 +21,7 @@ import com.google.android.material.tabs.TabLayout
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.ActivityGameSetupBinding
-import com.peaceray.codeword.domain.manager.genie.GenieGameSetupSettingsManager
+import com.peaceray.codeword.data.manager.genie.GenieGameSetupSettingsManager
 import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.FeatureAvailabilityContract
 import com.peaceray.codeword.presentation.contracts.GameSetupContract

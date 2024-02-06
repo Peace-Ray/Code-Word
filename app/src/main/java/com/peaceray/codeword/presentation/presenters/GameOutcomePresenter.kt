@@ -2,9 +2,9 @@ package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.record.*
-import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
-import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
-import com.peaceray.codeword.domain.manager.record.GameRecordManager
+import com.peaceray.codeword.data.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
+import com.peaceray.codeword.data.manager.record.GameRecordManager
 import com.peaceray.codeword.presentation.contracts.GameOutcomeContract
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -76,9 +76,10 @@ class GameOutcomePresenter @Inject constructor(): GameOutcomeContract.Presenter,
     private fun setPlaceholderHistory(seed: String?, gameSetup: GameSetup?) {
         if (gameSetup != null) {
             val type = gameSetupManager.getType(gameSetup)
+            val daily = gameSetup.daily
             view?.setGameHistory(
-                GameTypePerformanceRecord(type),
-                TotalPerformanceRecord(),
+                GameTypePerformanceRecord(type, daily),
+                TotalPerformanceRecord(daily),
                 GameTypePlayerStreak(type)
             )
         }

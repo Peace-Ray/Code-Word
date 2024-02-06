@@ -25,7 +25,7 @@ import com.peaceray.codeword.utils.histogram.IntHistogram
  * `forfeitTurnCounts[2] = 11` means that eleven games have been forfeit on the third move (while
  * waiting for the third guess to be input).
  */
-abstract class PerformanceRecord {
+sealed class PerformanceRecord {
     val attempts: Int
         get() = wins + losses + forfeits
 
@@ -38,11 +38,11 @@ abstract class PerformanceRecord {
     val forfeitTurnCounts = IntHistogram(min = 0)
 }
 
-class TotalPerformanceRecord(): PerformanceRecord()
+class TotalPerformanceRecord(val daily: Boolean?): PerformanceRecord()
 
 /**
  * Holds a record of game performances for a specific game type: total attempts,
  * total wins and losses, turn histogram for wins, losses, and forfeits
  *
  */
-class GameTypePerformanceRecord(val type: GameType): PerformanceRecord()
+class GameTypePerformanceRecord(val type: GameType, val daily: Boolean?): PerformanceRecord()

@@ -1,10 +1,10 @@
 package com.peaceray.codeword.presentation.presenters
 
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
-import com.peaceray.codeword.domain.manager.game.play.GamePlayManager
-import com.peaceray.codeword.domain.manager.game.play.GamePlaySession
-import com.peaceray.codeword.domain.manager.record.GameRecordManager
+import com.peaceray.codeword.data.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.data.manager.game.play.GamePlayManager
+import com.peaceray.codeword.data.manager.game.play.GamePlaySession
+import com.peaceray.codeword.data.manager.record.GameRecordManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy

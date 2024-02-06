@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.res.Resources
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.record.GameOutcome
-import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
+import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.glue.ForActivity

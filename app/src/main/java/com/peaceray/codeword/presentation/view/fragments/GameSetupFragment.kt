@@ -21,7 +21,7 @@ import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.databinding.GameSetupBinding
-import com.peaceray.codeword.domain.manager.genie.GenieGameSetupSettingsManager
+import com.peaceray.codeword.data.manager.genie.GenieGameSetupSettingsManager
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameSetupContract
@@ -36,7 +36,6 @@ import okhttp3.internal.toImmutableMap
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
-import kotlin.collections.ArrayList
 
 @AndroidEntryPoint
 class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {

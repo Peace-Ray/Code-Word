@@ -3,7 +3,7 @@ package com.peaceray.codeword.presentation.view.activities
 import android.content.Intent
 import android.os.Bundle
 import com.peaceray.codeword.databinding.ActivityHelloWorldBinding
-import com.peaceray.codeword.domain.manager.genie.GenieSettingsManager
+import com.peaceray.codeword.data.manager.genie.GenieSettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 

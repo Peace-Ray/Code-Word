@@ -3,16 +3,14 @@ package com.peaceray.codeword.presentation.presenters
 import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
-import com.peaceray.codeword.domain.manager.game.creation.GameCreationManager
-import com.peaceray.codeword.domain.manager.game.defaults.GameDefaultsManager
-import com.peaceray.codeword.domain.manager.game.persistence.GamePersistenceManager
-import com.peaceray.codeword.domain.manager.game.setup.GameSetupManager
+import com.peaceray.codeword.data.manager.game.creation.GameCreationManager
+import com.peaceray.codeword.data.manager.game.defaults.GameDefaultsManager
+import com.peaceray.codeword.data.manager.game.persistence.GamePersistenceManager
+import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.contracts.GameSetupContract
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
@@ -20,7 +18,6 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
-import javax.inject.Qualifier
 
 private const val DAILY_DEFAULTS_KEY = "GameSetupPresenter.Daily"
 private const val SEEDED_DEFAULTS_KEY = "GameSetupPresenter.Seeded"
