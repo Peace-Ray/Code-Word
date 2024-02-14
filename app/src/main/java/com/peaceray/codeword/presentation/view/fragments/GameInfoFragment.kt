@@ -21,8 +21,8 @@ import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameSetupContract
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
-import com.peaceray.codeword.presentation.datamodel.Guess
-import com.peaceray.codeword.presentation.datamodel.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
 import com.peaceray.codeword.presentation.view.component.layouts.CellLayout
@@ -309,7 +309,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 views.letterViews.forEachIndexed { index, view ->
                     if (index < letters.size) {
                         createLetterViewHolder(view.getChildAt(0), letterAppearance)
-                            .bind(GuessLetter(letters[index], markup))
+                            .bind(GuessLetter(0, letters[index], markup))
                     } else {
                         view.visibility = View.GONE
                     }
@@ -320,7 +320,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                         Constraint.MarkupType.INCLUDED -> createGuess(legendConstraint.candidate.length, 0, letters.size)
                         Constraint.MarkupType.NO -> createGuess(legendConstraint.candidate.length, 0, 0)
                     }
-                    createPipsViewHolder(views.pipView.getChildAt(0), pipAppearance).bind(guess)
+                    createPipsViewHolder(views.pipView.getChildAt(0), pipAppearance).bind(guess.evaluation)
                 } else {
                     views.pipView?.visibility = View.GONE
                 }
@@ -500,7 +500,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             else -> Constraint.MarkupType.NO
         } }
 
-        return Guess(Constraint.create(guess, markup))
+        return Guess.createPerfectEvaluation(Constraint.create(guess, markup))
     }
 
     data class LegendMarkupViews(val textView: TextView, val letterViews: List<ViewGroup>, val pipView: ViewGroup?) {

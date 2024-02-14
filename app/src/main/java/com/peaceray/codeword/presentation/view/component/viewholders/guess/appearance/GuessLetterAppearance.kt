@@ -3,7 +3,7 @@ package com.peaceray.codeword.presentation.view.component.viewholders.guess.appe
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 
 interface GuessLetterAppearance {
     // colors and alpha

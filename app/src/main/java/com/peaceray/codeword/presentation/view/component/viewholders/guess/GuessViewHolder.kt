@@ -9,7 +9,7 @@ import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 
 class GuessViewHolder(
@@ -36,7 +36,7 @@ class GuessViewHolder(
 
     //region Data
     //---------------------------------------------------------------------------------------------
-    private var _guess = Guess.placeholder
+    private var _guess = Guess.createPlaceholder(0)
     var guess
         get() = _guess
         set(value) = bind(value)

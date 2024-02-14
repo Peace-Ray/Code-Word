@@ -3,7 +3,9 @@ package com.peaceray.codeword.presentation.view.component.adapters.guess
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.layouts.CellLayout
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
@@ -281,7 +283,7 @@ class GuessLetterAdapter @Inject constructor(
                 holder.bind(bindLetter)
             }
             is AggregatedConstraintViewHolder -> holder.bind(guess)
-            is GuessAggregatedPipGridViewHolder -> holder.bind(guess)
+            is GuessAggregatedPipGridViewHolder -> holder.bind(guess.evaluation)
             is EmptyViewHolder -> holder.bind()
         }
     }

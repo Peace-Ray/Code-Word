@@ -17,7 +17,7 @@ import com.google.android.material.animation.ArgbEvaluatorCompat
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
@@ -70,7 +70,7 @@ class GuessLetterViewHolder(
     //---------------------------------------------------------------------------------------------
     private var bound = false
 
-    private var _guess = GuessLetter.placeholder
+    private var _guess = GuessLetter(0)
     var guess
         get() = _guess
         set(value) = bind(value)
@@ -328,7 +328,7 @@ class GuessLetterViewHolder(
         private val animatorMap: MutableMap<RecyclerView.ViewHolder, ValueAnimator> = mutableMapOf()
 
         class GuessLetterItemHolderInfo: ItemHolderInfo() {
-            var guess: GuessLetter = GuessLetter.placeholder
+            var guess: GuessLetter = GuessLetter(0)
             internal var style: GuessViewValues? = null
         }
 

@@ -6,7 +6,7 @@ import androidx.annotation.LayoutRes
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessViewHolder
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.utils.extensions.toLifecycleOwner
 import timber.log.Timber

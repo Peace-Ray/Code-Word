@@ -10,7 +10,7 @@ import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 
 class AggregatedConstraintViewHolder(
@@ -42,7 +42,7 @@ class AggregatedConstraintViewHolder(
 
     //region Data
     //---------------------------------------------------------------------------------------------
-    private var _guess = Guess.placeholder
+    private var _guess = Guess.createPlaceholder(0)
     var guess
         get() = _guess
         set(value) = bind(value)
@@ -66,8 +66,8 @@ class AggregatedConstraintViewHolder(
     }
 
     private fun setConstraintColors(guess: Guess, swatch: ColorSwatch) {
-        val exact = guess.constraint?.exact ?: 0
-        val inclu = guess.constraint?.included ?: 0
+        val exact = guess.evaluation?.exact ?: 0
+        val inclu = guess.evaluation?.included ?: 0
         List(guess.length) {
             when {
                 it < exact -> Constraint.MarkupType.EXACT

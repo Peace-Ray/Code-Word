@@ -4,26 +4,26 @@ import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 
 interface GuessAggregatedAppearance {
     // colors and alpha
-    @ColorInt fun getColorFill(guess: Guess, markup: Constraint.MarkupType?, swatch: ColorSwatch): Int
-    @ColorInt fun getColorStroke(guess: Guess, markup: Constraint.MarkupType?, swatch: ColorSwatch): Int
+    @ColorInt fun getColorFill(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?, swatch: ColorSwatch): Int
+    @ColorInt fun getColorStroke(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?, swatch: ColorSwatch): Int
 
     // dimensions
     val hasStableDimensions: Boolean
-    @Dimension fun getPipSize(guess: Guess, markup: Constraint.MarkupType?): Float
-    @Dimension fun getPipMargin(guess: Guess, markup: Constraint.MarkupType?): Float
+    @Dimension fun getPipSize(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float
+    @Dimension fun getPipMargin(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float
 
     // details
-    @Dimension fun getPipStrokeWidth(guess: Guess, markup: Constraint.MarkupType?): Int
-    @Dimension fun getPipCornerRadius(guess: Guess, markup: Constraint.MarkupType?): Float
-    @Dimension fun getPipElevation(guess: Guess, markup: Constraint.MarkupType?): Float
+    @Dimension fun getPipStrokeWidth(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Int
+    @Dimension fun getPipCornerRadius(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float
+    @Dimension fun getPipElevation(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float
 
 
     // pip / text counts
-    fun getTotalCount(guess: Guess): Int
-    fun getExactCount(guess: Guess): Int
-    fun getIncludedCount(guess: Guess): Int
+    fun getTotalCount(evaluation: GuessEvaluation?): Int
+    fun getExactCount(evaluation: GuessEvaluation?): Int
+    fun getIncludedCount(evaluation: GuessEvaluation?): Int
 }

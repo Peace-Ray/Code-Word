@@ -2,7 +2,7 @@ package com.peaceray.codeword.presentation.view.component.adapters.guess
 
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.game.data.Constraint
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import timber.log.Timber
 
 abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, RecyclerView.Adapter<T>() {
@@ -48,7 +48,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
     val guesses: List<Guess>
         get() = _guesses
 
-    var placeholder = Guess.placeholder
+    var placeholder = Guess.createPlaceholder(0)
         private set
 
     /**
@@ -64,10 +64,10 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         if (this.length != length || this.rows != rows) {
             if (this.length != length) {
                 _constraints.clear()
-                placeholder = Guess(length)
+                placeholder = Guess.createPlaceholder(length)
 
                 for (i in 0 until _guesses.size) {
-                    _guesses[i] = Guess(length, _guesses[i].candidate)
+                    _guesses[i] = Guess.createGuess(length, _guesses[i].candidate)
                 }
             }
 
@@ -130,7 +130,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         }
 
         val added = if (constraints.isEmpty()) null else {
-            _constraints.addAll(constraints.map { Guess(it) })
+            _constraints.addAll(constraints.map { Guess.createPerfectEvaluation(it) })
             guessRangeToItemRange(_constraints.size - constraints.size, constraints.size)
         }
 
@@ -146,7 +146,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         }
 
         val added = if (guesses.isEmpty()) null else {
-            _guesses.addAll(guesses.map { Guess(length, it) })
+            _guesses.addAll(guesses.map { Guess.createGuess(length, it) })
             guessRangeToItemRange(_constraints.size + _guesses.size - guesses.size, guesses.size)
         }
 
@@ -177,7 +177,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         Timber.v("update constraint = $constraint, guess = $guess")
         if (constraint != null) {
             // the new constraint replaces the first available guess or placeholder.
-            _constraints.add(Guess(constraint))
+            _constraints.add(Guess.createPerfectEvaluation(constraint))
             val removed = _guesses.removeFirstOrNull()
 
             // notify
@@ -193,7 +193,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
             // could alter the guess, insert one, or remove the existing one.
             val oldGuess = _guesses.removeLastOrNull()
             val oldBinding = oldGuess ?: placeholder
-            val newBinding = Guess(length, guess)
+            val newBinding = Guess.createGuess(length, guess)
             _guesses.add(newBinding)
 
             if ((oldGuess != null) || _constraints.size + _guesses.size <= rows) {

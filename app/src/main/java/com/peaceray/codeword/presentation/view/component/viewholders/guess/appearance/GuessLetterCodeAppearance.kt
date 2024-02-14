@@ -5,7 +5,7 @@ import androidx.annotation.Dimension
 import androidx.annotation.LayoutRes
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
 
 class GuessLetterCodeAppearance(context: Context, private val layout: GuessLetterCellLayout): GuessLetterAppearance {
