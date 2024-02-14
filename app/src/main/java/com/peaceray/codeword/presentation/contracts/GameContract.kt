@@ -4,6 +4,7 @@ import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import java.util.*
 
 /**
@@ -102,7 +103,7 @@ interface GameContract: BaseContract {
          * @param constraints Current constraints.
          * @param animate Animate this change; if false, apply immediately.
          */
-        fun setConstraints(constraints: List<Constraint>, animate: Boolean = false)
+        fun setConstraints(constraints: List<Guess>, animate: Boolean = false)
 
         /**
          * Update the currently displayed guess for the Game.
@@ -110,7 +111,7 @@ interface GameContract: BaseContract {
          * @param guess The guess to apply
          * @param animate Animate this change; if false, apply immediately.
          */
-        fun setGuess(guess: String, animate: Boolean = false)
+        fun setGuess(guess: Guess, animate: Boolean = false)
 
         /**
          * Update the currently displayed guess by REPLACING it with the
@@ -120,7 +121,7 @@ interface GameContract: BaseContract {
          * @param constraint The new constraint to apply
          * @param animate Animate this change; if false, apply immediately.
          */
-        fun replaceGuessWithConstraint(constraint: Constraint, animate: Boolean = false)
+        fun replaceGuessWithConstraint(constraint: Guess, animate: Boolean = false)
 
         //-----------------------------------------------------------------------------------------
         //endregion
@@ -149,7 +150,7 @@ interface GameContract: BaseContract {
          *
          * @param suggestedGuess A suggestion for the next guess, perhaps partial.
          */
-        fun promptForGuess(suggestedGuess: String?)
+        fun promptForGuess(suggestedGuess: Guess)
 
         /**
          * Prompt the player for an evaluation of the provided guess (after this is done,
@@ -157,7 +158,7 @@ interface GameContract: BaseContract {
          *
          * @param guess The guess to evaluate
          */
-        fun promptForEvaluation(guess: String)
+        fun promptForEvaluation(guess: Guess)
 
         /**
          * Prompt the user to wait for an update.

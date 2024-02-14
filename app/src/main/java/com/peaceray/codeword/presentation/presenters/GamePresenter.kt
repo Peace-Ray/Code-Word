@@ -11,6 +11,7 @@ import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.FeedbackProvider
 import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvider
 import com.peaceray.codeword.presentation.contracts.GameContract
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -99,13 +100,13 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 // begin game
                 ready = true
                 val moves = gamePlaySession.getCurrentMoves()
-                view?.setConstraints(moves.second, true)
+                view?.setConstraints(moves.second.map { Guess.createPerfectEvaluation(it) }, true)
                 if (moves.first != null) {
-                    view?.setGuess(moves.first!!, true)
+                    view?.setGuess(Guess.createGuess(gameSetup.vocabulary.length, moves.first!!), true)
                 } else {
                     cachedPartialGuess = view?.getCachedGuess()
                     if ((cachedPartialGuess?.length?: 0) > 0) {
-                        view?.setGuess(cachedPartialGuess!!, true)
+                        view?.setGuess(Guess.createGuess(gameSetup.vocabulary.length, cachedPartialGuess!!), true)
                     }
                 }
                 advanceGameCharacterFeedback(false)
@@ -142,7 +143,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     && after.length <= gameSetup.vocabulary.length
                     && sanitized.all { it in charset }
             Timber.v("onGuessUpdated: ok $ok")
-            if (ok) view?.setGuess(sanitized)
+            if (ok) view?.setGuess(Guess.createGuess(gameSetup.vocabulary.length, sanitized))
         }
     }
 
@@ -169,7 +170,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 val constraint = Constraint.create(guess.lowercase(locale).trim(), markup)
                 try{
                     gamePlaySession.advanceWithEvaluation(constraint)
-                    view?.replaceGuessWithConstraint(constraint)
+                    view?.replaceGuessWithConstraint(Guess.createPerfectEvaluation(constraint))
                     advanceGame()
                 } catch (err: Game.IllegalEvaluationException) {
                     Timber.e(err, "Error evaluating guess $guess")
@@ -244,7 +245,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     private suspend fun advanceGameGuessing() {
         Timber.v("advanceGameGuessing")
         if (gameSetup.solver == GameSetup.Solver.PLAYER) {
-            view?.promptForGuess(cachedPartialGuess)
+            view?.promptForGuess(Guess.createGuess(gameSetup.vocabulary.length, cachedPartialGuess ?: ""))
             cachedPartialGuess = null
         } else {
             val time = System.currentTimeMillis()
@@ -252,7 +253,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             try {
                 val solution = gamePlaySession.generateGuess(true)
                 Timber.v("Computed and applied a solution: $solution. Took ${(System.currentTimeMillis() - time) / 1000.0} seconds")
-                view?.setGuess(solution, true)
+                view?.setGuess(Guess.createGuess(gameSetup.vocabulary.length, solution), true)
                 advanceGame()
             } catch (err: IllegalStateException) {
                 Timber.e("GamePlaySession generated a guess, but Game was not accepting guesses")
@@ -268,13 +269,13 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         Timber.v("advanceGameEvaluating")
         if (gameSetup.evaluator == GameSetup.Evaluator.PLAYER) {
             cachedPartialGuess = null
-            view?.promptForEvaluation(gamePlaySession.getCurrentGuess()!!)
+            view?.promptForEvaluation(Guess.createGuess(gameSetup.vocabulary.length, gamePlaySession.getCurrentGuess()!!))
         } else {
             view?.promptForWait()
             try {
                 val constraint = gamePlaySession.generateEvaluation(true)
                 Timber.v("Computed and applied an evaluation: $constraint.")
-                view?.replaceGuessWithConstraint(constraint, true)
+                view?.replaceGuessWithConstraint(Guess.createPerfectEvaluation(constraint), true)
                 advanceGameCharacterFeedback(true)
             } catch (err: IllegalStateException) {
                 Timber.e("GamePlaySession generated a Constraint, but Game was not accepting evaluation")

@@ -336,6 +336,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
         legendAdapter.setCodeCharacters(legendCodeCharacters)
 
+
         legendAdapter.setGameFieldSize(legendGuess.length, 2)
         legendAdapter.setCodeCharacters(legendCodeCharacters)
         legendLayoutManager = GridLayoutManager(context, legendAdapter.itemsPerGameRow)
@@ -343,8 +344,8 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
         // TODO apply animation to these
         legendAdapter.replace(constraints = listOf(
-            legendConstraint,
-            Constraint.Companion.create(legendSecret, legendSecret)
+            Guess.createPerfectEvaluation(legendConstraint),
+            Guess.createPerfectEvaluation(Constraint.Companion.create(legendSecret, legendSecret))
         ))
     }
 

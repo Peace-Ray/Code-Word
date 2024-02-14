@@ -1,6 +1,7 @@
 package com.peaceray.codeword.presentation.view.component.adapters.guess
 
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 
 /**
  * An Adapter that holds Constraints and Guesses (in most scenarios at most 1 guess will be present
@@ -27,7 +28,7 @@ interface GuessAdapter {
     fun clear()
 
     /**
-     * Sets existing constraints and guesses. The nuclear option; if possible, use [update]
+     * Sets existing constraints and guesses. The nuclear option; if possible, use [advance]
      * to append a constraint and/or replace a guess for smoother animation.
      *
      * @param constraints The new constraints to set. If null, no changes to constraints will be
@@ -37,12 +38,12 @@ interface GuessAdapter {
      * made; if non-null (even if empty) the guesses provided will fully replace those previously
      * there.
      */
-    fun replace(constraints: List<Constraint>? = null, guesses: List<String>? = null)
+    fun replace(constraints: List<Guess>? = null, guesses: List<Guess>? = null)
 
     /**
      * Appends new constraint(s) and/or guess(es), smoothly updating display and maintaining other
      * the constraints and guesses already present. For updates that occur during gameplay,
-     * [update] is preferred.
+     * [advance] is preferred.
      *
      * Note: will not replace an ongoing guess with the resulting constraint or new guess(es). Any
      * existing guesses will remain, between the newly added constraints and newly added guesses.
@@ -52,7 +53,7 @@ interface GuessAdapter {
      * @param guesses The new guesses to add. Will be appended to any existing guesses. If null
      * or empty no changes will be made to guesses.
      */
-    fun append(constraints: List<Constraint>? = null, guesses: List<String>? = null)
+    fun append(constraints: List<Guess>? = null, guesses: List<Guess>? = null)
 
     /**
      * Replace an existing guess with a new guess, a constraint, or both. Replacements are smooth.
@@ -67,7 +68,7 @@ interface GuessAdapter {
      * guess will be appended to any existing constraints.
      *
      */
-    fun update(constraint: Constraint? = null, guess: String? = null)
+    fun advance(constraint: Guess? = null, guess: Guess? = null)
     //---------------------------------------------------------------------------------------------
     //endregion
 
@@ -83,7 +84,7 @@ interface GuessAdapter {
     fun positionSpan(position: Int): Int
 
     /**
-     * Return a range of all "active" items: items that can be altered by a call to [update].
+     * Return a range of all "active" items: items that can be altered by a call to [advance].
      *
      * @param placeholders Include placeholder blocks in the range returned (typically at the
      * end of the current guess row).

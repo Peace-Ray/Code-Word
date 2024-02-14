@@ -19,6 +19,7 @@ import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
@@ -463,7 +464,7 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         binding.constraintRecyclerView.layoutManager = gridLayoutManager
     }
 
-    override fun setConstraints(constraints: List<Constraint>, animate: Boolean) {
+    override fun setConstraints(constraints: List<Guess>, animate: Boolean) {
         Timber.v("setConstraints: ${constraints.size}")
         // TODO deal with [animate]
         guessAdapter.replace(constraints = constraints)
@@ -472,20 +473,20 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         onRecyclerViewContentHeightChange()
     }
 
-    override fun setGuess(guess: String, animate: Boolean) {
+    override fun setGuess(guess: Guess, animate: Boolean) {
         Timber.v("setGuess: $guess")
         // TODO deal with [animate]
-        guessAdapter.update(guess = guess)
+        guessAdapter.advance(guess = guess)
 
         onRecyclerViewActiveItemChange()
 
         lastMoveAt = System.currentTimeMillis()
     }
 
-    override fun replaceGuessWithConstraint(constraint: Constraint, animate: Boolean) {
+    override fun replaceGuessWithConstraint(constraint: Guess, animate: Boolean) {
         Timber.v("replaceGuessWithConstraint: $constraint")
         // TODO deal with [animate]
-        guessAdapter.update(constraint = constraint)
+        guessAdapter.advance(constraint = constraint)
 
         onRecyclerViewActiveItemChange()
         onRecyclerViewContentHeightChange()
@@ -500,19 +501,19 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         keyboardView?.setCharacterFeedback(feedback)
     }
 
-    override fun promptForGuess(suggestedGuess: String?) {
+    override fun promptForGuess(suggestedGuess: Guess) {
         Timber.v("promptForGuess")
         // clear "guess" field or placeholder
-        guessAdapter.update(guess = (suggestedGuess ?: ""))
+        guessAdapter.advance(guess = suggestedGuess)
 
         keyboardView?.isEnabled = true
 
         onPresenterPrompting()
     }
 
-    override fun promptForEvaluation(guess: String) {
+    override fun promptForEvaluation(guess: Guess) {
         Timber.v("promptForEvaluation $guess")
-        guessAdapter.update(guess = guess)
+        guessAdapter.advance(guess = guess)
 
         keyboardView?.isEnabled = false
 
