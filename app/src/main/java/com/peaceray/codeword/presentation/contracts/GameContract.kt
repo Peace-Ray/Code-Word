@@ -4,6 +4,7 @@ import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
+import com.peaceray.codeword.game.feedback.Feedback
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import java.util.*
 
@@ -123,6 +124,13 @@ interface GameContract: BaseContract {
          */
         fun replaceGuessWithConstraint(constraint: Guess, animate: Boolean = false)
 
+        /**
+         * Update the indicated Constraint by REPLACING it with the provided one. This
+         * is a simple operation, intended for in-place updates on the hints and feedback
+         * attached to the Guess.
+         */
+        fun updateConstraint(index: Int, constraint: Guess, animate: Boolean = false)
+
         //-----------------------------------------------------------------------------------------
         //endregion
 
@@ -135,7 +143,7 @@ interface GameContract: BaseContract {
          * keys. The mapping may be incomplete; treat any omitted character as having no evaluation,
          * i.e. having markup "null" and occurrences of 0..codeLength.
          */
-        fun setCharacterFeedback(evaluations: Map<Char, CharacterFeedback>)
+        fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>)
 
         //-----------------------------------------------------------------------------------------
         //endregion

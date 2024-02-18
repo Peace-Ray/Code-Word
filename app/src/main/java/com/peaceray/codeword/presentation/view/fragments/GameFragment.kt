@@ -276,12 +276,10 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                 binding.constraintRecyclerView.layoutManager = null
                 guessAdapter.setCellLayouts(mapOf(
                     Pair(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout),
-                    Pair(GuessLetterAdapter.ItemStyle.LETTER_ENTRY, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.EMPTY, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout),
-                    Pair(GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER, pipLayout),
-                    Pair(GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER, pipLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.AGGREGATED_DONUT_CLUSTER, pipLayout)
                 ))
                 binding.constraintRecyclerView.adapter = guessAdapter
                 binding.constraintRecyclerView.layoutManager = guessLayoutManager
@@ -424,17 +422,15 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         val itemStyles = mutableListOf<GuessLetterAdapter.ItemStyle>()
         if (locale == null) {
             itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_CODE)
-        } else if (feedbackPolicy.isByLetter()) {
-            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
         } else {
-            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_ENTRY)
+            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
         }
 
         // ...and aggregated pips
         if (feedbackPolicy.isByWord()) {
             itemStyles.add(when (feedbackPolicy) {
-                ConstraintPolicy.AGGREGATED_EXACT -> GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER
-                ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER
+                ConstraintPolicy.AGGREGATED_EXACT,
+                ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.AGGREGATED_DONUT_CLUSTER
                 ConstraintPolicy.AGGREGATED -> GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
                 else -> throw IllegalStateException("Don't know the isByWord() policy $feedbackPolicy")
             })
@@ -494,6 +490,12 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         lastMoveAt = System.currentTimeMillis()
 
         if (animate) onPresenterPrompting()
+    }
+
+    override fun updateConstraint(index: Int, constraint: Guess, animate: Boolean) {
+        Timber.v("updateConstraint: $index $constraint")
+        // TODO deal with [animate]
+        guessAdapter.update(constraints = listOf(Pair(index, constraint)))
     }
 
     override fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {

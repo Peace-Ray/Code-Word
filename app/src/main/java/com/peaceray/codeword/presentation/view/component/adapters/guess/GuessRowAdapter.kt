@@ -66,6 +66,15 @@ class GuessRowAdapter @Inject constructor(
     override fun guessRangeToItemRange(guessStart: Int, guessCount: Int) = Pair(guessStart, guessCount)
     override fun guessSliceToItemRange(guessPosition: Int, sliceStart: Int, sliceCount: Int) =
         Pair(guessPosition, 1)
+
+    override fun guessUpdateToItemsChanged(
+        guessPosition: Int,
+        oldGuess: Guess,
+        newGuess: Guess
+    ): Iterable<Int> {
+        return if (oldGuess == newGuess) emptyList() else listOf(guessPosition)
+    }
+
     override fun itemRangeToGuessRange(itemStart: Int, itemCount: Int) = Pair(itemStart, itemCount)
     //---------------------------------------------------------------------------------------------
     //endregion

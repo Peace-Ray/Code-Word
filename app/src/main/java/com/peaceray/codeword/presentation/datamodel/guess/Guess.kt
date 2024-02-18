@@ -54,6 +54,27 @@ data class Guess private constructor(
             List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], constraint.markup[it], null) },
             GuessEvaluation(constraint.exact, constraint.included, constraint.candidate.length, constraint.correct)
         )
+
+        fun createFromLetters(length: Int, letters: List<GuessLetter>, evaluation: GuessEvaluation?) = Guess(
+            length,
+            letters.map { it.character }.joinToString(""),
+            letters,
+            List(length) { if (it < letters.size) letters[it] else GuessLetter(it) },
+            evaluation
+        )
+
+        fun createFromPaddedLetters(length: Int, paddedLetters: List<GuessLetter>, evaluation: GuessEvaluation?): Guess {
+            val letters = paddedLetters.filter { !it.isPlaceholder }
+            val candidate = letters.map { it.character }.joinToString("")
+
+            return Guess(
+                length,
+                candidate,
+                letters,
+                paddedLetters,
+                evaluation
+            )
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion

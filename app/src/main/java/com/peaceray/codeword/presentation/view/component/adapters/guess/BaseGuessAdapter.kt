@@ -174,7 +174,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
      *
      */
     override fun advance(constraint: Guess?, guess: Guess?) {
-        Timber.v("update constraint = $constraint, guess = $guess")
+        Timber.v("advance constraint = $constraint, guess = $guess")
         if (constraint != null) {
             // the new constraint replaces the first available guess or placeholder.
             _constraints.add(constraint)
@@ -207,6 +207,23 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         }
     }
 
+    override fun update(constraints: List<Pair<Int, Guess>>?, guesses: List<Pair<Int, Guess>>?, safe: Boolean) {
+        Timber.v("update constraints = $constraints, guesses = $guesses")
+
+        fun updateEntry(index: Int, entry: Guess, list: MutableList<Guess>, offset: Int) {
+            val replacing = list[index]
+            if (!safe || (replacing.candidate == entry.candidate && replacing.evaluation == entry.evaluation)) {
+                list[index] = entry
+                if (replacing != entry) {
+                    notifyGuessChanged(index + offset, replacing, entry)
+                }
+            }
+        }
+
+        constraints?.forEach { (index, guess) -> updateEntry(index, guess, _constraints, 0) }
+        guesses?.forEach { (index, guess) -> updateEntry(index, guess, _guesses, _constraints.size) }
+    }
+
     private fun notifyGuessChangedFromPlaceholder(guessPosition: Int, guess: Guess?) {
         if (guess != null) {
             val changeStart = guess.lettersPadded.indexOfFirst { !it.isPlaceholder }
@@ -227,15 +244,11 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         if (oldGuess == null || newGuess == null) {
             notifyGuessChangedFromPlaceholder(guessPosition, oldGuess ?: newGuess)
         } else {
-            val zipped = oldGuess.lettersPadded.zip(newGuess.lettersPadded)
-            val changeStart = zipped.indexOfFirst { (old, new) -> !old.isSameAs(new) }
-
-            val range: Pair<Int, Int> = if (changeStart < 0) guessRangeToItemRange(guessPosition, 0) else {
-                val changeEnd = zipped.indexOfLast { (old, new) -> !old.isSameAs(new) }
-                guessSliceToItemRange(guessPosition, changeStart, changeEnd - changeStart + 1)
+            val items = guessUpdateToItemsChanged(guessPosition, oldGuess, newGuess)
+            items.forEach {
+                Timber.v("Guess position $guessPosition changed; notifying item $it")
+                notifyItemChanged(it)
             }
-
-            notifyItemRangeChanged(range.first, range.second)
         }
     }
     //---------------------------------------------------------------------------------------------

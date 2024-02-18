@@ -454,9 +454,9 @@ class GuessLetterViewHolder(
                         a
                     }
 
-                    // from guess to evaluation
-                    preInfo.guess.isGuess && postInfo.guess.isEvaluation
-                            && preInfo.guess.isSameCandidateAs(postInfo.guess) -> {
+                    // a change in markup
+                    preInfo.guess.isSameCandidateAs(postInfo.guess)
+                            && preInfo.guess.markup != postInfo.guess.markup -> {
 
                         // set style to "before" content
                         holder.setViewStyle(preInfo.style!!)
@@ -490,6 +490,29 @@ class GuessLetterViewHolder(
                             animatorMap.remove(holder)
 
                             holder.itemView.rotationY = 0f
+                            dispatchAnimationFinished(holder)
+                        }
+
+                        a
+                    }
+
+                    // from guess to evaluation, but markup did not change
+                    preInfo.guess.isSameCandidateAs(postInfo.guess)
+                            && preInfo.guess.isGuess && postInfo.guess.isEvaluation -> {
+
+                        // set style to "before" content
+                        holder.setViewStyle(preInfo.style!!)
+                        holder.setViewContent(postInfo.guess)
+
+                        // animate shape and color to the new status.
+                        val a = ObjectAnimator.ofFloat(0f, 1f)
+
+                        a.duration = holder.durationShortAnimation.toLong()
+                        a.addUpdateListener(holder.createViewStyleAnimatorUpdateListener(preInfo.style!!, postInfo.style!!))
+                        a.doOnEnd {
+                            animatorMap.remove(holder)
+
+                            holder.setViewContent(postInfo.guess)
                             dispatchAnimationFinished(holder)
                         }
 

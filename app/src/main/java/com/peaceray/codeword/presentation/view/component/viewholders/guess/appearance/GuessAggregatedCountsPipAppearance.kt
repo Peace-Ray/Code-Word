@@ -6,7 +6,7 @@ import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
 
-open class GuessAggregatedCountsAppearance(context: Context, protected val layout: GuessAggregateConstraintCellLayout): GuessAggregatedAppearance {
+open class GuessAggregatedCountsPipAppearance(context: Context, protected val layout: GuessAggregateConstraintCellLayout): GuessAggregatedAppearance {
 
     override fun getColorFill(
         evaluation: GuessEvaluation?,
@@ -53,8 +53,4 @@ open class GuessAggregatedCountsAppearance(context: Context, protected val layou
     override fun getPipElevation(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float {
         return if (evaluation == null) 0.0f else layout.pipElevation
     }
-
-    override fun getTotalCount(evaluation: GuessEvaluation?) = getExactCount(evaluation) + getIncludedCount(evaluation)
-    override fun getExactCount(evaluation: GuessEvaluation?) = evaluation?.exact ?: 0
-    override fun getIncludedCount(evaluation: GuessEvaluation?) = evaluation?.included ?: 0
 }

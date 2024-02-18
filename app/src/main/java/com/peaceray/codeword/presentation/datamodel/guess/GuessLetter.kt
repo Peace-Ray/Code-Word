@@ -14,13 +14,21 @@ data class GuessLetter(
     }
 ) {
 
+    init {
+        if ((character == SPACE) != (type == GuessType.PLACEHOLDER)) {
+            throw IllegalStateException("PLACEHOLDER letters must have SPACE character")
+        }
+        if (markup != null && type != GuessType.EVALUATION) {
+            throw IllegalStateException("Letters with markup must have EVALUATION type")
+        }
+    }
+
     private companion object {
         const val SPACE = ' '
     }
 
     val isPlaceholder = type == GuessType.PLACEHOLDER
     val isGuess = type == GuessType.GUESS
-    val isEmptyGuess = type == GuessType.GUESS && character == SPACE
     val isEvaluation = type == GuessType.EVALUATION
 
     /**
@@ -35,7 +43,8 @@ data class GuessLetter(
     fun isSameAs(guessLetter: GuessLetter) = (
             position == guessLetter.position &&
                     character == guessLetter.character &&
-                    markup == guessLetter.markup
+                    markup == guessLetter.markup &&
+                    type == guessLetter.type
             )
 
     /**

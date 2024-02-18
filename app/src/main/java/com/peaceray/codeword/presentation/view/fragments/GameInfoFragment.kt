@@ -31,12 +31,10 @@ import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCell
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessAggregatedPipGridViewHolder
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessLetterViewHolder
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedExactAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedIncludedAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsPipAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsDonutAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterCodeAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterEntryAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterMarkupAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.review.GameReviewListenerAdapter
 import com.peaceray.codeword.presentation.view.component.viewholders.review.GameReviewPuzzleTypeViewHolder
@@ -247,12 +245,12 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
                 // item styles
                 val letterStyle = when (gameSetup.vocabulary.type) {
-                    GameSetup.Vocabulary.VocabularyType.LIST -> GuessLetterAdapter.ItemStyle.LETTER_ENTRY
+                    GameSetup.Vocabulary.VocabularyType.LIST -> GuessLetterAdapter.ItemStyle.LETTER_MARKUP
                     GameSetup.Vocabulary.VocabularyType.ENUMERATED -> GuessLetterAdapter.ItemStyle.LETTER_CODE
                 }
                 val aggregatedStyle = when (gameSetup.evaluation.type) {
-                    ConstraintPolicy.AGGREGATED_EXACT -> GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER
-                    ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER
+                    ConstraintPolicy.AGGREGATED_EXACT,
+                    ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.AGGREGATED_DONUT_CLUSTER
                     ConstraintPolicy.AGGREGATED -> GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
                     else -> throw IllegalStateException("Evaluation type ${gameSetup.evaluation.type} changed?")
                 }
@@ -262,12 +260,12 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 letterAppearance = if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.ENUMERATED) {
                     GuessLetterCodeAppearance(requireContext(), letterLayout, legendCodeCharacters)
                 } else {
-                    GuessLetterEntryAppearance(requireContext(), letterLayout)
+                    GuessLetterMarkupAppearance(requireContext(), letterLayout)
                 }
                 pipAppearance = when (gameSetup.evaluation.type) {
-                    ConstraintPolicy.AGGREGATED_EXACT -> GuessAggregatedExactAppearance(requireContext(), pipLayout)
-                    ConstraintPolicy.AGGREGATED_INCLUDED -> GuessAggregatedIncludedAppearance(requireContext(), pipLayout)
-                    ConstraintPolicy.AGGREGATED -> GuessAggregatedCountsAppearance(requireContext(), pipLayout)
+                    ConstraintPolicy.AGGREGATED_EXACT,
+                    ConstraintPolicy.AGGREGATED_INCLUDED -> GuessAggregatedCountsDonutAppearance(requireContext(), pipLayout)
+                    ConstraintPolicy.AGGREGATED -> GuessAggregatedCountsPipAppearance(requireContext(), pipLayout)
                     else -> throw IllegalArgumentException("Can't ever happen; unsupported evaluation ${gameSetup.evaluation.type}")
                 }
             }
@@ -284,7 +282,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
                 // appearances
                 letterAppearance = GuessLetterMarkupAppearance(requireContext(), letterLayout)
-                pipAppearance = GuessAggregatedCountsAppearance(requireContext(), pipLayout)
+                pipAppearance = GuessAggregatedCountsPipAppearance(requireContext(), pipLayout)
             }
             else -> throw IllegalArgumentException("ConstraintPolicy ${gameSetup.evaluation.type} is not supported")
         }
@@ -329,10 +327,8 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
         legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout)
         legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout)
-        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.LETTER_ENTRY, letterLayout)
         legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout)
-        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER, pipLayout)
-        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER, pipLayout)
+        legendAdapter.setCellLayout(GuessLetterAdapter.ItemStyle.AGGREGATED_DONUT_CLUSTER, pipLayout)
 
         legendAdapter.setCodeCharacters(legendCodeCharacters)
 

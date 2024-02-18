@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
-import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.layouts.CellLayout
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
@@ -16,12 +15,10 @@ import com.peaceray.codeword.presentation.view.component.viewholders.guess.Guess
 import com.peaceray.codeword.presentation.view.component.viewholders.EmptyViewHolder
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessLetterViewHolder
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedExactAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedIncludedAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsPipAppearance
+import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedCountsDonutAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterCodeAppearance
-import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterEntryAppearance
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterMarkupAppearance
 import com.peaceray.codeword.utils.extensions.toLifecycleOwner
 import timber.log.Timber
@@ -78,13 +75,6 @@ class GuessLetterAdapter @Inject constructor(
         LETTER_CODE,
 
         /**
-         * Display letters of the candidate guess, possibly styled to indicate whether
-         * they are a current entry or previous Constraint, but without color-coding
-         * or markup.
-         */
-        LETTER_ENTRY,
-
-        /**
          * Display the aggregated evaluation "pips" w/o any associated candidate characters.
          * Represented as a full row item.
          */
@@ -96,14 +86,9 @@ class GuessLetterAdapter @Inject constructor(
         AGGREGATED_PIP_CLUSTER(itemCount = ItemCount.SINGLE),
 
         /**
-         * Display the aggregated evaluation "pips" for Exact matches only
+         * Display the aggregated evaluation "donuts"
          */
-        EXACT_PIP_CLUSTER(itemCount = ItemCount.SINGLE),
-
-        /**
-         * Display the aggregated evaluation "pips"
-         */
-        INCLUDED_PIP_CLUSTER(itemCount = ItemCount.SINGLE),
+        AGGREGATED_DONUT_CLUSTER(itemCount = ItemCount.SINGLE),
 
         /**
          * Display an empty cell at this location.
@@ -122,11 +107,9 @@ class GuessLetterAdapter @Inject constructor(
         _cellDefaultLayout = mapOf(
             Pair(ItemStyle.LETTER_MARKUP, letterLayout),
             Pair(ItemStyle.LETTER_CODE, letterLayout),
-            Pair(ItemStyle.LETTER_ENTRY, letterLayout),
             Pair(ItemStyle.AGGREGATED_PIP_LINE, GuessAggregateConstraintLineLayout.create(resources)),
             Pair(ItemStyle.AGGREGATED_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
-            Pair(ItemStyle.EXACT_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
-            Pair(ItemStyle.INCLUDED_PIP_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
+            Pair(ItemStyle.AGGREGATED_DONUT_CLUSTER, GuessAggregateConstraintCellLayout.create(resources, 4)),
             Pair(ItemStyle.EMPTY, letterLayout)
         )
     }
@@ -146,11 +129,9 @@ class GuessLetterAdapter @Inject constructor(
         val context = layoutInflater.context
         letterStyleAppearance[ItemStyle.LETTER_MARKUP] = GuessLetterMarkupAppearance(context, cellLayout[ItemStyle.LETTER_MARKUP] as GuessLetterCellLayout)
         letterStyleAppearance[ItemStyle.LETTER_CODE] = GuessLetterCodeAppearance(context, cellLayout[ItemStyle.LETTER_CODE] as GuessLetterCellLayout)
-        letterStyleAppearance[ItemStyle.LETTER_ENTRY] = GuessLetterEntryAppearance(context, cellLayout[ItemStyle.LETTER_ENTRY] as GuessLetterCellLayout)
 
-        aggregatedStyleAppearance[ItemStyle.AGGREGATED_PIP_CLUSTER] = GuessAggregatedCountsAppearance(context, cellLayout[ItemStyle.AGGREGATED_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
-        aggregatedStyleAppearance[ItemStyle.EXACT_PIP_CLUSTER] = GuessAggregatedExactAppearance(context, cellLayout[ItemStyle.EXACT_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
-        aggregatedStyleAppearance[ItemStyle.INCLUDED_PIP_CLUSTER] = GuessAggregatedIncludedAppearance(context, cellLayout[ItemStyle.INCLUDED_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
+        aggregatedStyleAppearance[ItemStyle.AGGREGATED_PIP_CLUSTER] = GuessAggregatedCountsPipAppearance(context, cellLayout[ItemStyle.AGGREGATED_PIP_CLUSTER] as GuessAggregateConstraintCellLayout)
+        aggregatedStyleAppearance[ItemStyle.AGGREGATED_DONUT_CLUSTER] = GuessAggregatedCountsDonutAppearance(context, cellLayout[ItemStyle.AGGREGATED_DONUT_CLUSTER] as GuessAggregateConstraintCellLayout)
     }
 
     // game details (cached for recreation of subfields, such as styleAppearance)
@@ -179,21 +160,13 @@ class GuessLetterAdapter @Inject constructor(
                 require(layout is GuessLetterCellLayout)
                 letterStyleAppearance[itemStyle] = GuessLetterCodeAppearance(layoutInflater.context, layout, _codeCharacters)
             }
-            ItemStyle.LETTER_ENTRY -> {
-                require(layout is GuessLetterCellLayout)
-                letterStyleAppearance[itemStyle] = GuessLetterEntryAppearance(layoutInflater.context, layout)
-            }
-            ItemStyle.EXACT_PIP_CLUSTER -> {
+            ItemStyle.AGGREGATED_DONUT_CLUSTER -> {
                 require(layout is GuessAggregateConstraintCellLayout)
-                aggregatedStyleAppearance[itemStyle] = GuessAggregatedExactAppearance(layoutInflater.context, layout)
-            }
-            ItemStyle.INCLUDED_PIP_CLUSTER -> {
-                require(layout is GuessAggregateConstraintCellLayout)
-                aggregatedStyleAppearance[itemStyle] = GuessAggregatedIncludedAppearance(layoutInflater.context, layout)
+                aggregatedStyleAppearance[itemStyle] = GuessAggregatedCountsDonutAppearance(layoutInflater.context, layout)
             }
             ItemStyle.AGGREGATED_PIP_CLUSTER -> {
                 require(layout is GuessAggregateConstraintCellLayout)
-                aggregatedStyleAppearance[itemStyle] = GuessAggregatedCountsAppearance(layoutInflater.context, layout)
+                aggregatedStyleAppearance[itemStyle] = GuessAggregatedCountsPipAppearance(layoutInflater.context, layout)
             }
             ItemStyle.AGGREGATED_PIP_LINE -> {
                 require(layout is GuessAggregateConstraintLineLayout)
@@ -259,12 +232,10 @@ class GuessLetterAdapter @Inject constructor(
         val cellView = layoutInflater.inflate(layout.layoutId, parent, false)
         return when (style) {
             ItemStyle.LETTER_MARKUP,
-            ItemStyle.LETTER_CODE,
-            ItemStyle.LETTER_ENTRY -> GuessLetterViewHolder(cellView, colorSwatchManager, letterStyleAppearance[style]!!)
+            ItemStyle.LETTER_CODE -> GuessLetterViewHolder(cellView, colorSwatchManager, letterStyleAppearance[style]!!)
             ItemStyle.AGGREGATED_PIP_LINE -> AggregatedConstraintViewHolder(cellView, layoutInflater, colorSwatchManager)
             ItemStyle.AGGREGATED_PIP_CLUSTER,
-            ItemStyle.EXACT_PIP_CLUSTER,
-            ItemStyle.INCLUDED_PIP_CLUSTER -> GuessAggregatedPipGridViewHolder(cellView, colorSwatchManager, aggregatedStyleAppearance[style]!!)
+            ItemStyle.AGGREGATED_DONUT_CLUSTER -> GuessAggregatedPipGridViewHolder(cellView, colorSwatchManager, aggregatedStyleAppearance[style]!!)
             ItemStyle.EMPTY -> EmptyViewHolder(cellView)
 
         }
@@ -354,6 +325,34 @@ class GuessLetterAdapter @Inject constructor(
             val end = Math.max(acc.first + acc.second - 1, pair.first + pair.second - 1)
             Pair(start, end - start + 1)
         }
+    }
+
+    override fun guessUpdateToItemsChanged(guessPosition: Int, oldGuess: Guess, newGuess: Guess): Iterable<Int> {
+        return _itemStyles.flatMapIndexed { index: Int, itemStyle: ItemStyle ->
+            val offset = itemStyleOffset[index]
+            when (itemStyle) {
+                ItemStyle.LETTER_MARKUP,
+                ItemStyle.LETTER_CODE -> {
+                    oldGuess.lettersPadded.indices
+                        .filter {
+                            val oldLet = oldGuess.lettersPadded[it]
+                            val newLet = newGuess.lettersPadded[it]
+
+                            oldLet.character != newLet.character
+                                    || oldLet.markup != newLet.markup
+                                    || oldLet.type != newLet.type
+                                    || (oldLet.isPlaceholder && newLet.isPlaceholder && oldLet.candidates != newLet.candidates)
+                        }
+                        .map { it + offset }
+                }
+                ItemStyle.AGGREGATED_PIP_LINE,
+                ItemStyle.AGGREGATED_PIP_CLUSTER,
+                ItemStyle.AGGREGATED_DONUT_CLUSTER -> {
+                    if (oldGuess.evaluation == newGuess.evaluation) emptyList() else listOf(offset)
+                }
+                ItemStyle.EMPTY -> emptyList()
+            }
+        }.map { it + guessPosition * itemsPerGameRow }
     }
 
     override fun itemRangeToGuessRange(itemStart: Int, itemCount: Int): Pair<Int, Int> {

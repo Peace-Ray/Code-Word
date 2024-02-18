@@ -20,10 +20,4 @@ interface GuessAggregatedAppearance {
     @Dimension fun getPipStrokeWidth(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Int
     @Dimension fun getPipCornerRadius(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float
     @Dimension fun getPipElevation(evaluation: GuessEvaluation?, markup: Constraint.MarkupType?): Float
-
-
-    // pip / text counts
-    fun getTotalCount(evaluation: GuessEvaluation?): Int
-    fun getExactCount(evaluation: GuessEvaluation?): Int
-    fun getIncludedCount(evaluation: GuessEvaluation?): Int
 }

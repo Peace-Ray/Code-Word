@@ -11,7 +11,6 @@ import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
@@ -53,7 +52,7 @@ class GuessAggregatedPipGridViewHolder(
         if (eval == null) {
             pipGrid.visibility = View.GONE
             noPipImageView.visibility = View.GONE
-        } else if (appearance.getTotalCount(eval) == 0) {
+        } else if (eval.total == 0) {
             pipGrid.visibility = View.GONE
             noPipImageView.visibility = View.VISIBLE
         } else {
@@ -62,7 +61,7 @@ class GuessAggregatedPipGridViewHolder(
         }
 
         // configure pip visible count
-        pipGrid.setPipsVisibility(if (eval == null) 0 else appearance.getTotalCount(eval))
+        pipGrid.setPipsVisibility(eval?.total ?: 0)
 
         // configure pip details
         setConstraintDetails(eval, colorSwatchManager.colorSwatch)
@@ -91,8 +90,8 @@ class GuessAggregatedPipGridViewHolder(
     }
 
     private fun setConstraintDetails(eval: GuessEvaluation?, swatch: ColorSwatch) {
-        val exact = appearance.getExactCount(eval)
-        val inclu = appearance.getIncludedCount(eval)
+        val exact = eval?.exact ?: 0
+        val inclu = eval?.included ?: 0
         List(eval?.length ?: 0) {
             when {
                 it < exact -> Constraint.MarkupType.EXACT
