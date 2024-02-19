@@ -11,8 +11,13 @@ import com.peaceray.codeword.presentation.manager.feedback.GameFeedbackProvider
 import com.peaceray.codeword.presentation.manager.feedback.guess.GuessCreator
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
+import timber.log.Timber
 import javax.inject.Inject
 
 class GameFeedbackProviderImpl @Inject constructor(
@@ -27,30 +32,29 @@ class GameFeedbackProviderImpl @Inject constructor(
 
     override suspend fun getFeedback(constraints: List<Constraint>): Feedback {
         return withContext(computationDispatcher) {
-            feedbackProvider.getFeedback(constraintPolicy, constraints)
+            // provide a suspension callback: accept a pending result if the job is not active.
+            val acceptOnCancelCallback = { _: Feedback, _: Boolean ->
+                Timber.v("GameFeedbackProvider in callback; isActive ${isActive}")
+                !isActive
+            }
+            feedbackProvider.getFeedback(constraintPolicy, constraints, acceptOnCancelCallback)
         }
     }
 
-    override suspend fun getCharacterFeedback(constraints: List<Constraint>): Map<Char, CharacterFeedback> {
-        return withContext(computationDispatcher) {
-            feedbackProvider.getCharacterFeedback(constraintPolicy, constraints)
-        }
+    override fun getFeedbackFlow(constraints: List<Constraint>): Flow<Pair<Feedback, Boolean>> {
+        return callbackFlow {
+            val flowOnCallback = { feedback: Feedback, done: Boolean ->
+                trySend(Pair(feedback, done))
+                done || !isActive
+            }
+            feedbackProvider.getFeedback(constraintPolicy, constraints, flowOnCallback)
+            // only reach here after the final Feedback has been created and provided
+            // (or if canceled)
+        }.flowOn(computationDispatcher)
     }
 
-    override suspend fun getFullFeedback(constraints: List<Constraint>): Pair<Feedback, Map<Char, CharacterFeedback>> {
-        return withContext(computationDispatcher) {
-            Pair(
-                feedbackProvider.getFeedback(constraintPolicy, constraints),
-                feedbackProvider.getCharacterFeedback(constraintPolicy, constraints)
-            )
-        }
-    }
-
-    override fun getFullPlaceholderFeedback(): Pair<Feedback, Map<Char, CharacterFeedback>> {
-        return Pair(
-            feedbackProvider.getFeedback(constraintPolicy, emptyList()),
-            feedbackProvider.getCharacterFeedback(constraintPolicy, emptyList())
-        )
+    override fun getPlaceholderFeedback(): Feedback {
+        return feedbackProvider.getFeedback(constraintPolicy, emptyList())
     }
 
     //---------------------------------------------------------------------------------------------
@@ -68,16 +72,24 @@ class GameFeedbackProviderImpl @Inject constructor(
 
     //region Guess Update Flow
     //---------------------------------------------------------------------------------------------
-
-    override fun toGuesses(constraints: List<Constraint>, feedback: Feedback, reverse: Boolean): Flow<Pair<Int, Guess>> {
-        return flow {
-            val indices = if (reverse) constraints.indices.reversed() else constraints.indices
-            indices.forEach { index ->
-                emit(Pair(index, guessCreator.toGuess(constraints[index], feedback)))
+    override suspend fun toGuesses(constraints: List<Constraint>, feedback: Feedback): List<Guess> {
+        return withContext(computationDispatcher) {
+            constraints.map {
+                yield()
+                guessCreator.toGuess(it, feedback)
             }
         }
     }
 
+    override fun toGuessesFlow(constraints: List<Constraint>, feedback: Feedback, reverse: Boolean): Flow<Pair<Int, Guess>> {
+        return flow {
+            val indices = if (reverse) constraints.indices.reversed() else constraints.indices
+            indices.forEach { index ->
+                Timber.v("getting guess from creator $guessCreator for constraint ${constraints[index]}")
+                emit(Pair(index, guessCreator.toGuess(constraints[index], feedback)))
+            }
+        }.flowOn(computationDispatcher)
+    }
     //---------------------------------------------------------------------------------------------
     //endregion
 

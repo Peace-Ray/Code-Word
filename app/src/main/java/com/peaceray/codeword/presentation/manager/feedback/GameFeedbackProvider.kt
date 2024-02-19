@@ -38,33 +38,46 @@ interface GameFeedbackProvider: GuessCreator {
     //---------------------------------------------------------------------------------------------
 
     /**
-     * Given the provided constraints, creates a Feedback object.
+     * Given the provided constraints, creates a Feedback object. The object returned is
+     * identical to the final Feedback provided by [getFeedbackFlow] (the instance accompanied
+     * by a 'true' Boolean value).
+     *
+     * @param constraints The Constraints to consider in creating the Feedback.
      */
     suspend fun getFeedback(constraints: List<Constraint>): Feedback
 
-    /**
-     * Given the provided constraints, creates a CharacterFeedback map.
-     */
-    suspend fun getCharacterFeedback(constraints: List<Constraint>): Map<Char, CharacterFeedback>
 
     /**
-     * Given the provided constraints, creates both a Feedback object and a CharacterFeedback map,
-     * returning them together.
+     * Return a Flow which produces Feedback of increasing specificity. Each Pair provided
+     * represents a Feedback instance and whether it is the final instance in the Flow.
+     * The final such instance, with pair.second == true, is identical to the output of
+     * [getFeedback].
+     *
+     * @param constraints The Constraints to consider in creating the Feedbacks.
      */
-    suspend fun getFullFeedback(constraints: List<Constraint>): Pair<Feedback, Map<Char, CharacterFeedback>>
+    fun getFeedbackFlow(constraints: List<Constraint>): Flow<Pair<Feedback, Boolean>>
 
     /**
      * Quickly and synchronously generate a Feedback pair to act as a placeholder. The result
      * matches the output of `getFullFeedback(emptyList())` but can be called outside of a
      * coroutine.
      */
-    fun getFullPlaceholderFeedback(): Pair<Feedback, Map<Char, CharacterFeedback>>
+    fun getPlaceholderFeedback(): Feedback
 
     //---------------------------------------------------------------------------------------------
     //endregion
 
     //region Guess Update Flow
     //---------------------------------------------------------------------------------------------
+
+    /**
+     * Returns a list of Guesses created by applying the given Feedback to the provided Constraints.
+     *
+     * @param constraints The Constraints to represent as Guesses.
+     * @param feedback Feedback to apply in constructing hints.
+     * @return A list of Guesses resulting from applying Feedback to the Constraints.
+     */
+    suspend fun toGuesses(constraints: List<Constraint>, feedback: Feedback): List<Guess>
 
     /**
      * Creates and returns a Flow which provides Guesses created from the indicated Constraints,
@@ -76,7 +89,7 @@ interface GameFeedbackProvider: GuessCreator {
      * will be in descending order).
      * @return A Flow of Pairs giving the list index of a Constraint and the corresponding Guess.
      */
-    fun toGuesses(constraints: List<Constraint>, feedback: Feedback, reverse: Boolean = false): Flow<Pair<Int, Guess>>
+    fun toGuessesFlow(constraints: List<Constraint>, feedback: Feedback, reverse: Boolean = false): Flow<Pair<Int, Guess>>
 
     //---------------------------------------------------------------------------------------------
     //endregion

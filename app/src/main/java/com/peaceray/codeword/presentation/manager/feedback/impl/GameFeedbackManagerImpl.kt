@@ -24,12 +24,18 @@ class GameFeedbackManagerImpl @Inject constructor(
         val policy = gameSetup.evaluation.type
         return GameFeedbackProviderImpl(
             gameSetup.evaluation.type,
-            if (hints) HintingGuessCreator(policy) else VanillaGuessCreator(policy),
+            HintingGuessCreator(policy),
             InferredMarkupFeedbackProvider(
                 gameCreationManager.getCodeCharacters(gameSetup).toSet(),
+
+
                 gameSetup.vocabulary.length,
                 gameSetup.vocabulary.characterOccurrences,
-                if (hints) setOf(InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED) else setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
+                if (hints) {
+                    setOf(InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED, InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
+                } else {
+                    setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
+                }
             ),
             computatationDispatcher
         )

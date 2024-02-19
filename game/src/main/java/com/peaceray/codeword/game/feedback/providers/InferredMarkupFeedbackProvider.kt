@@ -2,7 +2,6 @@ package com.peaceray.codeword.game.feedback.providers
 
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
-import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.game.feedback.Feedback
 import java.lang.UnsupportedOperationException
 import kotlin.math.max
@@ -54,11 +53,23 @@ class InferredMarkupFeedbackProvider(
          * Apply NO markup for any letter that has been determined to not exist within the word,
          * even if no individual Constraint indicated this.
          */
-        INFERRED_ELIMINATION;
+        INFERRED_ELIMINATION,
+
+        /**
+         * Apply markup when a [Constraint.correct] constraint is provided.
+         */
+        SOLUTION,
+
+        /**
+         * Apply NO markup when a [Constraint.correct] constraint is provided.
+         */
+        SOLUTION_ELIMINATION;
 
         companion object {
             val directPolicies = setOf(DIRECT, DIRECT_ELIMINATION)
             val inferredPolicies = setOf(INFERRED, INFERRED_ELIMINATION)
+            val solutionPolicies = setOf(SOLUTION, SOLUTION_ELIMINATION)
+            val eliminationPolicies = setOf(DIRECT_ELIMINATION, INFERRED_ELIMINATION, SOLUTION_ELIMINATION)
         }
     }
 
@@ -72,86 +83,186 @@ class InferredMarkupFeedbackProvider(
     )
 
     override fun constrainFeedback(
-        feedback: Pair<Feedback, Map<Char, CharacterFeedback>>,
+        feedback: Feedback,
         policy: ConstraintPolicy,
         constraints: List<Constraint>,
-        freshConstraints: List<Constraint>
-    ): Pair<Feedback, Map<Char, CharacterFeedback>> {
+        freshConstraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback {
         if (!supports(policy)) {
             throw UnsupportedOperationException("Cannot provide feedback for policy $policy")
         }
 
         // make mutable
-        val candidates = feedback.first.candidates.map { it.toMutableSet() }.toMutableList()
-        val occurrences = feedback.first.occurrences.toMutableMap()
-        val markups = feedback.second.mapValues { it.value.markup }.toMutableMap()
+        val candidates = feedback.candidates.map { it.toMutableSet() }.toMutableList()
+        val occurrences = feedback.occurrences.toMutableMap()
+        val markups = feedback.characters.mapValues { it.value.markup }.toMutableMap()
 
-        // update mutable fields
-        var changed = constrainCandidatesAndOccurrences(candidates, occurrences, policy, freshConstraints)
-        while (changed) {
-            changed = constrainCandidatesAndOccurrences(candidates, occurrences, policy, constraints.distinct())
+        // check markup policies
+        val doSolutionMarkup = markupPolicies.intersect(MarkupPolicy.solutionPolicies).isNotEmpty()
+        val doIndirectMarkup = markupPolicies.intersect(MarkupPolicy.inferredPolicies).isNotEmpty()
+        val doDirectMarkup = doIndirectMarkup || markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()
+        val doIndirectNonElimination = MarkupPolicy.INFERRED in markupPolicies
+        val doDirectNonElimination = doIndirectNonElimination || MarkupPolicy.DIRECT in markupPolicies
+        val doSolutionNonElimination = doDirectNonElimination
+                || MarkupPolicy.SOLUTION in markupPolicies
+
+        // apply solution. Supa fast.
+        if (doSolutionMarkup) {
+            val solutionMarkupChanged = freshConstraints.any { constraint ->
+                constrainFeedbackBySolution(candidates, occurrences, markups, doSolutionNonElimination, constraint)
+            }
+
+            // complete and perfect; no further modification will have any effect. No
+            // callback; superclass will perform call.
+            if (solutionMarkupChanged) {
+                return asFeedback(candidates, occurrences, markups)
+            }
         }
-        inferMarkup(candidates, occurrences, markups, policy, freshConstraints)
 
-        // convert format
-        return Pair(
-            Feedback(
-                candidates = candidates.map { it.toSet() }.toList(),
-                occurrences = occurrences.toMap()
-            ),
-            characters.associateWith { c -> CharacterFeedback(
-                c,
-                occurrences[c] ?: 0..0,
-                positions = (0 until length).filter { candidates[it].size == 1 && c in candidates[it] }.toSet(),
-                absences = (0 until length).filter { c !in candidates[it] }.toSet(),
-                markups[c]
-            ) }
-        )
+        // apply direct updates. Direct markup is fast and can be done with a single pass on each
+        // unique Constraint; there is no need to ever recur.
+        var directMarkupChanged = false
+        if (doDirectMarkup) {
+            freshConstraints.forEachIndexed { index, constraint ->
+                val changed = constrainFeedbackDirectly(
+                    candidates,
+                    occurrences,
+                    markups,
+                    doDirectNonElimination,
+                    policy,
+                    constraint
+                )
+                directMarkupChanged = directMarkupChanged || changed
+            }
+        }
+
+        // callback only if markup changed and there are more operations forthcoming
+        // (otherwise the callback will be invoked by superclass upon exit).
+        val moreForthcoming = freshConstraints.isNotEmpty() && markupPolicies.intersect(MarkupPolicy.inferredPolicies).isNotEmpty()
+        if (callback != null && directMarkupChanged && moreForthcoming) {
+            val feedback = asFeedback(candidates, occurrences, markups)
+            if (callback(asFeedback(candidates, occurrences, markups), false)) {
+                return feedback
+            }
+        }
+
+        if (doIndirectMarkup) {
+            // Indirect markup differs based on constraint policy.
+            when (policy) {
+                ConstraintPolicy.POSITIVE,
+                ConstraintPolicy.ALL,
+                ConstraintPolicy.PERFECT -> {
+                    // every constraint has been fully represented in the feedback already;
+                    // there is no information to be gained by reexamination. However,
+                    // feedback can perhaps be improved by internal inference within the
+                    // feedback fields themselves; e.g. by determining (based on elimination
+                    // of other candidates) that a given letter must occur, even if it was
+                    // not yet used in a Constraint.
+                    constrainFeedbackIndirectlyByLetter(candidates, occurrences, markups, doIndirectNonElimination)
+                    // no callback; superclass will handle it
+                }
+                ConstraintPolicy.AGGREGATED_EXACT,
+                ConstraintPolicy.AGGREGATED_INCLUDED,
+                ConstraintPolicy.AGGREGATED -> {
+                    // aggregated constraints have complex comparisons; the result is dependent
+                    // on the input state of the Feedback. For that reason, we iterate
+                    // repeatedly until no changes are detected. Changes prompted by
+                    // the fresh constraints may allow additional information to be gleaned from
+                    // past constraints.
+                    var changed = constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, doIndirectNonElimination, policy, constraints, freshConstraints)
+                    while (changed) {
+                        // do a callback before the next iteration
+                        if (callback != null) {
+                            val feedback = asFeedback(candidates, occurrences, markups)
+                            if (callback(asFeedback(candidates, occurrences, markups), false)) {
+                                return feedback
+                            }
+                        }
+                        // repeat constrain operation with the entire list of constraints
+                        changed = constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, doIndirectNonElimination, policy, constraints, constraints)
+                    }
+                }
+                ConstraintPolicy.IGNORE -> {}
+            }
+        }
+
+        // convert format and return. Superclass invokes the callback to finish.
+        return asFeedback(candidates, occurrences, markups)
     }
 
-    private fun constrainCandidatesAndOccurrences(
+    private fun constrainFeedbackDirectly(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
+        markups:  MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
         policy: ConstraintPolicy,
-        constraints: List<Constraint>
-    ): Boolean {
-        val f: (c: Constraint) -> Boolean = when (policy) {
-            ConstraintPolicy.PERFECT,
-            ConstraintPolicy.ALL,
-            ConstraintPolicy.POSITIVE ->
-                { c: Constraint -> constrainCandidatesAndOccurrencesCharacterMarkup(candidates, occurrences, c) }
-            ConstraintPolicy.AGGREGATED ->
-                { c: Constraint -> constrainCandidatesAndOccurrencesAggregatedMarkup(candidates, occurrences, c) }
-            ConstraintPolicy.AGGREGATED_INCLUDED ->
-                { c: Constraint -> constrainCandidatesAndOccurrencesCountIncluded(candidates, occurrences, c) }
-            ConstraintPolicy.AGGREGATED_EXACT ->
-                { c: Constraint -> constrainCandidatesAndOccurrencesCountExact(candidates, occurrences, c) }
-            ConstraintPolicy.IGNORE -> { _: Constraint -> false }
+        constraint: Constraint
+    ) = when (policy) {
+        ConstraintPolicy.IGNORE -> false
+        ConstraintPolicy.AGGREGATED_EXACT,
+        ConstraintPolicy.AGGREGATED_INCLUDED,
+        ConstraintPolicy.AGGREGATED -> {
+            val considerIncluded = policy in setOf(ConstraintPolicy.AGGREGATED_INCLUDED, ConstraintPolicy.AGGREGATED)
+            val considerExact = policy in setOf(ConstraintPolicy.AGGREGATED_EXACT, ConstraintPolicy.AGGREGATED)
+            constrainFeedbackDirectlyByAggregated(
+                candidates,
+                occurrences,
+                markups,
+                considerIncluded = considerIncluded,
+                considerExact = considerExact,
+                constraint
+            )
         }
-
-        return constraints.fold(false) { changed, c -> f(c) || changed }
+        ConstraintPolicy.POSITIVE,
+        ConstraintPolicy.ALL,
+        ConstraintPolicy.PERFECT -> {
+            constrainFeedbackDirectlyByLetter(candidates, occurrences, markups, includeNonElimination, constraint)
+        }
     }
 
-    private fun constrainCandidatesAndOccurrencesCharacterMarkup(
+    private fun constrainFeedbackBySolution(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        constraint: Constraint
+    ): Boolean {
+        // only if correct
+        if (constraint.correct) {
+            // set all candidates
+            constraint.candidate.forEachIndexed { index, c ->
+                candidates[index] = mutableSetOf(c)
+            }
+
+            // set all occurrences
+            occurrences.keys.forEach { char ->
+                val count = constraint.candidate.count { it == char }
+                occurrences[char] = count..count
+            }
+
+            inferMarkups(candidates, occurrences, markups, includeNonElimination)
+            return true
+        }
+
+        return false
+    }
+
+    private fun constrainFeedbackDirectlyByLetter(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups:  MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
         constraint: Constraint
     ): Boolean {
         val zipped = constraint.candidate.toCharArray().zip(constraint.markup)
 
-        var changed = false
-
         // update candidates for each position based on direct markup.
         zipped.forEachIndexed { index, pair ->
             when (pair.second) {
-                Constraint.MarkupType.EXACT -> {
-                    if (candidates[index].size != 1) changed = true
-                    candidates[index] = mutableSetOf(pair.first)
-                }
+                Constraint.MarkupType.EXACT -> candidates[index] = mutableSetOf(pair.first)
                 Constraint.MarkupType.INCLUDED,
-                Constraint.MarkupType.NO -> {
-                    if (candidates[index].remove(pair.first)) changed = true
-                }
+                Constraint.MarkupType.NO -> candidates[index].remove(pair.first)
             }
         }
 
@@ -161,27 +272,175 @@ class InferredMarkupFeedbackProvider(
             val eiCount = cZipped.count { it.second != Constraint.MarkupType.NO }
 
             val range = occurrences[c] ?: 0..0
-            val bounded = range.bound(
-                // minimum: number of exact and included markup
-                minimum = setOf(eiCount),
-                // maximum: number of direct and included markup if NO appears
-                maximum = setOf(if (eiCount == cZipped.size) range.last else eiCount)
+            occurrences[c] = range.bound(
+                // minimum: number of exact and included markups, or number of exact candidates so far
+                minimum = setOf(eiCount, candidates.count { it.size == 1 && c in it }),
+                // maximum: number of direct and included markup if NO appears, number of possible candidates so far
+                maximum = setOf(
+                    if (eiCount == cZipped.size) range.last else eiCount,
+                    candidates.count { c in it }
+                )
             )
-            if (range.first != bounded.first || range.last != bounded.last) {
-                occurrences[c] = bounded
+        }
+
+        // update markup to the best available for each attempted letter
+        var changed = false
+        constraint.candidate.toSet().forEach { c ->
+            val cMarkup = markups[c]
+            val zMarkup = zipped.filter { it.first == c }.map { it.second }.maxByOrNull { it.value() }
+            val nMarkup = listOf(cMarkup, zMarkup).maxByOrNull { it?.value() ?: -1 }
+            if (nMarkup != cMarkup && (includeNonElimination || nMarkup == Constraint.MarkupType.NO)) {
+                markups[c] = nMarkup
                 changed = true
             }
         }
 
-        // allow new occurrences and candidates to constrain each other
-        if (changed) constrainCandidatesAndOccurrences(candidates, occurrences)
-
         return changed
     }
 
-    private fun constrainCandidatesAndOccurrencesAggregatedMarkup(
+    private fun constrainFeedbackDirectlyByAggregated(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
+        markups:  MutableMap<Char, Constraint.MarkupType?>,
+        considerIncluded: Boolean,
+        considerExact: Boolean,
+        constraint: Constraint
+    ): Boolean {
+        when {
+            // if NO, none of these letters are correct
+            considerIncluded && constraint.exact == 0 && constraint.included == 0 -> {
+                constraint.candidate.toSet().forEach { char ->
+                    // remove from ALL position candidates
+                    candidates.forEach { candidateSet -> candidateSet.remove(char) }
+
+                    // remove from ALL occurrences
+                    occurrences[char] = 0..0
+                }
+            }
+
+            // if no exact, no letter occurs at the given position
+            considerExact && constraint.exact == 0 -> {
+                constraint.candidate.forEachIndexed { index, char ->
+                    // from from position candidates
+                    val removed = candidates[index].remove(char)
+
+                    // update occurrences
+                    if (removed) {
+                        val range = occurrences[char] ?: 0..0
+                        occurrences[char] = range.bound(maximum = setOf(candidates.count { char in it }))
+                    }
+                }
+            }
+
+            // if all exact, ALL letters are correct
+            considerExact && constraint.exact == length -> {
+                // set all candidates
+                constraint.candidate.forEachIndexed { index, c ->
+                    candidates[index] = mutableSetOf(c)
+                }
+
+                // set all occurrences
+                occurrences.keys.forEach { char ->
+                    val count = constraint.candidate.count { it == char }
+                    occurrences[char] = count..count
+                }
+            }
+
+            // if has exact, but not included, nothing to do as it requires inference from other info.
+        }
+
+        // update markup from null to NO if a letter is fully eliminated. Will only happen
+        // for letters in this constraint.
+        var changed = false
+        constraint.candidate.toSet().forEach { char ->
+            if ((occurrences[char] ?: 0..0).last <= 0 && markups[char] == null) {
+                changed = true
+                markups[char] = Constraint.MarkupType.NO
+            }
+        }
+        return changed
+    }
+
+    private fun constrainFeedbackIndirectlyByLetter(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean
+    ): Boolean {
+        // candidates and occurrences can influence each other
+        constrainCandidatesAndOccurrences(candidates, occurrences)
+
+        // update markup to the best available for each attempted letter
+        return inferMarkups(candidates, occurrences, markups, includeNonElimination)
+    }
+
+    private fun constrainFeedbackIndirectlyByAggregated(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups:  MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        policy: ConstraintPolicy,
+        constraints: List<Constraint>,
+        freshConstraints: List<Constraint>
+    ): Boolean {
+        val applyConstraint = { constraint: Constraint ->
+            constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, includeNonElimination, policy, constraint)
+        }
+        val compareConstraints = {
+            constrainFeedbackIndirectlyByAggregatedConstraintComparison(candidates, occurrences, markups, includeNonElimination, policy, constraints)
+        }
+
+        var everChanged = false
+        var changed: Boolean
+        do {
+            changed = false
+
+            // it's cheaper to constrain based on individual constraints than by n^2 comparison,
+            // so loop the former until no more changes occur before doing the latter.
+            while (freshConstraints.any { applyConstraint(it) }) {
+                changed = true
+            }
+
+            changed = compareConstraints() || changed
+            everChanged = everChanged || changed
+        } while (changed)
+
+        return everChanged
+    }
+
+    private fun constrainFeedbackIndirectlyByAggregated(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        policy: ConstraintPolicy,
+        constraint: Constraint
+    ): Boolean {
+        val exact = { constrainFeedbackIndirectlyByAggregatedCountsExact(candidates, occurrences, markups, includeNonElimination, constraint) }
+        val inclu = { constrainFeedbackIndirectlyByAggregatedCountsIncluded(candidates, occurrences, markups, includeNonElimination, constraint) }
+        val aggre = { constrainFeedbackIndirectlyByAggregatedCounts(candidates, occurrences, markups, includeNonElimination, constraint) }
+        val adjustments: List<()-> Boolean> = when (policy) {
+            ConstraintPolicy.AGGREGATED_EXACT -> listOf(exact)
+            ConstraintPolicy.AGGREGATED_INCLUDED -> listOf(inclu)
+            ConstraintPolicy.AGGREGATED -> listOf(aggre, exact, inclu)
+            else -> throw IllegalArgumentException("No support for policy $policy; must be AGGREGATED*")
+        }
+
+        var everChanged = false
+        var changed: Boolean
+        do {
+            changed = adjustments.any { it() }
+            everChanged = everChanged || changed
+        } while (changed)
+
+        return everChanged
+    }
+
+    private fun constrainFeedbackIndirectlyByAggregatedCounts(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
         constraint: Constraint
     ): Boolean {
         val word = constraint.candidate
@@ -294,21 +553,19 @@ class InferredMarkupFeedbackProvider(
             // allow new occurrences and candidates to constrain each other
             if (changed) constrainCandidatesAndOccurrences(candidates, occurrences)
 
-            // Note: we have strictly more information than the IncludedCount and ExactCount cases,
-            // so performing their calculations is appropriate here to consider analysis we skipped.
-            // Only bother doing so if the more sophisticated analysis did not produce a change.
-            if (!changed && constrainCandidatesAndOccurrencesCountIncluded(candidates, occurrences, constraint)) changed = true
-            if (!changed && constrainCandidatesAndOccurrencesCountExact(candidates, occurrences, constraint)) changed = true
-
             everChanged = everChanged || changed
         } while (changed)
 
+        // update markup to the best available for all letters
+        everChanged = inferMarkups(candidates, occurrences, markups, includeNonElimination) || everChanged
         return everChanged
     }
 
-    private fun constrainCandidatesAndOccurrencesCountIncluded(
+    private fun constrainFeedbackIndirectlyByAggregatedCountsIncluded(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
         constraint: Constraint
     ): Boolean {
         val inCount = constraint.exact + constraint.included
@@ -394,12 +651,16 @@ class InferredMarkupFeedbackProvider(
             everChanged = everChanged || changed
         } while (changed)
 
+        // update markup to the best available for all letters
+        everChanged = inferMarkups(candidates, occurrences, markups, includeNonElimination) || everChanged
         return everChanged
     }
 
-    private fun constrainCandidatesAndOccurrencesCountExact(
+    private fun constrainFeedbackIndirectlyByAggregatedCountsExact(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
         constraint: Constraint
     ): Boolean {
         val noCount = constraint.candidate.length - constraint.exact
@@ -461,6 +722,8 @@ class InferredMarkupFeedbackProvider(
             everChanged = everChanged || changed
         } while (changed)
 
+        // update markup to the best available for all letters
+        everChanged = inferMarkups(candidates, occurrences, markups, includeNonElimination) || everChanged
         return everChanged
     }
 
@@ -516,102 +779,300 @@ class InferredMarkupFeedbackProvider(
         return everChanged
     }
 
-    private fun inferMarkup(
+    private fun constrainFeedbackIndirectlyByAggregatedConstraintComparison(
         candidates: MutableList<MutableSet<Char>>,
         occurrences: MutableMap<Char, IntRange>,
         markups: MutableMap<Char, Constraint.MarkupType?>,
-        constraintFeedbackPolicy: ConstraintPolicy,
+        includeNonElimination: Boolean,
+        policy: ConstraintPolicy,
         constraints: List<Constraint>
     ): Boolean {
+        val exact = { constrainFeedbackIndirectlyByAggregatedExactCountsConstraintComparison(candidates, occurrences, markups, includeNonElimination, constraints) }
+        val inclu = { constrainFeedbackIndirectlyByAggregatedIncludedCountsConstraintComparison(candidates, occurrences, markups, includeNonElimination, constraints) }
+        val aggre = { constrainFeedbackIndirectlyByAggregatedCountsConstraintComparison(candidates, occurrences, markups, includeNonElimination, constraints) }
+        val adjustments: List<()-> Boolean> = when (policy) {
+            ConstraintPolicy.AGGREGATED_EXACT -> listOf(exact)
+            ConstraintPolicy.AGGREGATED_INCLUDED -> listOf(inclu)
+            ConstraintPolicy.AGGREGATED -> listOf(aggre, exact, inclu)
+            else -> throw IllegalArgumentException("No support for policy $policy; must be AGGREGATED*")
+        }
+
+        var everChanged = false
+        var changed: Boolean
+        do {
+            changed = adjustments.any { it() }
+            everChanged = everChanged || changed
+        } while (changed)
+
+        return everChanged
+    }
+
+    private fun constrainFeedbackIndirectlyByAggregatedCountsConstraintComparison(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        constraints: List<Constraint>
+    ): Boolean {
+        // TODO: consider the following scenario and write a GENERAL detector for it
+        // Given two guesses:
+        //  SPITE (1 exact, 0 included)
+        //  MIGHT (1 exact, 0 included)
+        // Because the position change of I and T did not change an EXACT match to an
+        // INCLUDED match, it can be determined that -- if max occurrences is 1 -- neither exist in
+        // the secret. This inference is not possible in either AggregatedExact or AggregatedIncluded
+        // comparisons.
+        // Consider also that there may be other letters with KNOWN contributions to EXACT
+        // and INCLUDED, so they must be accounted for to produce an overall correct comparison,
+        // and that the above example may or may not function when max occurrences > 1.
+
+        return false
+    }
+
+    private fun constrainFeedbackIndirectlyByAggregatedIncludedCountsConstraintComparison(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        constraints: List<Constraint>
+    ): Boolean {
+        // any constraint whose INCLUDED count is fully explained by existing Feedback is already
+        // represented in that Feedback, and need not be considered separately. To not be
+        // considered as such, it must have a higher INCLUDED count than can be explained by
+        // the minimum occurrences of each letter present.
+        val unrepresentedConstraints = constraints.filter { constraint ->
+            val letterCount = constraint.candidate.toSet()
+                .associateWith { char -> constraint.candidate.count { it == char } }
+            val knownIncludedCount = letterCount.entries.sumOf { (char, count) ->
+                val range = occurrences[char] ?: 0..0
+                min(count, range.first)
+            }
+
+            constraint.exact + constraint.included > knownIncludedCount
+        }
+
+        // compare the unrepresented constraints against each other (n^2 / 2), looking for
+        // cases where the change it letters perfectly explains the change in INCLUDED count.
+        // Do this by first counting the known contributions of letters: letters included
+        // up to the minimum, letters included beyond the maximum, and letters shared between
+        // both. Then, for the remaining UNKNOWN changes, check for:
+        // Number of letters REMOVED is == decrease in INCLUDED count (all letters removed are included,
+        //      any added are not)
+        // Number of letters ADDED is == increase in INCLUDED count (all letters added are included,
+        //      any removed are not)
         var changed = false
+        for (i in unrepresentedConstraints.indices) {
+            val constraintA = unrepresentedConstraints[i]
+            val includedA = constraintA.included + constraintA.exact
+            val fullCharsA = constraintA.candidate.toSet()
+                .associateWith { char -> constraintA.candidate.count { char == it } }
+            for (j in (i + 1) until unrepresentedConstraints.size) {
+                val charsA = fullCharsA.toMutableMap()
+                val constraintB = unrepresentedConstraints[j]
+                val includedB = constraintB.included + constraintB.exact
+                val charsB = constraintB.candidate.toSet()
+                    .associateWith { char -> constraintB.candidate.count { char == it } }
+                    .toMutableMap()
 
-        // apply explicitly indicated markup as indicated by markup policy
-        if (constraintFeedbackPolicy.isByLetter()
-            && markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()) {
+                // remove chars with known contributions to delta (above maximum have 0 contribution,
+                // below minimum have 1 contribution).
+                var delta = includedB - includedA
 
-            constraints.forEach { constraint ->
-                val zipped = constraint.candidate.toCharArray().zip(constraint.markup)
+                val allChars = listOf(charsA.keys, charsB.keys).flatten().toSet()
+                allChars.forEach { char ->
+                    val range = occurrences[char] ?: 0..0
 
-                // update markup to the best available for each attempted letter
-                constraint.candidate.toSet().forEach { c ->
-                    val zMarkup = zipped.filter { it.first == c }
-                        .filter {
-                            MarkupPolicy.DIRECT in markupPolicies
-                                    || (MarkupPolicy.DIRECT_ELIMINATION in markupPolicies && it.second == Constraint.MarkupType.NO)
-                        }
-                        .map { it.second }.maxByOrNull { it.value() }
-                    val cMarkup = markups[c]
+                    var keepA = min(charsA[char] ?: 0, range.last)
+                    var keepB = min(charsB[char] ?: 0, range.last)
 
-                    val newMarkup = listOf(cMarkup, zMarkup).maxByOrNull { it?.value() ?: -1 }
-                    if (newMarkup != cMarkup) {
-                        markups[c] = newMarkup
-                        changed = true
+                    // any in A up to minimum contributed -1 to delta
+                    val removeFromA = min(keepA, range.first)
+                    keepA -= removeFromA
+                    delta += removeFromA
+
+                    // any in B up to the minimum contributed +1 to delta
+                    val removeFromB = min(keepB, range.first)
+                    keepB -= removeFromB
+                    delta -= removeFromB
+
+                    // any they still share have a net 0 change.
+                    val removeFromBoth = min(keepA, keepB)
+
+                    charsA[char] = keepA - removeFromBoth
+                    charsB[char] = keepB - removeFromBoth
+                }
+
+                val charsAddedB = charsB.values.sum()
+                val charsRemovedA = charsA.values.sum()
+                val raiseMinBoundsBy: Map<Char, Int>
+                val lowerMaxBoundsBy: Map<Char, Int>
+                when {
+                    charsAddedB == delta -> {
+                        // characters in charsA should be removed from maximum occurrences.
+                        // characters in charsB should be added to minimum occurrences.
+                        lowerMaxBoundsBy = charsA.filter { it.value > 0 }
+                        raiseMinBoundsBy = charsB.filter { it.value > 0 }
+                    }
+                    charsRemovedA == -delta -> {
+                        // characters in charsA should be added to minimum occurrences.
+                        // characters in charsB should be removed from maximum occurrences.
+                        raiseMinBoundsBy = charsA.filter { it.value > 0 }
+                        lowerMaxBoundsBy = charsB.filter { it.value > 0 }
+                    }
+                    else -> {
+                        raiseMinBoundsBy = emptyMap()
+                        lowerMaxBoundsBy = emptyMap()
                     }
                 }
-            }
-        }
 
-        // DIRECT ELIMINATION: if a constraint has all NOs, eliminate all candidates.
-        if ((constraintFeedbackPolicy.isByLetter() || constraintFeedbackPolicy in setOf(ConstraintPolicy.AGGREGATED, ConstraintPolicy.AGGREGATED_INCLUDED))
-            && markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()) {
-
-            constraints.forEach { constraint ->
-                if (constraint.exact + constraint.included == 0) {
-                    constraint.candidate.toSet().forEach { c ->
-                        val cMarkup = markups[c]
-                        val newMarkup = listOf(cMarkup, Constraint.MarkupType.NO).maxByOrNull { it?.value() ?: -1 }
-                        if (newMarkup != cMarkup) {
-                            markups[c] = newMarkup
+                // now adjust bounds
+                allChars.forEach {  char ->
+                    val raiseMin = raiseMinBoundsBy[char] ?: 0
+                    val lowerMax = lowerMaxBoundsBy[char] ?: 0
+                    if (raiseMin != 0 || lowerMax != 0) {
+                        val range = occurrences[char] ?: 0..0
+                        val adjusted = range.bound(
+                            minimum = setOf(range.first + raiseMin),
+                            maximum = setOf(range.last - lowerMax)
+                        )
+                        if (range.first != adjusted.first || range.last != adjusted.last) {
                             changed = true
+                            occurrences[char] = adjusted
                         }
                     }
                 }
             }
         }
 
+        if (changed) {
+            // candidates and occurrences can influence each other
+            constrainCandidatesAndOccurrences(candidates, occurrences)
 
+            // update markup to the best available for each attempted letter
+            inferMarkups(candidates, occurrences, markups, includeNonElimination)
+        }
 
-        // INFERRED MARKUP
-        if (markupPolicies.intersect(MarkupPolicy.inferredPolicies).isNotEmpty()) {
-            // elimination: any character with a max of 0 occurrences is marked NO
-            occurrences.filter { it.value.last == 0 }.keys.forEach { c ->
-                if (markups[c] != Constraint.MarkupType.NO) {
-                    markups[c] = Constraint.MarkupType.NO
-                    changed = true
-                }
+        return changed
+    }
+
+    private fun constrainFeedbackIndirectlyByAggregatedExactCountsConstraintComparison(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        constraints: List<Constraint>
+    ): Boolean {
+        // any constraint whose EXACT count is fully explained by existing Feedback is already
+        // represented in that Feedback, and need not be considered separately. To not be
+        // considered as such, it must have nonzero EXACT whose positions are not known.
+        val unrepresentedConstraints = constraints.filter { constraint ->
+            val knownExactCount = candidates.indices.count {
+                val char = constraint.candidate[it]
+                val set = candidates[it]
+                char in set && set.size == 1
             }
+            constraint.exact > knownExactCount
+        }
 
-            if (MarkupPolicy.INFERRED in markupPolicies) {
-                // also infer INCLUDED and EXACT.
-                occurrences.filter { it.value.first > 0 }.keys.forEach { c ->
-                    // a letter that definitely appears. but should it be EXACT or INCLUDED?
-                    val oMarkup = when (constraintFeedbackPolicy) {
-                        ConstraintPolicy.PERFECT,
-                        ConstraintPolicy.ALL,
-                        ConstraintPolicy.POSITIVE,
-                        ConstraintPolicy.AGGREGATED -> {
-                            if (candidates.any { it.size == 1 && c in it }) {
-                                Constraint.MarkupType.EXACT
-                            } else {
-                                Constraint.MarkupType.INCLUDED
-                            }
+        // compare the unrepresentedConstraints against each other (n^2 / 2), looking for cases where
+        // the change in letters perfectly explains the change in EXACT count. Do this by
+        // first counting the contribution of known changes in-place (removing a non-candidate
+        // has change 0, adding or removing an exact match has change +/-1, etc.). Then, for
+        // the remaining UNKNOWN changes, check for:
+        // Change in EXACT is == number of in-place replacements (all chars are EXACT matches)
+        // One in-place change produces no change in EXACT count (both are NO)
+        var changed = false
+        for (i in unrepresentedConstraints.indices) {
+            val constraintA = unrepresentedConstraints[i]
+            for (j in (i + 1) until unrepresentedConstraints.size) {
+                val constraintB = unrepresentedConstraints[j]
+
+                var delta = constraintB.exact - constraintA.exact
+                val indices = constraintA.candidate.indices.filter {
+                    val set = candidates[it]
+                    val charA = constraintA.candidate[it]
+                    val charB = constraintB.candidate[it]
+                    when {
+                        // same letter; no delta
+                        charA == charB -> false
+                        charA in set && set.size == 1 -> {
+                            // A is exact match; it contributed -1 to delta.
+                            delta += 1
+                            false
                         }
-                        ConstraintPolicy.AGGREGATED_INCLUDED -> Constraint.MarkupType.INCLUDED
-                        ConstraintPolicy.AGGREGATED_EXACT -> Constraint.MarkupType.EXACT
-                        ConstraintPolicy.IGNORE -> null
+                        charB in set && set.size == 1 -> {
+                            // B is exact match; it contributed +1 to delta.
+                            delta -= 1
+                            false
+                        }
+                        // neither is a match; no delta
+                        charA !in set && charB !in set -> false
+                        else -> true
                     }
+                }
 
-                    val cMarkup = markups[c]
-
-                    val newMarkup = listOf(cMarkup, oMarkup).maxByOrNull { it?.value() ?: -1 }
-                    if (newMarkup != cMarkup) {
-                        markups[c] = newMarkup
+                // check for inference conditions
+                when {
+                    indices.isEmpty() -> {
+                        // ignore; no characters to consider
+                    }
+                    indices.size == delta -> {
+                        // all remaining B chars are EXACT
+                        indices.forEach { candidates[it] = mutableSetOf(constraintB.candidate[it]) }
+                        changed = true
+                    }
+                    indices.size == -delta -> {
+                        // all remaining A chars are EXACT
+                        indices.forEach { candidates[it] = mutableSetOf(constraintA.candidate[it]) }
+                        changed = true
+                    }
+                    indices.size == 1 && delta == 0 -> {
+                        // both A and B have the wrong character
+                        indices.forEach { index ->
+                            val set = candidates[index]
+                            set.remove(constraintA.candidate[index])
+                            set.remove(constraintB.candidate[index])
+                        }
                         changed = true
                     }
                 }
             }
         }
 
+        if (changed) {
+            // candidates and occurrences can influence each other
+            constrainCandidatesAndOccurrences(candidates, occurrences)
+
+            // update markup to the best available for each attempted letter
+            inferMarkups(candidates, occurrences, markups, includeNonElimination)
+        }
+
+        return changed
+    }
+    
+    private fun inferMarkups(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean
+    ): Boolean {
+        // update markup to the best available for each attempted letter
+        var changed = false
+        occurrences.keys.forEach { char ->
+            val range = occurrences[char] ?: 0..0
+            val cMarkup = markups[char]
+            val zMarkup = when {
+                candidates.any { it.size == 1 && char in it } -> Constraint.MarkupType.EXACT
+                range.first > 0 -> Constraint.MarkupType.INCLUDED
+                range.last == 0 -> Constraint.MarkupType.NO
+                else -> null
+            }
+            val nMarkup = listOf(cMarkup, zMarkup).maxByOrNull { it?.value() ?: -1 }
+            if (nMarkup != cMarkup && (includeNonElimination || nMarkup == Constraint.MarkupType.NO)) {
+                markups[char] = nMarkup
+                changed = true
+            }
+        }
         return changed
     }
 
@@ -630,5 +1091,17 @@ class InferredMarkupFeedbackProvider(
         Constraint.MarkupType.EXACT -> 2
         Constraint.MarkupType.INCLUDED -> 1
         Constraint.MarkupType.NO -> 0
+    }
+
+    private fun asFeedback(
+        candidates: List<Set<Char>>,
+        occurrences: Map<Char, IntRange>,
+        markups:  Map<Char, Constraint.MarkupType?>
+    ): Feedback {
+        return Feedback(
+            candidates = candidates.map { it.toSet() }.toList(),
+            occurrences = occurrences.toMap(),
+            markup = markups.toMap()
+        )
     }
 }

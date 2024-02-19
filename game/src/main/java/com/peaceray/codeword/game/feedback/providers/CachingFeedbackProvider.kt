@@ -9,27 +9,31 @@ import com.peaceray.codeword.game.feedback.FeedbackProvider
 abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: Int, val occurrences: IntRange): FeedbackProvider {
 
     private var cachedInput: Pair<ConstraintPolicy, List<Constraint>>? = null
-    private var cachedOutput: Pair<Feedback, Map<Char, CharacterFeedback>>? = null
+    private var cachedOutput: Feedback? = null
 
     override fun getFeedback(
         policy: ConstraintPolicy,
-        constraints: List<Constraint>
-    ) = cachedGet(policy, constraints).first
+        constraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback {
+        val feedback = cachedGet(policy, constraints, callback)
+        if (callback != null) callback(feedback, true)
+        return feedback
+    }
 
-    override fun getCharacterFeedback(
+    private fun cachedGet(
         policy: ConstraintPolicy,
-        constraints: List<Constraint>
-    ) = cachedGet(policy, constraints).second
-
-    private fun cachedGet(policy: ConstraintPolicy, constraints: List<Constraint>): Pair<Feedback, Map<Char, CharacterFeedback>> {
+        constraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback {
         val previousInput: Pair<ConstraintPolicy, List<Constraint>>?
-        val previousOutput: Pair<Feedback, Map<Char, CharacterFeedback>>?
+        val previousOutput: Feedback?
         synchronized(this) {
             previousInput = cachedInput
             previousOutput = cachedOutput
         }
 
-        // perform computation, not synchronized (does not members)
+        // perform computation, not synchronized (does not touch members)
         val input = Pair(policy, constraints)
         val output = when {
             // cache hit
@@ -41,16 +45,22 @@ abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: In
                     previousOutput!!,
                     policy,
                     constraints,
-                    constraints.filter { it !in previousInput.second }
+                    constraints.filter { it !in previousInput.second },
+                    callback
                 )
 
             // cache miss
-            else -> constrainFeedback(
-                initializeFeedback(policy),
-                policy,
-                constraints,
-                constraints
-            )
+            else -> {
+                val init = initializeFeedback(policy)
+                if (callback != null) callback(init, false)
+                constrainFeedback(
+                    initializeFeedback(policy),
+                    policy,
+                    constraints,
+                    constraints,
+                    callback
+                )
+            }
         }
 
         // update cache
@@ -62,17 +72,13 @@ abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: In
         return output!!
     }
 
-    open fun initializeFeedback(policy: ConstraintPolicy): Pair<Feedback, Map<Char, CharacterFeedback>> {
-        return Pair(
-            Feedback(characters, length, occurrences),
-            characters.associateWith { CharacterFeedback(it, occurrences) }
-        )
-    }
+    open fun initializeFeedback(policy: ConstraintPolicy) = Feedback(characters, length, occurrences)
 
     abstract fun constrainFeedback(
-        feedback: Pair<Feedback, Map<Char, CharacterFeedback>>,
+        feedback: Feedback,
         policy: ConstraintPolicy,
         constraints: List<Constraint>,
-        freshConstraints: List<Constraint>
-    ): Pair<Feedback, Map<Char, CharacterFeedback>>
+        freshConstraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback
 }

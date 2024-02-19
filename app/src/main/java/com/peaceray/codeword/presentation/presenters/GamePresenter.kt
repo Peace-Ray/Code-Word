@@ -72,7 +72,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         viewScope.launch {
             gamePlaySession = gamePlayManager.getGamePlaySession(gameSeed, gameSetup)
             gameFeedbackProvider = gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = false)
-            gameFeedback = gameFeedbackProvider.getFullPlaceholderFeedback().first
+            gameFeedback = gameFeedbackProvider.getPlaceholderFeedback()
 
             clearConstraints()
 
@@ -229,23 +229,19 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         // TODO better scope management, so new Constraints halt this process
         val constraints = gamePlaySession.getConstraints()
         guessFlowJob = viewScope.launch {
-            val feedback = gameFeedbackProvider.getFullFeedback(constraints)
-            Timber.v("GameFeedbackProvider for ${gameSetup.evaluation.type} gave feedback: ${feedback.first}")
-            Timber.v("GameFeedbackProvider for ${gameSetup.evaluation.type} gave character feedback: ${feedback.second.values}")
-            view?.setCharacterFeedback(feedback.second)
+            gameFeedback = gameFeedbackProvider.getFeedback(constraints)
+            view?.setCharacterFeedback(gameFeedback.characters)
 
-            // update game feedback
-            gameFeedback = feedback.first
 
             // advance game: will set a partial guess ("") with this feedback
             advanceGame(saveAfter)
 
             // update existing Constraints for the new feedback; impose delays so the entire game
             // field doesn't update all at once.
-            delay(400L)
-            gameFeedbackProvider.toGuesses(gamePlaySession.getConstraints(), gameFeedback, true)
+            delay(80L)
+            gameFeedbackProvider.toGuessesFlow(gamePlaySession.getConstraints(), gameFeedback, true)
                 .collect { (index, guess) ->
-                    if (updateConstraint(index, guess)) delay(400L)
+                    if (updateConstraint(index, guess)) delay(80L)
                 }
         }
     }

@@ -155,11 +155,11 @@ fun printEvaluation(constraint: Constraint?, env: ConsoleGameEnvironment) {
 fun getCharacterFeedback(env: ConsoleGameEnvironment): String? {
     var feedbackText: String? = null
     env.feedbackProvider
-        ?.getCharacterFeedback(env.feedbackPolicy, env.game.constraints)
+        ?.getFeedback(env.feedbackPolicy, env.game.constraints)
         ?.let { feedback ->
             feedbackText = applyMarkup(
-                feedback.keys.sorted().joinToString("").uppercase(),
-                feedback.values.associate { cf -> Pair(cf.character.uppercaseChar(), cf.markup) }
+                feedback.characters.keys.sorted().joinToString("").uppercase(),
+                feedback.characters.values.associate { cf -> Pair(cf.character.uppercaseChar(), cf.markup) }
             )
         }
     return feedbackText
@@ -179,6 +179,8 @@ private fun playGame(env: ConsoleGameEnvironment) {
     println()
 
     env.reset()
+
+    println("peeked secret is ${env.evaluator.peek(emptyList())}")
 
     // print introduction and feedback
     printEvaluation(null, env)
@@ -203,7 +205,7 @@ private fun playGame(env: ConsoleGameEnvironment) {
         val constraint = env.evaluator.evaluate(env.game.currentGuess!!, env.game.constraints)
         env.game.evaluate(constraint)
 
-        // print guess with markup and markup
+        // print guess with markup
         printEvaluation(constraint, env)
     }
 
