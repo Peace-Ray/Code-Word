@@ -11,6 +11,7 @@ import androidx.annotation.ColorInt
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
 import com.google.android.material.card.MaterialCardView
+import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
@@ -206,8 +207,12 @@ class CodeKeyboardView: ConstraintLayout {
                     color = swatch.evaluation.color(markup)
                 }
                 KeyStyle.CODE -> {
+                    val markup = characterFeedback[view.character]?.markup
                     val index = codeCharacters.indexOf(view.character)
-                    if (index >= 0) {
+                    if (markup == Constraint.MarkupType.NO) {
+                        onColor = swatch.evaluation.onColor(Constraint.MarkupType.NO)
+                        color = swatch.evaluation.color(Constraint.MarkupType.NO)
+                    } else if (index >= 0) {
                         onColor = swatch.code.onColor(index)
                         color = swatch.code.color(index)
                     } else {

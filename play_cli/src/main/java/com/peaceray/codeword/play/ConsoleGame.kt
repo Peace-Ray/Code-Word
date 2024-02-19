@@ -180,8 +180,6 @@ private fun playGame(env: ConsoleGameEnvironment) {
 
     env.reset()
 
-    println("peeked secret is ${env.evaluator.peek(emptyList())}")
-
     // print introduction and feedback
     printEvaluation(null, env)
 

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.Dimension
 import androidx.annotation.LayoutRes
 import com.peaceray.codeword.R
+import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
@@ -24,6 +25,8 @@ class GuessLetterCodeAppearance(context: Context, private val layout: GuessLette
         val charIndex = codeCharacters.indexOf(guess.character)
         return if (guess.isPlaceholder) {
             swatch.evaluation.untried
+        } else if (guess.markup == Constraint.MarkupType.NO) {
+            swatch.evaluation.color(Constraint.MarkupType.NO)
         } else {
             swatch.code.color(charIndex)
         }
@@ -41,6 +44,8 @@ class GuessLetterCodeAppearance(context: Context, private val layout: GuessLette
         val charIndex = codeCharacters.indexOf(guess.character)
         return if (guess.isPlaceholder) {
             swatch.evaluation.untried
+        } else if (guess.markup == Constraint.MarkupType.NO) {
+            swatch.evaluation.onColor(Constraint.MarkupType.NO)
         } else {
             swatch.code.onColor(charIndex)
         }
@@ -54,8 +59,8 @@ class GuessLetterCodeAppearance(context: Context, private val layout: GuessLette
 
     override fun getCardElevation(guess: GuessLetter) = when {
         guess.isPlaceholder -> 0.0f
-        guess.isGuess -> layout.elevation
-        else -> layout.elevation / 2.0f
+        guess.isGuess -> layout.elevation * 1.5f
+        else -> layout.elevation
     }
 
     override fun getCardStrokeWidth(guess: GuessLetter) = when {
@@ -71,7 +76,7 @@ class GuessLetterCodeAppearance(context: Context, private val layout: GuessLette
 
     override fun getCardScale(guess: GuessLetter) = when {
         guess.isPlaceholder -> 0.9f
-        guess.isGuess -> 1.0f
+        guess.isGuess -> 1.05f
         else -> 1.0f
     }
 }

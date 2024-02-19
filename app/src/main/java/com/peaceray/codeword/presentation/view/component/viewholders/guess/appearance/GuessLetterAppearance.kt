@@ -17,4 +17,6 @@ interface GuessLetterAppearance {
     @Dimension fun getCardStrokeWidth(guess: GuessLetter): Float
     @Dimension fun getCardCornerRadius(guess: GuessLetter): Float
     @Dimension fun getCardScale(guess: GuessLetter): Float
+
+    // pip
 }

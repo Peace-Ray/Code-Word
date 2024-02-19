@@ -55,6 +55,22 @@ data class Guess private constructor(
             GuessEvaluation(constraint.exact, constraint.included, constraint.candidate.length, constraint.correct)
         )
 
+        fun createNoMarkupEvaluation(constraint: Constraint) = Guess(
+            constraint.candidate.length,
+            constraint.candidate,
+            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], null, null) },
+            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], null, null) },
+            GuessEvaluation(constraint.exact, constraint.included, constraint.candidate.length, constraint.correct)
+        )
+
+        fun createNoMarkupEvaluation(guess: String, exact: Int, included: Int, correct: Boolean = guess.length == exact) = Guess(
+            guess.length,
+            guess,
+            List(guess.length) { GuessLetter(it, guess[it], null, null) },
+            List(guess.length) { GuessLetter(it, guess[it], null, null) },
+            GuessEvaluation(exact, included, guess.length, correct)
+        )
+
         fun createFromLetters(length: Int, letters: List<GuessLetter>, evaluation: GuessEvaluation?) = Guess(
             length,
             letters.map { it.character }.joinToString(""),

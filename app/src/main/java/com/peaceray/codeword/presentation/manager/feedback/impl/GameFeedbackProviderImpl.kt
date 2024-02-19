@@ -33,10 +33,7 @@ class GameFeedbackProviderImpl @Inject constructor(
     override suspend fun getFeedback(constraints: List<Constraint>): Feedback {
         return withContext(computationDispatcher) {
             // provide a suspension callback: accept a pending result if the job is not active.
-            val acceptOnCancelCallback = { _: Feedback, _: Boolean ->
-                Timber.v("GameFeedbackProvider in callback; isActive ${isActive}")
-                !isActive
-            }
+            val acceptOnCancelCallback = { _: Feedback, _: Boolean -> !isActive }
             feedbackProvider.getFeedback(constraintPolicy, constraints, acceptOnCancelCallback)
         }
     }
@@ -85,7 +82,6 @@ class GameFeedbackProviderImpl @Inject constructor(
         return flow {
             val indices = if (reverse) constraints.indices.reversed() else constraints.indices
             indices.forEach { index ->
-                Timber.v("getting guess from creator $guessCreator for constraint ${constraints[index]}")
                 emit(Pair(index, guessCreator.toGuess(constraints[index], feedback)))
             }
         }.flowOn(computationDispatcher)

@@ -227,6 +227,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 legendSecret = getString(R.string.game_info_legend_code_secret)
             }
         }
+        legendConstraint = Constraint.create(legendGuess, legendSecret)
 
         // configuration based on evaluation type
         val letterLayout: GuessLetterCellLayout
@@ -234,6 +235,8 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         val showPips: Boolean
         val letterAppearance: GuessLetterAppearance
         val pipAppearance: GuessAggregatedAppearance
+        val legendGuesses: List<Guess>
+
         when (gameSetup.evaluation.type) {
             ConstraintPolicy.AGGREGATED_EXACT,
             ConstraintPolicy.AGGREGATED_INCLUDED,
@@ -255,6 +258,23 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                     else -> throw IllegalStateException("Evaluation type ${gameSetup.evaluation.type} changed?")
                 }
                 legendAdapter.setItemStyles(letterStyle, aggregatedStyle)
+
+                // item content
+                legendGuesses = when (gameSetup.evaluation.type) {
+                    ConstraintPolicy.AGGREGATED_EXACT -> listOf(
+                        Guess.createNoMarkupEvaluation(legendGuess, legendConstraint.exact, 0),
+                        Guess.createNoMarkupEvaluation(legendSecret, legendSecret.length, 0)
+                    )
+                    ConstraintPolicy.AGGREGATED_INCLUDED -> listOf(
+                        Guess.createNoMarkupEvaluation(legendGuess, 0, legendConstraint.exact + legendConstraint.included),
+                        Guess.createNoMarkupEvaluation(legendSecret, 0, legendSecret.length, true)
+                    )
+                    ConstraintPolicy.AGGREGATED -> listOf(
+                        Guess.createNoMarkupEvaluation(legendConstraint),
+                        Guess.createNoMarkupEvaluation(Constraint.create(legendSecret, legendSecret))
+                    )
+                    else -> throw IllegalStateException("Evaluation type ${gameSetup.evaluation.type} changed?")
+                }
 
                 // appearances
                 letterAppearance = if (gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.ENUMERATED) {
@@ -280,6 +300,12 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 // item styles
                 legendAdapter.setItemStyles(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
 
+                // item content
+                legendGuesses = listOf(
+                    Guess.createPerfectEvaluation(legendConstraint),
+                    Guess.createPerfectEvaluation(Constraint.create(legendSecret, legendSecret))
+                )
+
                 // appearances
                 letterAppearance = GuessLetterMarkupAppearance(requireContext(), letterLayout)
                 pipAppearance = GuessAggregatedCountsPipAppearance(requireContext(), pipLayout)
@@ -288,7 +314,6 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         }
 
         // legend constraint and letters
-        legendConstraint = Constraint.create(legendGuess, legendSecret)
         val markupLetters = getLegendMarkupLetters(gameSetup, legendConstraint)
         val markupLabels = getLegendMarkupLabels(gameSetup, markupLetters)
         val markupViews = getLegendMarkupViews()
@@ -298,6 +323,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             val letters = markupLetters[markup]
             val label = markupLabels[markup]
             val views = markupViews[markup]
+            val guessMarkup = if (gameSetup.evaluation.type.isByLetter()) markup else null
 
             if (letters.isNullOrEmpty() || label == null || views == null) {
                 views?.setVisibility(View.GONE)
@@ -307,7 +333,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 views.letterViews.forEachIndexed { index, view ->
                     if (index < letters.size) {
                         createLetterViewHolder(view.getChildAt(0), letterAppearance)
-                            .bind(GuessLetter(0, letters[index], markup))
+                            .bind(GuessLetter(0, letters[index], guessMarkup))
                     } else {
                         view.visibility = View.GONE
                     }
@@ -339,10 +365,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         binding.sectionHowToPlay.recyclerView.layoutManager = legendLayoutManager
 
         // TODO apply animation to these
-        legendAdapter.replace(constraints = listOf(
-            Guess.createPerfectEvaluation(legendConstraint),
-            Guess.createPerfectEvaluation(Constraint.Companion.create(legendSecret, legendSecret))
-        ))
+        legendAdapter.replace(constraints = legendGuesses)
     }
 
     private fun createLetterViewHolder(itemView: View, appearance: GuessLetterAppearance): GuessLetterViewHolder {
@@ -497,7 +520,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             else -> Constraint.MarkupType.NO
         } }
 
-        return Guess.createPerfectEvaluation(Constraint.create(guess, markup))
+        return Guess.createNoMarkupEvaluation(Constraint.create(guess, markup))
     }
 
     data class LegendMarkupViews(val textView: TextView, val letterViews: List<ViewGroup>, val pipView: ViewGroup?) {

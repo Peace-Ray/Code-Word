@@ -7,7 +7,6 @@ import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 import com.peaceray.codeword.presentation.datamodel.guess.GuessType
-import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -75,9 +74,6 @@ class HintingGuessCreator @Inject constructor(
             return List(constraint.candidate.length) { Constraint.MarkupType.EXACT }
         }
 
-        Timber.v("getMarkup for feedback ${feedback.candidates}")
-        Timber.v("getMarkup for feedback ${feedback.occurrences}")
-
         return when (constraintPolicy) {
             ConstraintPolicy.IGNORE -> List(constraint.candidate.length) { null }
             ConstraintPolicy.AGGREGATED_EXACT,
@@ -119,12 +115,8 @@ class HintingGuessCreator @Inject constructor(
 
                 // downgrade to the best set markup set for that character, if less specific
                 constraint.candidate.forEachIndexed { index, char ->
-                    markup[index] = listOfNotNull(markup[index], feedback.characters[char]?.markup)
-                        .minByOrNull { it.value() }
-
-
-
-
+                    markup[index] = listOf(markup[index], feedback.characters[char]?.markup)
+                        .minByOrNull { it?.value() ?: -1 }
                 }
 
                 markup.toList()

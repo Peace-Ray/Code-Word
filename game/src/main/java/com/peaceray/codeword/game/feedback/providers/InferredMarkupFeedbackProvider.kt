@@ -321,7 +321,7 @@ class InferredMarkupFeedbackProvider(
             // if no exact, no letter occurs at the given position
             considerExact && constraint.exact == 0 -> {
                 constraint.candidate.forEachIndexed { index, char ->
-                    // from from position candidates
+                    // remove from position candidates
                     val removed = candidates[index].remove(char)
 
                     // update occurrences

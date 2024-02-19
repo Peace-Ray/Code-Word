@@ -302,6 +302,13 @@ class GuessLetterViewHolder(
                 )
             }
         }
+
+        fun isSameColor(values: GuessViewValues?): Boolean {
+            return values != null
+                    && value.color == values.value.color
+                    && stroke.color == values.stroke.color
+                    && solid.color == values.solid.color
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -454,9 +461,10 @@ class GuessLetterViewHolder(
                         a
                     }
 
-                    // a change in markup
+                    // a change in markup producing a change in color
                     preInfo.guess.isSameCandidateAs(postInfo.guess)
-                            && preInfo.guess.markup != postInfo.guess.markup -> {
+                            && preInfo.guess.markup != postInfo.guess.markup
+                            && !preInfo.style!!.isSameColor(postInfo.style) -> {
 
                         // set style to "before" content
                         holder.setViewStyle(preInfo.style!!)
