@@ -108,7 +108,7 @@ class HintingGuessCreator @Inject constructor(
                     var consideredCount = maybePositions.size
                     noPositions.forEach { index ->
                         if (consideredCount < range.first) markup[index] = Constraint.MarkupType.INCLUDED
-                        else if (range.last < consideredCount) markup[index] = Constraint.MarkupType.NO
+                        else if (range.last <= consideredCount) markup[index] = Constraint.MarkupType.NO
                         consideredCount++
                     }
                 }

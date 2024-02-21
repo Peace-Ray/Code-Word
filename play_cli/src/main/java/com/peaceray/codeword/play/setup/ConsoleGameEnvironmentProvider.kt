@@ -189,13 +189,13 @@ class ConsoleGameEnvironmentProvider {
                 characters,
                 settings.vocabulary.length,
                 if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
-                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
+                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
             )
             ConsoleGameSettings.Difficulty.LetterFeedback.DIRECT_AND_INFERRED -> InferredMarkupFeedbackProvider(
                 characters,
                 settings.vocabulary.length,
                 if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
-                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED)
+                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION, InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED)
             )
         }
         builder.feedbackPolicy = settings.difficulty.feedbackPolicy
