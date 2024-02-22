@@ -3,6 +3,8 @@ package com.peaceray.codeword.presentation.datamodel
 import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 
 /**
  * A swatch of colors useful for drawing letters, backgrounds, word evaluations, etc.
@@ -82,24 +84,24 @@ data class ColorSwatch (
         @ColorInt val noVariant: Int,
         @ColorInt val onNo: Int
     ) {
-        @ColorInt fun color(markup: Constraint.MarkupType?) = when(markup) {
-            Constraint.MarkupType.EXACT -> exact
-            Constraint.MarkupType.INCLUDED -> included
-            Constraint.MarkupType.NO -> no
+        @ColorInt fun color(markup: GuessMarkup) = when(markup) {
+            GuessMarkup.EXACT -> exact
+            GuessMarkup.INCLUDED -> included
+            GuessMarkup.NO -> no
             else -> untried
         }
 
-        @ColorInt fun colorVariant(markup: Constraint.MarkupType?) = when(markup) {
-            Constraint.MarkupType.EXACT -> exactVariant
-            Constraint.MarkupType.INCLUDED -> includedVariant
-            Constraint.MarkupType.NO -> noVariant
+        @ColorInt fun colorVariant(markup: GuessMarkup) = when(markup) {
+            GuessMarkup.EXACT -> exactVariant
+            GuessMarkup.INCLUDED -> includedVariant
+            GuessMarkup.NO -> noVariant
             else -> untriedVariant
         }
 
-        @ColorInt fun onColor(markup: Constraint.MarkupType?) = when(markup) {
-            Constraint.MarkupType.EXACT -> onExact
-            Constraint.MarkupType.INCLUDED -> onIncluded
-            Constraint.MarkupType.NO -> onNo
+        @ColorInt fun onColor(markup: GuessMarkup) = when(markup) {
+            GuessMarkup.EXACT -> onExact
+            GuessMarkup.INCLUDED -> onIncluded
+            GuessMarkup.NO -> onNo
             else -> onUntried
         }
     }
@@ -110,6 +112,8 @@ data class ColorSwatch (
         val included: String,
         val no: String
     ) {
+
+        // TODO change to use GuessMarkup, the Presentation-layer equivalent
         fun emoji(markup: Constraint.MarkupType?) = when(markup) {
             Constraint.MarkupType.EXACT -> exact
             Constraint.MarkupType.INCLUDED -> included

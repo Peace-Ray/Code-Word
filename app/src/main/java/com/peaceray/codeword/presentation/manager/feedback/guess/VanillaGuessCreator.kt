@@ -4,8 +4,11 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.Feedback
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
 import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup.Companion.toGuessMarkup
 import com.peaceray.codeword.presentation.datamodel.guess.GuessType
 import javax.inject.Inject
 
@@ -52,10 +55,35 @@ class VanillaGuessCreator @Inject constructor(
             ConstraintPolicy.POSITIVE,
             ConstraintPolicy.ALL,
             ConstraintPolicy.PERFECT -> List(constraint.candidate.length) {
-                GuessLetter(it, constraint.candidate[it], constraint.markup[it])
+                GuessLetter(it, constraint.candidate[it], constraint.markup[it].toGuessMarkup())
             }
         }
 
         return Guess.createFromLetters(constraint.candidate.length, letters, evaluation)
+    }
+
+    override fun toGuessAlphabet(feedback: Feedback): GuessAlphabet {
+        return when (constraintPolicy) {
+            ConstraintPolicy.IGNORE -> GuessAlphabet(feedback.characters.values.associate { cf ->
+                Pair(cf.character, GuessAlphabet.Letter(
+                    cf.character,
+                    cf.occurrences
+                ))
+            })
+            ConstraintPolicy.AGGREGATED_EXACT,
+            ConstraintPolicy.AGGREGATED_INCLUDED,
+            ConstraintPolicy.AGGREGATED -> {
+                GuessAlphabet(feedback.characters.values.associate { cf ->
+                    Pair(cf.character, GuessAlphabet.Letter(cf, markup = GuessMarkup.EMPTY))
+                })
+            }
+            ConstraintPolicy.POSITIVE,
+            ConstraintPolicy.ALL,
+            ConstraintPolicy.PERFECT -> {
+                GuessAlphabet(feedback.characters.values.associate { cf ->
+                    Pair(cf.character, GuessAlphabet.Letter(cf))
+                })
+            }
+        }
     }
 }

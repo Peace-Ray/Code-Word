@@ -11,9 +11,9 @@ import androidx.annotation.ColorInt
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
 import com.google.android.material.card.MaterialCardView
-import com.peaceray.codeword.game.data.Constraint
-import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.utils.extensions.toLifecycleOwner
 import dagger.hilt.android.AndroidEntryPoint
@@ -104,7 +104,7 @@ class CodeKeyboardView: ConstraintLayout {
     @Inject
     lateinit var colorSwatchManager: ColorSwatchManager
     private val keys = mutableListOf<CodeKeyView>()
-    private var characterFeedback: Map<Char, CharacterFeedback> = mapOf()
+    private var guessAlphabet: GuessAlphabet = GuessAlphabet(emptyMap())
     private var codeCharacters: List<Char> = listOf()
 
     private var _keyStyle: KeyStyle = KeyStyle.MARKUP
@@ -138,8 +138,8 @@ class CodeKeyboardView: ConstraintLayout {
         updateKeyColors(keyStyle, colorSwatchManager.colorSwatch)
     }
 
-    fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
-        characterFeedback = feedback
+    fun setGuessAlphabet(guessAlphabet: GuessAlphabet) {
+        this.guessAlphabet = guessAlphabet
         updateKeyColors(keyStyle, colorSwatchManager.colorSwatch)
     }
 
@@ -200,26 +200,15 @@ class CodeKeyboardView: ConstraintLayout {
             @ColorInt val onColor: Int
             @ColorInt val color: Int
             @ColorInt val colorPop: Int = swatch.container.onBackgroundAccent
-            when(keyStyle) {
-                KeyStyle.MARKUP -> {
-                    val markup = characterFeedback[view.character]?.markup
-                    onColor = swatch.evaluation.onColor(markup)
-                    color = swatch.evaluation.color(markup)
-                }
-                KeyStyle.CODE -> {
-                    val markup = characterFeedback[view.character]?.markup
-                    val index = codeCharacters.indexOf(view.character)
-                    if (markup == Constraint.MarkupType.NO) {
-                        onColor = swatch.evaluation.onColor(Constraint.MarkupType.NO)
-                        color = swatch.evaluation.color(Constraint.MarkupType.NO)
-                    } else if (index >= 0) {
-                        onColor = swatch.code.onColor(index)
-                        color = swatch.code.color(index)
-                    } else {
-                        onColor = swatch.evaluation.onColor(null)
-                        color = swatch.evaluation.color(null)
-                    }
-                }
+
+            val markup = guessAlphabet.characters[view.character]?.markup ?: GuessMarkup.EMPTY
+            val index = codeCharacters.indexOf(view.character)
+            if (markup == GuessMarkup.EMPTY && keyStyle == KeyStyle.CODE && index >= 0) {
+                onColor = swatch.code.onColor(index)
+                color = swatch.code.color(index)
+            } else {
+                onColor = swatch.evaluation.onColor(markup)
+                color = swatch.evaluation.color(markup)
             }
 
             // background color

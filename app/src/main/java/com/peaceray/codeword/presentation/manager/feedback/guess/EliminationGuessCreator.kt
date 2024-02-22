@@ -13,19 +13,12 @@ import com.peaceray.codeword.presentation.datamodel.guess.GuessType
 import javax.inject.Inject
 
 /**
- * Creates Guesses that include hints based on calculated [Feedback]. Types of hints included:
+ * Creates Guesses that include hints based on calculated [Feedback].
  *
- * 1. Markup applied to evaluation Guesses for letters whose markup is fully known. Markup is applied
- * only in cases where its meaning is unambiguous. For instance, in a AGGREGATED_INCLUDED game, there
- * is never any indication that a letter is in the right spot, so "Included" does not necessarily
- * convey "not in this place."
- *
- * 2. Specify the candidates that could potentially occupy the given position, evaluated from
- * left to right. This means (e.g.) that if a letter has at most 1 occurrence, and it has been
- * used at an earlier position in the word, it will NOT be included in the candidates for that
- * spot (even if the Feedback object includes it there).
+ * Only includes hints for explicitly marked characters (PERFECT, POSITIVE, etc.) and for
+ * characters that have been eliminated (NO). Otherwise, prefers EMPTY markup over ALLOWED.
  */
-class HintingGuessCreator @Inject constructor(
+class EliminationGuessCreator @Inject constructor(
     private val constraintPolicy: ConstraintPolicy
 ): GuessCreator {
 
@@ -72,11 +65,6 @@ class HintingGuessCreator @Inject constructor(
     }
 
     private fun getMarkup(constraint: Constraint, feedback: Feedback): List<GuessMarkup> {
-        if (constraint.correct) {
-            // correct answer: mark everything EXACT
-            return List(constraint.candidate.length) { GuessMarkup.EXACT }
-        }
-
         return when (constraintPolicy) {
             ConstraintPolicy.IGNORE -> List(constraint.candidate.length) { GuessMarkup.ALLOWED }
             ConstraintPolicy.AGGREGATED_EXACT,
@@ -91,11 +79,9 @@ class HintingGuessCreator @Inject constructor(
                     when {
                         // character not present anywhere in the word
                         range.last == 0 -> GuessMarkup.NO
-                        // this position is known; character is correct
-                        candidates.size == 1 && char in candidates -> GuessMarkup.EXACT
 
-                        // otherwise, mark as OK
-                        else -> GuessMarkup.ALLOWED
+                        // otherwise, mark as EMPTY
+                        else -> GuessMarkup.EMPTY
                     }
                 }
 
@@ -110,7 +96,7 @@ class HintingGuessCreator @Inject constructor(
                     val range = feedback.occurrences[char] ?: 0..0
                     var consideredCount = maybePositions.size
                     noPositions.forEach { index ->
-                        if (consideredCount < range.first) markup[index] = GuessMarkup.INCLUDED
+                        if (consideredCount < range.first) markup[index] = GuessMarkup.EMPTY
                         else if (range.last <= consideredCount) markup[index] = GuessMarkup.NO
                         consideredCount++
                     }
@@ -119,7 +105,7 @@ class HintingGuessCreator @Inject constructor(
                 // downgrade to the best set markup set for that character, if less specific
                 constraint.candidate.forEachIndexed { index, char ->
                     val fMarkup = feedback.characters[char]?.markup
-                    val gMarkup = fMarkup?.toGuessMarkup() ?: GuessMarkup.ALLOWED
+                    val gMarkup = fMarkup.toGuessMarkup()
                     markup[index] = listOf(markup[index], gMarkup).minBy { it.value() }
                 }
 
@@ -151,7 +137,7 @@ class HintingGuessCreator @Inject constructor(
                 Pair(cf.character, GuessAlphabet.Letter(
                     cf.character,
                     cf.occurrences,
-                    markup = GuessMarkup.ALLOWED
+                    markup = GuessMarkup.EMPTY
                 ))
             })
             ConstraintPolicy.AGGREGATED_EXACT,
@@ -161,7 +147,7 @@ class HintingGuessCreator @Inject constructor(
             ConstraintPolicy.ALL,
             ConstraintPolicy.PERFECT -> {
                 GuessAlphabet(feedback.characters.values.associate { cf ->
-                    val markup = if (cf.markup == null) GuessMarkup.ALLOWED else cf.markup.toGuessMarkup()
+                    val markup = cf.markup.toGuessMarkup()
                     Pair(cf.character, GuessAlphabet.Letter(cf, markup = markup))
                 })
             }

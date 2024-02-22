@@ -5,16 +5,13 @@ import android.view.View
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
-import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.data.model.record.GameOutcome
-import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.HistogramEntry
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
-import com.peaceray.codeword.utils.extensions.toLifecycleOwner
-import timber.log.Timber
 
 class HistogramViewHolder(
     itemView: View,
@@ -96,9 +93,9 @@ class HistogramViewHolder(
     private fun setViewColors(entry: HistogramEntry, outcome: GameOutcome?, swatch: ColorSwatch) {
         val isOutcome = outcome?.outcome == GameOutcome.Outcome.WON && entry.includesKey(outcome.round)
         val markup = when {
-            isOutcome -> Constraint.MarkupType.EXACT
-            entry.value == 0 -> Constraint.MarkupType.NO
-            else -> Constraint.MarkupType.INCLUDED
+            isOutcome -> GuessMarkup.EXACT
+            entry.value == 0 -> GuessMarkup.NO
+            else -> GuessMarkup.INCLUDED
         }
         histogramBackgroundView.setBackgroundColor(swatch.evaluation.color(markup))
         countTextView.setTextColor(swatch.evaluation.onColor(markup))

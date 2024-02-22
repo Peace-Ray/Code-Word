@@ -10,6 +10,8 @@ import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.feedback.Feedback
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.feedback.GameFeedbackManager
 import com.peaceray.codeword.presentation.manager.feedback.GameFeedbackProvider
 import kotlinx.coroutines.CoroutineScope
@@ -382,7 +384,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
             // collect locally as well as in member fields, so these results can be
             // checked to see if hints are ready
-            var createdFeedback: Feedback? = null
+            var createdAlphabet: GuessAlphabet? = null
             val createdGuesses = MutableList<Guess?>(constraints.size) { null }
 
             // generate feedback; store locally as well as update view
@@ -390,9 +392,12 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 constraints,
                 gameFeedbackProvider,
                 { feedback ->
-                    createdFeedback = feedback
                     gameFeedback = feedback
-                    view?.setCharacterFeedback(feedback.characters)
+                    Pair(isActive, 0L)
+                },
+                { guessAlphabet ->
+                    createdAlphabet = guessAlphabet
+                    view?.setGuessAlphabet(guessAlphabet)
                     Pair(isActive, 80L)
                 },
                 { index, guess ->
@@ -412,18 +417,29 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     { feedback ->
                         // hints are ready if character markup changed
                         Timber.v("got hinted feedback...")
-                        val charMarkup1 = createdFeedback?.characters?.values?.associate { Pair(it.character, it.markup) }
-                        val charMarkup2 = feedback.characters.values.associate { Pair(it.character, it.markup) }
-                        val changed = charMarkup1 != charMarkup2
+                        Pair(true, 0L)
+                    },
+                    { guessAlphabet ->
+                        val charMarkup1 = createdAlphabet?.characters?.values?.associate { Pair(it.character, it.markup) } ?: emptyMap()
+                        val charMarkup2 = guessAlphabet.characters.values.associate { Pair(it.character, it.markup) }
+
+                        val sigMarkup1 = charMarkup1.filter { it.value in GuessMarkup.explicit }
+                        val sigMarkup2 = charMarkup2.filter { it.value in GuessMarkup.explicit }
+
+                        val changed = sigMarkup1 != sigMarkup2
                         if (changed) onHintsReady()
-                        Pair(!changed, 200L)
+                        Pair(changed, 200L)
                     },
                     { index, guess ->
                         // hints are ready if character markup changed
                         Timber.v("got hinted guess...")
-                        val charMarkup1 = createdGuesses[index]?.letters?.map { it.markup }
+                        val charMarkup1 = createdGuesses[index]?.letters?.map { it.markup } ?: emptyList()
                         val charMarkup2 = guess.letters.map { it.markup }
-                        val changed = charMarkup1 != charMarkup2
+
+                        val sigMarkup1 = charMarkup1.filter { it in GuessMarkup.explicit }
+                        val sigMarkup2 = charMarkup2.filter { it in GuessMarkup.explicit }
+
+                        val changed = sigMarkup1 != sigMarkup2
                         if (changed) onHintsReady()
                         Pair(!changed, 200L)
                     }
@@ -443,6 +459,7 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         constraints: List<Constraint>,
         feedbackProvider: GameFeedbackProvider,
         onFeedback: (feedback: Feedback) -> Pair<Boolean, Long>,
+        onGuessAlphabet: (guessAlphabet: GuessAlphabet) -> Pair<Boolean, Long>,
         onGuess: (index: Int, guess: Guess) -> Pair<Boolean, Long>
     ): Boolean {
         suspend fun process(response: Pair<Boolean, Long>): Boolean {
@@ -456,15 +473,19 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
         var continuing = true
         val feedback = feedbackProvider.getFeedback(constraints)
-        val response = onFeedback(feedback)
+        var response = onFeedback(feedback)
+        if (!process(response)) return false
+
+        val alphabet = feedbackProvider.toGuessAlphabet(feedback)
+        response = onGuessAlphabet(alphabet)
         if (!process(response)) return false
 
         feedbackProvider.toGuessesFlow(constraints, feedback, true)
             .cancellable()
             .takeWhile { continuing }
             .collect { (index, guess) ->
-                val guessResponse = onGuess(index, guess)
-                continuing = process(guessResponse)
+                response = onGuess(index, guess)
+                continuing = process(response)
             }
 
         return continuing

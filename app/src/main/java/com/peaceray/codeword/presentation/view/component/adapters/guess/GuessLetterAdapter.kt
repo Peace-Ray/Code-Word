@@ -3,8 +3,10 @@ package com.peaceray.codeword.presentation.view.component.adapters.guess
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.layouts.CellLayout
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
@@ -227,12 +229,22 @@ class GuessLetterAdapter @Inject constructor(
     //region RecyclerView.Adapter Implementation
     //---------------------------------------------------------------------------------------------
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val style = ItemStyle.values()[viewType]
+        val style = ItemStyle.entries[viewType]
         val layout = _cellLayout[style]!!
         val cellView = layoutInflater.inflate(layout.layoutId, parent, false)
         return when (style) {
-            ItemStyle.LETTER_MARKUP,
-            ItemStyle.LETTER_CODE -> GuessLetterViewHolder(cellView, colorSwatchManager, letterStyleAppearance[style]!!)
+            ItemStyle.LETTER_MARKUP -> GuessLetterViewHolder(cellView, colorSwatchManager, letterStyleAppearance[style]!!)
+            ItemStyle.LETTER_CODE -> {
+                val markupAppearance = letterStyleAppearance[ItemStyle.LETTER_MARKUP]
+                GuessLetterViewHolder(
+                    cellView,
+                    colorSwatchManager,
+                    letterStyleAppearance[style]!!,
+                    if (markupAppearance == null) emptyMap() else {
+                        GuessMarkup.informative.associateWith { markupAppearance }
+                    }
+                )
+            }
             ItemStyle.AGGREGATED_PIP_LINE -> AggregatedConstraintViewHolder(cellView, layoutInflater, colorSwatchManager)
             ItemStyle.AGGREGATED_PIP_CLUSTER,
             ItemStyle.AGGREGATED_DONUT_CLUSTER -> GuessAggregatedPipGridViewHolder(cellView, colorSwatchManager, aggregatedStyleAppearance[style]!!)

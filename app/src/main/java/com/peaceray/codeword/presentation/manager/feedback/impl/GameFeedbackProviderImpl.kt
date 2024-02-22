@@ -2,7 +2,6 @@ package com.peaceray.codeword.presentation.manager.feedback.impl
 
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
-import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.game.feedback.Feedback
 import com.peaceray.codeword.game.feedback.FeedbackProvider
 import com.peaceray.codeword.glue.ForComputation
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import timber.log.Timber
 import javax.inject.Inject
 
 class GameFeedbackProviderImpl @Inject constructor(
@@ -63,6 +61,7 @@ class GameFeedbackProviderImpl @Inject constructor(
     override fun toGuess(partialGuess: String, feedback: Feedback) = guessCreator.toGuess(partialGuess, feedback)
 
     override fun toGuess(constraint: Constraint, feedback: Feedback) = guessCreator.toGuess(constraint, feedback)
+    override fun toGuessAlphabet(feedback: Feedback) = guessCreator.toGuessAlphabet(feedback)
 
     //---------------------------------------------------------------------------------------------
     //endregion

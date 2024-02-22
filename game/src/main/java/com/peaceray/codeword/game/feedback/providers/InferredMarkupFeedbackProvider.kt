@@ -101,7 +101,7 @@ class InferredMarkupFeedbackProvider(
         // check markup policies
         val doSolutionMarkup = markupPolicies.intersect(MarkupPolicy.solutionPolicies).isNotEmpty()
         val doIndirectMarkup = markupPolicies.intersect(MarkupPolicy.inferredPolicies).isNotEmpty()
-        val doDirectMarkup = doIndirectMarkup || markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()
+        val doDirectMarkup = markupPolicies.intersect(MarkupPolicy.directPolicies).isNotEmpty()
         val doIndirectNonElimination = MarkupPolicy.INFERRED in markupPolicies
         val doDirectNonElimination = doIndirectNonElimination || MarkupPolicy.DIRECT in markupPolicies
         val doSolutionNonElimination = doDirectNonElimination

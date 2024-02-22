@@ -20,6 +20,7 @@ import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
@@ -512,9 +513,9 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         guessAdapter.update(constraints = listOf(Pair(index, constraint)))
     }
 
-    override fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
-        Timber.v("setCharacterFeedback ${feedback.size}")
-        keyboardView?.setCharacterFeedback(feedback)
+    override fun setGuessAlphabet(guessAlphabet: GuessAlphabet) {
+        Timber.v("setGuessAlphabet ${guessAlphabet.characters.size}")
+        keyboardView?.setGuessAlphabet(guessAlphabet)
     }
 
     override fun setHintStatus(on: Boolean, ready: Boolean, supported: Boolean) {

@@ -9,9 +9,9 @@ import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
-import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
 import com.peaceray.codeword.presentation.view.component.views.PipGridLayout
@@ -78,11 +78,11 @@ class GuessAggregatedPipGridViewHolder(
         if (appearance.hasStableDimensions) {
             constraintPipViews.forEach { view ->
                 view.updateLayoutParams {
-                    val size = round(appearance.getPipSize(evaluation, null)).toInt()
+                    val size = round(appearance.getPipSize(evaluation, GuessMarkup.EMPTY)).toInt()
                     width = size
                     height = size
                     if (this is MarginLayoutParams) {
-                        setMargins(round(appearance.getPipMargin(evaluation, null)).toInt())
+                        setMargins(round(appearance.getPipMargin(evaluation, GuessMarkup.EMPTY)).toInt())
                     }
                 }
             }
@@ -94,9 +94,9 @@ class GuessAggregatedPipGridViewHolder(
         val inclu = eval?.included ?: 0
         List(eval?.length ?: 0) {
             when {
-                it < exact -> Constraint.MarkupType.EXACT
-                it < exact + inclu -> Constraint.MarkupType.INCLUDED
-                else -> Constraint.MarkupType.NO
+                it < exact -> GuessMarkup.EXACT
+                it < exact + inclu -> GuessMarkup.INCLUDED
+                else -> GuessMarkup.NO
             }
         }.zip(constraintPipViews).forEach { (markUp, pipView) ->
             // dimensions

@@ -1,14 +1,12 @@
 package com.peaceray.codeword.presentation.datamodel.guess
 
-import com.peaceray.codeword.game.data.Constraint
-
 data class GuessLetter(
     val position: Int,
     val character: Char = SPACE,
-    val markup: Constraint.MarkupType? = null,
+    val markup: GuessMarkup = GuessMarkup.EMPTY,
     val candidates: Set<Char>? = null,
     val type: GuessType = when {
-        markup != null -> GuessType.EVALUATION
+        markup != GuessMarkup.EMPTY -> GuessType.EVALUATION
         character != SPACE -> GuessType.GUESS
         else -> GuessType.PLACEHOLDER
     }
@@ -18,7 +16,7 @@ data class GuessLetter(
         if ((character == SPACE) != (type == GuessType.PLACEHOLDER)) {
             throw IllegalStateException("PLACEHOLDER letters must have SPACE character")
         }
-        if (markup != null && type != GuessType.EVALUATION) {
+        if (markup != GuessMarkup.EMPTY && markup != GuessMarkup.ALLOWED && type != GuessType.EVALUATION) {
             throw IllegalStateException("Letters with markup must have EVALUATION type")
         }
     }

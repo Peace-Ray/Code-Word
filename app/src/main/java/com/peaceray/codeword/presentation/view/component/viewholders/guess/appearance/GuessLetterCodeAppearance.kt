@@ -2,11 +2,10 @@ package com.peaceray.codeword.presentation.view.component.viewholders.guess.appe
 
 import android.content.Context
 import androidx.annotation.Dimension
-import androidx.annotation.LayoutRes
 import com.peaceray.codeword.R
-import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
 
 class GuessLetterCodeAppearance(context: Context, private val layout: GuessLetterCellLayout): GuessLetterAppearance {
@@ -25,8 +24,8 @@ class GuessLetterCodeAppearance(context: Context, private val layout: GuessLette
         val charIndex = codeCharacters.indexOf(guess.character)
         return if (guess.isPlaceholder) {
             swatch.evaluation.untried
-        } else if (guess.markup == Constraint.MarkupType.NO) {
-            swatch.evaluation.color(Constraint.MarkupType.NO)
+        } else if (guess.markup == GuessMarkup.NO) {
+            swatch.evaluation.color(GuessMarkup.NO)
         } else {
             swatch.code.color(charIndex)
         }
@@ -44,8 +43,8 @@ class GuessLetterCodeAppearance(context: Context, private val layout: GuessLette
         val charIndex = codeCharacters.indexOf(guess.character)
         return if (guess.isPlaceholder) {
             swatch.evaluation.untried
-        } else if (guess.markup == Constraint.MarkupType.NO) {
-            swatch.evaluation.onColor(Constraint.MarkupType.NO)
+        } else if (guess.markup == GuessMarkup.NO) {
+            swatch.evaluation.onColor(GuessMarkup.NO)
         } else {
             swatch.code.onColor(charIndex)
         }

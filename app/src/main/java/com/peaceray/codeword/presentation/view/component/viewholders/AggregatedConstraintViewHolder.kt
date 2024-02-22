@@ -8,9 +8,9 @@ import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
-import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 
 class AggregatedConstraintViewHolder(
@@ -70,9 +70,9 @@ class AggregatedConstraintViewHolder(
         val inclu = guess.evaluation?.included ?: 0
         List(guess.length) {
             when {
-                it < exact -> Constraint.MarkupType.EXACT
-                it < exact + inclu -> Constraint.MarkupType.INCLUDED
-                else -> Constraint.MarkupType.NO
+                it < exact -> GuessMarkup.EXACT
+                it < exact + inclu -> GuessMarkup.INCLUDED
+                else -> GuessMarkup.NO
             }
         }.zip(constraintPipViews).forEach { (markUp, pipView) ->
             val bg = if (!guess.isEvaluation) swatch.container.background else swatch.evaluation.color(markUp)

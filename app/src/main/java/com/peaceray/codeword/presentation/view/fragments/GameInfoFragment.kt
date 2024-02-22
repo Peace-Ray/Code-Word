@@ -23,6 +23,8 @@ import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup.Companion.toGuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
 import com.peaceray.codeword.presentation.view.component.layouts.CellLayout
@@ -319,11 +321,11 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         val markupViews = getLegendMarkupViews()
 
         // populate and label
-        for (markup in listOf(Constraint.MarkupType.EXACT, Constraint.MarkupType.INCLUDED, Constraint.MarkupType.NO)) {
+        for (markup in listOf(GuessMarkup.EXACT, GuessMarkup.INCLUDED, GuessMarkup.NO)) {
             val letters = markupLetters[markup]
             val label = markupLabels[markup]
             val views = markupViews[markup]
-            val guessMarkup = if (gameSetup.evaluation.type.isByLetter()) markup else null
+            val guessMarkup = if (gameSetup.evaluation.type.isByLetter()) markup else GuessMarkup.EMPTY
 
             if (letters.isNullOrEmpty() || label == null || views == null) {
                 views?.setVisibility(View.GONE)
@@ -340,9 +342,10 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 }
                 if (showPips && views.pipView != null && letters.isNotEmpty()) {
                     val guess = when (markup) {
-                        Constraint.MarkupType.EXACT -> createGuess(legendConstraint.candidate.length, letters.size, 0)
-                        Constraint.MarkupType.INCLUDED -> createGuess(legendConstraint.candidate.length, 0, letters.size)
-                        Constraint.MarkupType.NO -> createGuess(legendConstraint.candidate.length, 0, 0)
+                        GuessMarkup.EXACT -> createGuess(legendConstraint.candidate.length, letters.size, 0)
+                        GuessMarkup.INCLUDED -> createGuess(legendConstraint.candidate.length, 0, letters.size)
+                        GuessMarkup.NO -> createGuess(legendConstraint.candidate.length, 0, 0)
+                        else -> throw IllegalArgumentException("Can't create guess for markup $markup")
                     }
                     createPipsViewHolder(views.pipView.getChildAt(0), pipAppearance).bind(guess.evaluation)
                 } else {
@@ -407,47 +410,47 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         return vh
     }
 
-    private fun getLegendMarkupLetters(gameSetup: GameSetup, constraint: Constraint): Map<Constraint.MarkupType, List<Char>> {
-        val zipped = constraint.candidate.toList().zip(constraint.markup)
+    private fun getLegendMarkupLetters(gameSetup: GameSetup, constraint: Constraint): Map<GuessMarkup, List<Char>> {
+        val zipped = constraint.candidate.toList().zip(constraint.markup.map { it.toGuessMarkup() })
         var exactLetters: List<Char> = emptyList()
         var includedLetters: List<Char> = emptyList()
         var noLetters: List<Char>
         when (gameSetup.evaluation.type) {
             ConstraintPolicy.AGGREGATED_EXACT -> {
-                exactLetters = zipped.filter { it.second == Constraint.MarkupType.EXACT }.map { it.first }
-                noLetters = zipped.filter { it.second != Constraint.MarkupType.EXACT }.map { it.first }
+                exactLetters = zipped.filter { it.second == GuessMarkup.EXACT }.map { it.first }
+                noLetters = zipped.filter { it.second != GuessMarkup.EXACT }.map { it.first }
             }
             ConstraintPolicy.AGGREGATED_INCLUDED -> {
                 includedLetters = zipped.filter {
-                    it.second in setOf(Constraint.MarkupType.INCLUDED, Constraint.MarkupType.EXACT)
+                    it.second in setOf(GuessMarkup.INCLUDED, GuessMarkup.EXACT)
                 }.map { it.first }
-                noLetters = zipped.filter { it.second == Constraint.MarkupType.NO }.map { it.first }
+                noLetters = zipped.filter { it.second == GuessMarkup.NO }.map { it.first }
             }
             ConstraintPolicy.AGGREGATED -> {
-                exactLetters = zipped.filter { it.second == Constraint.MarkupType.EXACT }.map { it.first }
-                includedLetters = zipped.filter { it.second == Constraint.MarkupType.INCLUDED }.map { it.first }
-                noLetters = zipped.filter { it.second == Constraint.MarkupType.NO }.map { it.first }
+                exactLetters = zipped.filter { it.second == GuessMarkup.EXACT }.map { it.first }
+                includedLetters = zipped.filter { it.second == GuessMarkup.INCLUDED }.map { it.first }
+                noLetters = zipped.filter { it.second == GuessMarkup.NO }.map { it.first }
             }
             ConstraintPolicy.POSITIVE,
             ConstraintPolicy.ALL,
             ConstraintPolicy.PERFECT -> {
-                exactLetters = zipped.filter { it.second == Constraint.MarkupType.EXACT }.map { it.first }
-                includedLetters = zipped.filter { it.second == Constraint.MarkupType.INCLUDED }.map { it.first }
-                noLetters = zipped.filter { it.second == Constraint.MarkupType.NO }.map { it.first }
+                exactLetters = zipped.filter { it.second == GuessMarkup.EXACT }.map { it.first }
+                includedLetters = zipped.filter { it.second == GuessMarkup.INCLUDED }.map { it.first }
+                noLetters = zipped.filter { it.second == GuessMarkup.NO }.map { it.first }
             }
             else -> throw IllegalArgumentException("No support for ${gameSetup.evaluation.type}")
         }
 
         return mapOf(
-            Pair(Constraint.MarkupType.EXACT, exactLetters),
-            Pair(Constraint.MarkupType.INCLUDED, includedLetters),
-            Pair(Constraint.MarkupType.NO, noLetters)
+            Pair(GuessMarkup.EXACT, exactLetters),
+            Pair(GuessMarkup.INCLUDED, includedLetters),
+            Pair(GuessMarkup.NO, noLetters)
         )
     }
 
-    private fun getLegendMarkupLabels(gameSetup: GameSetup, letters: Map<Constraint.MarkupType, List<Char>>): Map<Constraint.MarkupType, String> {
-        val map = mutableMapOf<Constraint.MarkupType, String>()
-        val pick: (markup: Constraint.MarkupType, arrayResId: Int) -> Unit = { markup, arrayResId ->
+    private fun getLegendMarkupLabels(gameSetup: GameSetup, letters: Map<GuessMarkup, List<Char>>): Map<GuessMarkup, String> {
+        val map = mutableMapOf<GuessMarkup, String>()
+        val pick: (markup: GuessMarkup, arrayResId: Int) -> Unit = { markup, arrayResId ->
             val array = requireContext().resources.getStringArray(arrayResId)
             val index = min(array.size - 1, letters[markup]!!.size - 1)
             map[markup] = array[index]
@@ -455,24 +458,24 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
 
         when (gameSetup.evaluation.type) {
             ConstraintPolicy.AGGREGATED_EXACT -> {
-                pick(Constraint.MarkupType.EXACT, R.array.game_info_legend_correct_count)
-                pick(Constraint.MarkupType.NO, R.array.game_info_legend_not_correct_count)
+                pick(GuessMarkup.EXACT, R.array.game_info_legend_correct_count)
+                pick(GuessMarkup.NO, R.array.game_info_legend_not_correct_count)
             }
             ConstraintPolicy.AGGREGATED_INCLUDED -> {
-                pick(Constraint.MarkupType.INCLUDED, R.array.game_info_legend_included_or_exact_count)
-                pick(Constraint.MarkupType.NO, R.array.game_info_legend_no_count)
+                pick(GuessMarkup.INCLUDED, R.array.game_info_legend_included_or_exact_count)
+                pick(GuessMarkup.NO, R.array.game_info_legend_no_count)
             }
             ConstraintPolicy.AGGREGATED -> {
-                pick(Constraint.MarkupType.EXACT, R.array.game_info_legend_correct_count)
-                pick(Constraint.MarkupType.INCLUDED, R.array.game_info_legend_included_count)
-                pick(Constraint.MarkupType.NO, R.array.game_info_legend_no_count)
+                pick(GuessMarkup.EXACT, R.array.game_info_legend_correct_count)
+                pick(GuessMarkup.INCLUDED, R.array.game_info_legend_included_count)
+                pick(GuessMarkup.NO, R.array.game_info_legend_no_count)
             }
             ConstraintPolicy.POSITIVE,
             ConstraintPolicy.ALL,
             ConstraintPolicy.PERFECT -> {
-                pick(Constraint.MarkupType.EXACT, R.array.game_info_legend_correct_shown)
-                pick(Constraint.MarkupType.INCLUDED, R.array.game_info_legend_included_shown)
-                pick(Constraint.MarkupType.NO, R.array.game_info_legend_no_shown)
+                pick(GuessMarkup.EXACT, R.array.game_info_legend_correct_shown)
+                pick(GuessMarkup.INCLUDED, R.array.game_info_legend_included_shown)
+                pick(GuessMarkup.NO, R.array.game_info_legend_no_shown)
             }
             else -> throw IllegalArgumentException("No support for ${gameSetup.evaluation.type}")
         }
@@ -480,9 +483,9 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
         return map.toMap()
     }
 
-    private fun getLegendMarkupViews(): Map<Constraint.MarkupType, LegendMarkupViews> {
+    private fun getLegendMarkupViews(): Map<GuessMarkup, LegendMarkupViews> {
         return mapOf(
-            Pair(Constraint.MarkupType.EXACT, LegendMarkupViews(
+            Pair(GuessMarkup.EXACT, LegendMarkupViews(
                 binding.sectionHowToPlay.legendCorrectText,
                 listOf(
                     binding.sectionHowToPlay.legendCorrectLetter1,
@@ -491,7 +494,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                     ),
                 binding.sectionHowToPlay.legendCorrectPips
             )),
-            Pair(Constraint.MarkupType.INCLUDED, LegendMarkupViews(
+            Pair(GuessMarkup.INCLUDED, LegendMarkupViews(
                 binding.sectionHowToPlay.legendPresentText,
                 listOf(
                     binding.sectionHowToPlay.legendPresentLetter1,
@@ -500,7 +503,7 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
                 ),
                 binding.sectionHowToPlay.legendPresentPips
             )),
-            Pair(Constraint.MarkupType.NO, LegendMarkupViews(
+            Pair(GuessMarkup.NO, LegendMarkupViews(
                 binding.sectionHowToPlay.legendNoText,
                 listOf(
                     binding.sectionHowToPlay.legendNoLetter1,

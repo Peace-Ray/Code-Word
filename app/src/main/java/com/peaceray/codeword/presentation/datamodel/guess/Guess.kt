@@ -1,6 +1,7 @@
 package com.peaceray.codeword.presentation.datamodel.guess
 
 import com.peaceray.codeword.game.data.Constraint
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup.Companion.toGuessMarkup
 
 data class Guess private constructor(
     val length: Int,
@@ -50,24 +51,24 @@ data class Guess private constructor(
         fun createPerfectEvaluation(constraint: Constraint) = Guess(
             constraint.candidate.length,
             constraint.candidate,
-            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], constraint.markup[it], null) },
-            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], constraint.markup[it], null) },
+            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], constraint.markup[it].toGuessMarkup(), null) },
+            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], constraint.markup[it].toGuessMarkup(), null) },
             GuessEvaluation(constraint.exact, constraint.included, constraint.candidate.length, constraint.correct)
         )
 
         fun createNoMarkupEvaluation(constraint: Constraint) = Guess(
             constraint.candidate.length,
             constraint.candidate,
-            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], null, null) },
-            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], null, null) },
+            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], GuessMarkup.EMPTY, null) },
+            List(constraint.candidate.length) { GuessLetter(it, constraint.candidate[it], GuessMarkup.EMPTY, null) },
             GuessEvaluation(constraint.exact, constraint.included, constraint.candidate.length, constraint.correct)
         )
 
         fun createNoMarkupEvaluation(guess: String, exact: Int, included: Int, correct: Boolean = guess.length == exact) = Guess(
             guess.length,
             guess,
-            List(guess.length) { GuessLetter(it, guess[it], null, null) },
-            List(guess.length) { GuessLetter(it, guess[it], null, null) },
+            List(guess.length) { GuessLetter(it, guess[it], GuessMarkup.EMPTY, null) },
+            List(guess.length) { GuessLetter(it, guess[it], GuessMarkup.EMPTY, null) },
             GuessEvaluation(exact, included, guess.length, correct)
         )
 

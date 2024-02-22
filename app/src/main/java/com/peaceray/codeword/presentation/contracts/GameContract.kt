@@ -6,6 +6,7 @@ import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.game.feedback.Feedback
 import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
 import java.util.*
 
 /**
@@ -145,7 +146,7 @@ interface GameContract: BaseContract {
          * keys. The mapping may be incomplete; treat any omitted character as having no evaluation,
          * i.e. having markup "null" and occurrences of 0..codeLength.
          */
-        fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>)
+        fun setGuessAlphabet(guessAlphabet: GuessAlphabet)
 
         //-----------------------------------------------------------------------------------------
         //endregion

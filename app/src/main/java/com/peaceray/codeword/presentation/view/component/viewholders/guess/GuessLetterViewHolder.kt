@@ -16,8 +16,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.animation.ArgbEvaluatorCompat
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
+import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
@@ -28,7 +30,8 @@ import kotlin.random.Random
 class GuessLetterViewHolder(
     itemView: View,
     val colorSwatchManager: ColorSwatchManager,
-    var appearance: GuessLetterAppearance
+    var appearance: GuessLetterAppearance,
+    var markupAppearance: Map<GuessMarkup, GuessLetterAppearance> = emptyMap()
 ): RecyclerView.ViewHolder(itemView) {
 
     //region View
@@ -351,8 +354,9 @@ class GuessLetterViewHolder(
         ): ItemHolderInfo {
             val info = super.recordPreLayoutInformation(state, viewHolder, changeFlags, payloads)
             if (viewHolder is GuessLetterViewHolder && info is GuessLetterItemHolderInfo) {
+                val appearance = viewHolder.markupAppearance[viewHolder.guess.markup] ?: viewHolder.appearance
                 info.guess = viewHolder.guess
-                info.style = GuessViewValues.create(viewHolder.appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
+                info.style = GuessViewValues.create(appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
             }
             return info
         }
@@ -363,8 +367,9 @@ class GuessLetterViewHolder(
         ): ItemHolderInfo {
             val info = super.recordPostLayoutInformation(state, viewHolder)
             if (viewHolder is GuessLetterViewHolder && info is GuessLetterItemHolderInfo) {
+                val appearance = viewHolder.markupAppearance[viewHolder.guess.markup] ?: viewHolder.appearance
                 info.guess = viewHolder.guess
-                info.style = GuessViewValues.create(viewHolder.appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
+                info.style = GuessViewValues.create(appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
             }
             return info
         }

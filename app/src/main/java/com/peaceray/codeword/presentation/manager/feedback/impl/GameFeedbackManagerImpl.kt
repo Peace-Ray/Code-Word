@@ -7,6 +7,7 @@ import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvi
 import com.peaceray.codeword.glue.ForComputation
 import com.peaceray.codeword.presentation.manager.feedback.GameFeedbackManager
 import com.peaceray.codeword.presentation.manager.feedback.GameFeedbackProvider
+import com.peaceray.codeword.presentation.manager.feedback.guess.EliminationGuessCreator
 import com.peaceray.codeword.presentation.manager.feedback.guess.HintingGuessCreator
 import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Inject
@@ -32,14 +33,19 @@ class GameFeedbackManagerImpl @Inject constructor(
             )
         } else {
             setOf(
-                InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT,
-                InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION
+                InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT
             )
+        }
+
+        val guessCreator = if (hints || gameSetup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
+            HintingGuessCreator(policy)
+        } else {
+            EliminationGuessCreator(policy)
         }
 
         return GameFeedbackProviderImpl(
             gameSetup.evaluation.type,
-            HintingGuessCreator(policy),
+            guessCreator,
             InferredMarkupFeedbackProvider(
                 gameCreationManager.getCodeCharacters(gameSetup).toSet(),
                 gameSetup.vocabulary.length,
