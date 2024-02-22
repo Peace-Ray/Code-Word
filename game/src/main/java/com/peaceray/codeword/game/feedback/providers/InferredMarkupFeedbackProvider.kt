@@ -756,6 +756,17 @@ class InferredMarkupFeedbackProvider(
                 }
             }
 
+            // update occurrences based on other letter minimum occurrences
+            val totalMinOccurrences = occurrences.values.sumOf { it.first }
+            for (char in characters) {
+                val range = occurrences[char] ?: 0..0
+                val max = length - (totalMinOccurrences - range.first)
+                if (max < range.last) {
+                    occurrences[char] = range.bound(maximum = setOf(max))
+                    changed = true
+                }
+            }
+
             // update candidates based on occurrences
             for (char in characters) {
                 val range = occurrences[char] ?: 0..0
@@ -814,7 +825,6 @@ class InferredMarkupFeedbackProvider(
         includeNonElimination: Boolean,
         constraints: List<Constraint>
     ): Boolean {
-        // TODO: consider the following scenario and write a GENERAL detector for it
         // Given two guesses:
         //  SPITE (1 exact, 0 included)
         //  MIGHT (1 exact, 0 included)
@@ -822,11 +832,121 @@ class InferredMarkupFeedbackProvider(
         // INCLUDED match, it can be determined that -- if max occurrences is 1 -- neither exist in
         // the secret. This inference is not possible in either AggregatedExact or AggregatedIncluded
         // comparisons.
-        // Consider also that there may be other letters with KNOWN contributions to EXACT
-        // and INCLUDED, so they must be accounted for to produce an overall correct comparison,
-        // and that the above example may or may not function when max occurrences > 1.
+        // Consider also that there may be other letters with known contributions to EXACT
+        // and INCLUDED, so they must be accounted for to produce an overall correct comparison.
 
-        return false
+        // In general, consider for each character two sets of positions: Exact Positions and
+        // "Exclusivity Positions". A position is Exact iff the character must
+        // appear there. A position has Exclusivity iff the character _either_ appears there,
+        // _or_ does not appear anywhere besides its Exact Positions. Once a nonempty set of Exclusivity
+        // Positions is found, attempt to determine whether the character filling ALL such positions
+        // is impossible.
+        // TODO consider the "conjunction of disjunctions" case, where a particular letter appears
+        // more than once in a guess without INCLUDED matches. In that case, neither position fits
+        // the definition of an Exclusivity Position, but the two of them _TOGETHER_ do -- the letter
+        // must occur in at least one of those two spots, or nowhere in the word.
+
+        val chars = occurrences.keys.toSet()
+        val exactCandidateSetIndices = candidates.indices.filter { candidates[it].size == 1 }.toSet()
+        val exactPositions = chars.associateWith { char ->
+            exactCandidateSetIndices.filter { char in candidates[it] }
+        }
+        val exclusivityPositions = chars.associateWith { mutableSetOf<Int>() }
+
+        // Each Constraint potentially indicates positions of exclusivity for each char.
+        // For instance, a Constraint with Included =0, Exact >0 provides an Exclusivity Position
+        // for any char that appears just once. With more care and consideration, Exclusivity Positions
+        // can be determined in other cases as well -- for instance, nonzero Included values can
+        // be accounted for by specific characters known to be in the wrong spot, leaving all other
+        // characters in Exclusivity Positions.
+        constraints.forEach { constraint ->
+            val word = constraint.candidate
+            val charCount = word.toSet().associateWith { char -> word.count { char == it } }
+
+            // a character contributes to "included" if it is known that none of its current
+            // positions are correct. Its contribution is the minimum of its positions and
+            // its minimum appearances. Any such character should be ignored for exclusivity.
+            val includedChars = charCount.keys.filter { char ->
+                val allPositionsWrong = word.indices.filter { char == word[it] }
+                    .all { char !in candidates[it] }
+                val hasPositions = (occurrences[char] ?: 0..0).first > 0
+                allPositionsWrong && hasPositions
+            }
+            val includedCount = includedChars.sumOf { min(charCount[it] ?: 0, (occurrences[it] ?: 0..0).first) }
+
+            val considerIndices = when {
+                // if nothing included, any character that occurs just once is in an exclusivity position
+                constraint.included == 0 && constraint.exact > 0 -> {
+                    word.indices.filter { charCount[word[it]] == 1 }
+                }
+
+                // if included is fully explained, any character not considered as "included"
+                // that occurs just once is in an exclusivity position
+                constraint.included <= includedCount && constraint.exact > 0 -> {
+                    word.indices.filter { index ->
+                        val char = word[index]
+                        char !in includedChars && charCount[char] == 1
+                    }
+                }
+
+                // TODO there may be other possible scenarios where exclusivity positions
+                // can be determined.
+
+                // otherwise, nothing is exclusive. Inferences based on exact = 0
+                // are made elsewhere, as they don't require cross-examination between Constraints.
+                else -> emptyList()
+            }
+
+            // of these, only consider if not already marked EXACT.
+            (considerIndices - exactCandidateSetIndices).forEach { index ->
+                val char = word[index]
+                exclusivityPositions[char]?.add(index)
+            }
+        }
+
+        // exactPositions and exclusivityPositions represent the definitive set of places
+        // where the letter MUST go if possible. exactPositions is known to correct;
+        // exclusivityPositions are either ALL also exact, or the letter occurs nowhere besides
+        // exactPositions.
+        val totalMinimumOccurrences = occurrences.values.sumOf { it.first }
+        var changed = false
+        chars.filter { char -> !exclusivityPositions[char].isNullOrEmpty() }
+            .filter { char ->
+                val range = (occurrences[char] ?: 0..0)
+                exactPositions[char]!!.size < range.last
+            }
+            .forEach { char ->
+                var impossible = false
+                val exact = exactPositions[char] ?: emptyList<Int>()
+                val exclusivity = exclusivityPositions[char] ?: emptyList<Int>()
+
+                // is it impossible that the letter appears in ALL positions listed?
+                // impossible if that would exceed maximum occurrences for the letter,
+                val range = occurrences[char] ?: 0..0
+                impossible = impossible || exact.size + exclusivity.size > range.last
+
+                // or if some other letter is known to fill one of those positions,
+                impossible = impossible || exclusivity.any { it !in exact && it in exactCandidateSetIndices }
+
+                // or if the minimum occurrences of all letters could not be accommodated.
+                impossible = impossible || (totalMinimumOccurrences - range.first) + exact.size + exclusivity.size > length
+
+                if (impossible) {
+                    val removeFrom = candidates.indices - exact.toSet()
+                    val removed = removeFrom.count { candidates[it].remove(char) }
+                    if (removed > 0) changed = true
+                }
+            }
+
+        if (changed) {
+            // candidates and occurrences can influence each other
+            constrainCandidatesAndOccurrences(candidates, occurrences)
+
+            // update markup to the best available for each attempted letter
+            inferMarkups(candidates, occurrences, markups, includeNonElimination)
+        }
+
+        return changed
     }
 
     private fun constrainFeedbackIndirectlyByAggregatedIncludedCountsConstraintComparison(
