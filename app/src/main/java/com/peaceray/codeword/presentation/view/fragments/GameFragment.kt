@@ -79,6 +79,12 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
             solved: Boolean,
             playerVictory: Boolean
         )
+
+        fun onHintStatusUpdated(
+            on: Boolean,
+            ready: Boolean,
+            supported: Boolean
+        )
     }
 
     /**
@@ -87,6 +93,14 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
      */
     fun forfeit() {
         presenter.onForfeit()
+    }
+
+    /**
+     * Hint status is reported and controlled from outside this Fragment. Outside messages to
+     * change hint status are passed on to the Presenter.
+     */
+    fun setHinting(on: Boolean) {
+        presenter.onSetHinting(on)
     }
 
     /**
@@ -501,6 +515,13 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
     override fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
         Timber.v("setCharacterFeedback ${feedback.size}")
         keyboardView?.setCharacterFeedback(feedback)
+    }
+
+    override fun setHintStatus(on: Boolean, ready: Boolean, supported: Boolean) {
+        Timber.v("setHintStatus on=$on ready=$ready supported=$supported")
+        // hint status is not reported by the Fragment itself; this is the Listener's
+        // responsibility
+        listener?.onHintStatusUpdated(on, ready, supported)
     }
 
     override fun promptForGuess(suggestedGuess: Guess) {

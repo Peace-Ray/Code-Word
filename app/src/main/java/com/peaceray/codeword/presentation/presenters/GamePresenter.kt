@@ -73,6 +73,8 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             gamePlaySession = gamePlayManager.getGamePlaySession(gameSeed, gameSetup)
             gameFeedbackProvider = gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = false)
             gameFeedback = gameFeedbackProvider.getPlaceholderFeedback()
+            // update hint status
+            view?.setHintStatus(on = false, ready = true, supported = true)
 
             clearConstraints()
 
@@ -116,6 +118,18 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         if (ready) {
             ready = false
             viewScope.launch { recordGameOutcome(false) }
+        }
+    }
+
+    override fun onSetHinting(on: Boolean) {
+        viewScope.launch {
+            gameFeedbackProvider = gameFeedbackManager.getGameFeedbackProvider(gameSetup, on)
+
+            // update hint status
+            view?.setHintStatus(on = on, ready = true, supported = true)
+
+            // update feedback; don't advance or save, as this should not alter game state
+            updateGameFeedback()
         }
     }
 
@@ -197,6 +211,9 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
     //region Game Progression
     //---------------------------------------------------------------------------------------------
+
+    //region Game Progression: Operations
+    //---------------------------------------------------------------------------------------------
     private val saveScope = CoroutineScope(Dispatchers.Main)
     private var saveJob: Job? = null
     private fun saveGame() {
@@ -207,6 +224,37 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             Timber.v("...Saved!")
         }
     }
+
+    private var guessFlowJob: Job? = null
+    private fun updateGameFeedback(advanceOrSaveAfter: Pair<Boolean, Boolean> = Pair(false, false)) {
+        guessFlowJob?.cancel("New call to updateGameFeedback")
+        guessFlowJob = viewScope.launch {
+            val constraints = gamePlaySession.getConstraints()
+            gameFeedback = gameFeedbackProvider.getFeedback(constraints)
+            view?.setCharacterFeedback(gameFeedback.characters)
+
+            Timber.v("Hint: character feedback mkup is ${gameFeedback.characters.filter { it.value.markup != null }.map { "${it.key}:${it.value}" }}")
+
+            // advance game: will set a partial guess ("") with this feedback
+            if (advanceOrSaveAfter.first) {
+                advanceGame(advanceOrSaveAfter.second)
+            } else if (advanceOrSaveAfter.second) {
+                saveGame()
+            }
+
+            // update existing Constraints for the new feedback
+            val guesses = gameFeedbackProvider.toGuesses(constraints, gameFeedback)
+            // send to view; impose delay so the entire field doesn't update all at once
+            delay(80L)
+            gameFeedbackProvider.toGuessesFlow(constraints, gameFeedback, true)
+                .collect { (index, guess) ->
+                    Timber.v("Hint: guess ${guess.candidate} mkup is ${guess.letters.filter { it.markup != null }.map { "${it.character}:${it.markup}" }}")
+                    if (updateConstraint(index, guess)) delay((40 * gameSetup.vocabulary.length).toLong())
+                }
+        }
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
 
     private suspend fun advanceGame(save: Boolean = true) {
         Timber.v("advanceGame")
@@ -223,27 +271,8 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
         }
     }
 
-    private var guessFlowJob: Job? = null
-    private suspend fun advanceGameFeedback(saveAfter: Boolean) {
-        guessFlowJob?.cancel("Advancing game feedback for new Constraints")
-        // TODO better scope management, so new Constraints halt this process
-        val constraints = gamePlaySession.getConstraints()
-        guessFlowJob = viewScope.launch {
-            gameFeedback = gameFeedbackProvider.getFeedback(constraints)
-            view?.setCharacterFeedback(gameFeedback.characters)
-
-
-            // advance game: will set a partial guess ("") with this feedback
-            advanceGame(saveAfter)
-
-            // update existing Constraints for the new feedback; impose delays so the entire game
-            // field doesn't update all at once.
-            delay(80L)
-            gameFeedbackProvider.toGuessesFlow(gamePlaySession.getConstraints(), gameFeedback, true)
-                .collect { (index, guess) ->
-                    if (updateConstraint(index, guess)) delay(80L)
-                }
-        }
+    private fun advanceGameFeedback(saveAfter: Boolean) {
+        updateGameFeedback(Pair(true, saveAfter))
     }
 
     private suspend fun advanceGameGuessing() {
@@ -381,7 +410,11 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
 
     private fun updateConstraint(index: Int, constraint: Guess): Boolean {
         val changed = index < _constraints.size && _constraints[index] != constraint
-        if (changed) view?.updateConstraint(index, constraint, true)
+        Timber.v("hint update constraint $index (${constraint.candidate}) changed: $changed")
+        if (changed) {
+            _constraints[index] = constraint
+            view?.updateConstraint(index, constraint, true)
+        }
         return changed
     }
 

@@ -9,8 +9,11 @@
     <string name="share_outcome_rounds_loading">\?</string>
     <string name="share_outcome_etc">…</string>
 
-    <string name="action_how_to_play">How to Play</string>
+    <string name="action_set_hinting">Hints</string>
+    <string name="action_set_hinting_is_off">Hints: Off</string>
+    <string name="action_set_hinting_is_on">Hints: On</string>
     <string name="action_puzzle_info">Puzzle Info</string>
+    <string name="action_how_to_play">How to Play</string>
     <string name="action_new_puzzle">New Puzzle</string>
     <string name="action_start_puzzle">Start Puzzle</string>
     <string name="action_settings">Settings</string>

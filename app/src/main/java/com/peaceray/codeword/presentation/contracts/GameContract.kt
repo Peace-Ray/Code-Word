@@ -149,6 +149,24 @@ interface GameContract: BaseContract {
         //endregion
 
 
+        //region Hints Available
+        //-----------------------------------------------------------------------------------------
+
+        /**
+         * Set (for UI) whether hints are currently on, and whether they could be turned on.
+         *
+         * @param on Are hints currently set to "On" (i.e. they will be displayed by the Presenter)
+         * @param ready Are any hints currently Ready (i.e., will the Presenter behavior differ
+         * depending on whether hints are on or off)
+         * @param supported Is it ever possible for hints to be turned on or to be ready? Dependent
+         * on game type.
+         */
+        fun setHintStatus(on: Boolean, ready: Boolean, supported: Boolean)
+
+        //-----------------------------------------------------------------------------------------
+        //endregion
+
+
         //region Player Prompts
         //-----------------------------------------------------------------------------------------
 
@@ -228,6 +246,12 @@ interface GameContract: BaseContract {
          * permanent; the game will not proceed from this point and will not be reloaded later.
          */
         fun onForfeit()
+
+        /**
+         * The user has changed whether hints should be displayed as part of gameplay. It is
+         * up to the Presenter whether to update its behavior as a result.
+         */
+        fun onSetHinting(on: Boolean)
 
         //-----------------------------------------------------------------------------------------
         //endregion

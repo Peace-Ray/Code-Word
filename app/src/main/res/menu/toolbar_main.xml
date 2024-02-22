@@ -3,11 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
 
-    <!-- "Help / How to Play", should appear as action button if possible -->
+    <!-- "Hint"; should appear as action button if possible -->
+    <!-- Note: title and icon are set programmatically in MainActivity; mirror any changes there -->
     <item
-        android:id="@+id/action_how_to_play"
-        android:icon="@drawable/round_help_white_48"
-        android:title="@string/action_how_to_play"
+        android:id="@+id/action_set_hinting"
+        android:icon="@drawable/round_lightbulb_white_48"
+        android:title="@string/action_set_hinting"
+        android:checkable="true"
+        android:checked="false"
         app:showAsAction="ifRoom"
         />
 
@@ -19,11 +22,13 @@
         app:showAsAction="ifRoom"
         />
 
-    <!-- Settings, should always be in the overflow -->
-    <item android:id="@+id/action_settings"
-        android:icon="@drawable/round_settings_white_48"
-        android:title="@string/action_settings"
-        app:showAsAction="never"/>
+    <!-- "Help / How to Play", should appear as action button if possible, but is low priority -->
+    <item
+        android:id="@+id/action_how_to_play"
+        android:icon="@drawable/round_help_white_48"
+        android:title="@string/action_how_to_play"
+        app:showAsAction="ifRoom"
+        />
 
     <!-- App Info, should always be in the overflow -->
     <item android:id="@+id/action_app_info"
@@ -35,6 +40,12 @@
     <item android:id="@+id/action_credits"
         android:icon="@drawable/round_info_white_48"
         android:title="@string/action_credits"
+        app:showAsAction="never"/>
+
+    <!-- Settings, should always be in the overflow -->
+    <item android:id="@+id/action_settings"
+        android:icon="@drawable/round_settings_white_48"
+        android:title="@string/action_settings"
         app:showAsAction="never"/>
 
 
