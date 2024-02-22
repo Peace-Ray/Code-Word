@@ -22,4 +22,14 @@ interface GameFeedbackManager {
     //-----------------------------------------------------------------------------------------
     //endregion
 
+    //region GameSetup Evaluation
+    //-----------------------------------------------------------------------------------------
+
+    fun supportsHinting(gameSetup: GameSetup): Boolean
+
+    fun supportsHinting(gameSaveData: GameSaveData): Boolean
+
+    //-----------------------------------------------------------------------------------------
+    //endregion
+
 }

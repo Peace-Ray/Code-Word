@@ -154,6 +154,8 @@ class MainActivity : CodeWordActivity(),
         this.menu = menu
         // Add action bar items
         menuInflater.inflate(R.menu.toolbar_main, menu)
+        // Initial configuration
+        onHintStatusUpdated(gameHinting, gameHintsReady, gameHintsSupported)
 
         return true
     }
@@ -345,6 +347,9 @@ class MainActivity : CodeWordActivity(),
     //region GameFragment.OnInteractionListener
     //---------------------------------------------------------------------------------------------
     private var gameHinting: Boolean = false
+    private var gameHintsReady: Boolean = false
+    private var gameHintsSupported: Boolean = false
+    private var gameEverHinting: Boolean = false
 
     override fun onGameStart(fragment: Fragment, seed: String?, gameSetup: GameSetup) {
         if (!tutorialManager.hasExplained(gameSetup)) {
@@ -396,17 +401,21 @@ class MainActivity : CodeWordActivity(),
 
     override fun onHintStatusUpdated(on: Boolean, ready: Boolean, supported: Boolean) {
         gameHinting = on
+        gameHintsReady = ready
+        gameHintsSupported = supported
+
+        if (gameHinting && !gameEverHinting) {
+            Toast.makeText(this, R.string.game_message_hints_on, Toast.LENGTH_SHORT).show()
+            gameEverHinting = true
+        }
+
         // update menu settings
-        menu?.let {
-            for (i in 0 until it.size) {
-                val item = it.getItem(i)
-                if (item.itemId == R.id.action_set_hinting) {
-                    item.title = if (on) getString(R.string.action_set_hinting_is_on) else getString(R.string.action_set_hinting_is_off)
-                    item.isEnabled = supported
-                    item.icon = ResourcesCompat.getDrawable(resources, if (on) R.drawable.round_lightbulb_on_white_48 else R.drawable.round_lightbulb_off_white_48, theme)
-                    item.icon?.alpha = if (supported) 255 else 128
-                }
-            }
+        menu?.findItem(R.id.action_set_hinting)?.let { item ->
+            item.title = if (on) getString(R.string.action_set_hinting_to_off) else getString(R.string.action_set_hinting_to_on)
+            item.isEnabled = ready
+            item.icon = ResourcesCompat.getDrawable(resources, if (on) R.drawable.round_lightbulb_off_white_48 else R.drawable.round_lightbulb_on_white_48, theme)
+            item.icon?.alpha = if (ready) 255 else 128
+            item.isVisible = supported
         }
     }
 

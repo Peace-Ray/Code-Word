@@ -22,12 +22,12 @@
         app:showAsAction="ifRoom"
         />
 
-    <!-- "Help / How to Play", should appear as action button if possible, but is low priority -->
+    <!-- "Help / How to Play", don't put in action bar (Hinting is sometimes hidden) -->
     <item
         android:id="@+id/action_how_to_play"
         android:icon="@drawable/round_help_white_48"
         android:title="@string/action_how_to_play"
-        app:showAsAction="ifRoom"
+        app:showAsAction="never"
         />
 
     <!-- App Info, should always be in the overflow -->

@@ -17,7 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
@@ -41,8 +45,14 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     private val locale: Locale = Locale.getDefault()
 
     private lateinit var gamePlaySession: GamePlaySession
-    private lateinit var gameFeedbackProvider: GameFeedbackProvider
+
+    private var gameFeedbackHinting: Boolean = false
+    private var gameFeedbackHintsReady: Boolean = false
+    private var gameFeedbackHintsSupported: Boolean = false
     private lateinit var gameFeedback: Feedback
+    private lateinit var gameFeedbackProviders: List<GameFeedbackProvider>
+    private val gameFeedbackProvider:GameFeedbackProvider
+        get() = if (!gameFeedbackHinting) gameFeedbackProviders.first() else gameFeedbackProviders.last()
 
     override fun onAttached() {
         super.onAttached()
@@ -67,16 +77,29 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             gameSetup.evaluation.type
         )
 
+        // reset state
+        ready = false
+        gameFeedbackHinting = false
+        gameFeedbackHintsReady = false
+        gameFeedbackHintsSupported = false
+        clearConstraints()
+
         // create the GamePlaySession
         ready = false
         viewScope.launch {
+            // create the play session
             gamePlaySession = gamePlayManager.getGamePlaySession(gameSeed, gameSetup)
-            gameFeedbackProvider = gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = false)
+            // create feedback provider(s)
+            gameFeedbackHintsSupported = gameFeedbackManager.supportsHinting(gameSetup)
+            gameFeedbackProviders = listOfNotNull(
+                gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = false),
+                if (!gameFeedbackHintsSupported) null else gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = true)
+            )
+            // TODO check from save data if hinting had previously been activated
             gameFeedback = gameFeedbackProvider.getPlaceholderFeedback()
-            // update hint status
-            view?.setHintStatus(on = false, ready = true, supported = true)
 
-            clearConstraints()
+            // update hint status
+            view?.setHintStatus(gameFeedbackHinting, gameFeedbackHintsReady, gameFeedbackHintsSupported)
 
             // if forfeit, apply immediately; otherwise prompt a user action
             if (forfeit) {
@@ -98,7 +121,9 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                         setGuess(gameFeedbackProvider.toGuess(cachedPartialGuess!!, gameFeedback))
                     }
                 }
-                advanceGameFeedback(false)
+
+                updateGameFeedback()
+                advanceGame(false)
             }
         }
     }
@@ -122,14 +147,26 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     }
 
     override fun onSetHinting(on: Boolean) {
+        Timber.v("onSetHinting $on")
         viewScope.launch {
-            gameFeedbackProvider = gameFeedbackManager.getGameFeedbackProvider(gameSetup, on)
+            // if enabling, ensure appropriate state
+            when {
+                !gameFeedbackHintsSupported -> view?.showError(GameContract.ErrorType.HINTS_NOT_SUPPORTED)
+                !gameFeedbackHintsReady -> view?.showError(GameContract.ErrorType.HINTS_NOT_READY)
+                else -> {
+                    gameFeedbackHinting = on
 
-            // update hint status
-            view?.setHintStatus(on = on, ready = true, supported = true)
+                    // update hint status
+                    view?.setHintStatus(
+                        on = gameFeedbackHinting,
+                        ready = gameFeedbackHintsReady,
+                        supported = gameFeedbackHintsSupported
+                    )
 
-            // update feedback; don't advance or save, as this should not alter game state
-            updateGameFeedback()
+                    // update feedback; don't advance or save, as this should not alter game state
+                    updateGameFeedback()
+                }
+            }
         }
     }
 
@@ -212,50 +249,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
     //region Game Progression
     //---------------------------------------------------------------------------------------------
 
-    //region Game Progression: Operations
-    //---------------------------------------------------------------------------------------------
-    private val saveScope = CoroutineScope(Dispatchers.Main)
-    private var saveJob: Job? = null
-    private fun saveGame() {
-        saveJob?.cancel("A new saved game is being prepared")
-        saveJob = saveScope.launch {
-            Timber.v("Saving the game...")
-           gamePlaySession.save()
-            Timber.v("...Saved!")
-        }
-    }
-
-    private var guessFlowJob: Job? = null
-    private fun updateGameFeedback(advanceOrSaveAfter: Pair<Boolean, Boolean> = Pair(false, false)) {
-        guessFlowJob?.cancel("New call to updateGameFeedback")
-        guessFlowJob = viewScope.launch {
-            val constraints = gamePlaySession.getConstraints()
-            gameFeedback = gameFeedbackProvider.getFeedback(constraints)
-            view?.setCharacterFeedback(gameFeedback.characters)
-
-            Timber.v("Hint: character feedback mkup is ${gameFeedback.characters.filter { it.value.markup != null }.map { "${it.key}:${it.value}" }}")
-
-            // advance game: will set a partial guess ("") with this feedback
-            if (advanceOrSaveAfter.first) {
-                advanceGame(advanceOrSaveAfter.second)
-            } else if (advanceOrSaveAfter.second) {
-                saveGame()
-            }
-
-            // update existing Constraints for the new feedback
-            val guesses = gameFeedbackProvider.toGuesses(constraints, gameFeedback)
-            // send to view; impose delay so the entire field doesn't update all at once
-            delay(80L)
-            gameFeedbackProvider.toGuessesFlow(constraints, gameFeedback, true)
-                .collect { (index, guess) ->
-                    Timber.v("Hint: guess ${guess.candidate} mkup is ${guess.letters.filter { it.markup != null }.map { "${it.character}:${it.markup}" }}")
-                    if (updateConstraint(index, guess)) delay((40 * gameSetup.vocabulary.length).toLong())
-                }
-        }
-    }
-    //---------------------------------------------------------------------------------------------
-    //endregion
-
     private suspend fun advanceGame(save: Boolean = true) {
         Timber.v("advanceGame")
 
@@ -269,10 +262,6 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             Game.State.EVALUATING -> advanceGameEvaluating()
             Game.State.WON, Game.State.LOST -> advanceGameOver()
         }
-    }
-
-    private fun advanceGameFeedback(saveAfter: Boolean) {
-        updateGameFeedback(Pair(true, saveAfter))
     }
 
     private suspend fun advanceGameGuessing() {
@@ -309,7 +298,8 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 val constraint = gamePlaySession.generateEvaluation(true)
                 Timber.v("Computed and applied an evaluation: $constraint.")
                 replaceGuessWithConstraints(gameFeedbackProvider.toGuess(constraint, gameFeedback))
-                advanceGameFeedback(true)
+                updateGameFeedback()
+                advanceGame(true)
             } catch (err: IllegalStateException) {
                 Timber.e("GamePlaySession generated a Constraint, but Game was not accepting evaluation")
             } catch (err: Game.IllegalEvaluationException) {
@@ -368,6 +358,118 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
             )
         }
     }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Game Progression: Operations
+    //---------------------------------------------------------------------------------------------
+    private val saveScope = CoroutineScope(Dispatchers.Main)
+    private var saveJob: Job? = null
+    private fun saveGame() {
+        saveJob?.cancel("A new saved game is being prepared")
+        saveJob = saveScope.launch {
+            Timber.v("Saving the game...")
+            gamePlaySession.save()
+            Timber.v("...Saved!")
+        }
+    }
+
+    private var guessFlowJob: Job? = null
+    private fun updateGameFeedback() {
+        guessFlowJob?.cancel("New call to updateGameFeedback")
+        guessFlowJob = viewScope.launch {
+            val constraints = gamePlaySession.getConstraints()
+
+            // collect locally as well as in member fields, so these results can be
+            // checked to see if hints are ready
+            var createdFeedback: Feedback? = null
+            val createdGuesses = MutableList<Guess?>(constraints.size) { null }
+
+            // generate feedback; store locally as well as update view
+            generateFeedback(
+                constraints,
+                gameFeedbackProvider,
+                { feedback ->
+                    createdFeedback = feedback
+                    gameFeedback = feedback
+                    view?.setCharacterFeedback(feedback.characters)
+                    Pair(isActive, 80L)
+                },
+                { index, guess ->
+                    createdGuesses[index] = guess
+                    val updated = updateConstraint(index, guess)
+                    val continuing = isActive
+                    Pair(continuing, if (updated) (40 * gameSetup.vocabulary.length).toLong() else 0L)
+                }
+            )
+
+            // at this point, all feedback is generated. Check if hinting becomes ready.
+            Timber.v("Hint on=$gameFeedbackHinting ready=$gameFeedbackHintsReady supported=$gameFeedbackHintsSupported")
+            if (!gameFeedbackHintsReady && gameFeedbackHintsSupported) {
+                generateFeedback(
+                    constraints,
+                    gameFeedbackProviders.last(),
+                    { feedback ->
+                        // hints are ready if character markup changed
+                        Timber.v("got hinted feedback...")
+                        val charMarkup1 = createdFeedback?.characters?.values?.associate { Pair(it.character, it.markup) }
+                        val charMarkup2 = feedback.characters.values.associate { Pair(it.character, it.markup) }
+                        val changed = charMarkup1 != charMarkup2
+                        if (changed) onHintsReady()
+                        Pair(!changed, 200L)
+                    },
+                    { index, guess ->
+                        // hints are ready if character markup changed
+                        Timber.v("got hinted guess...")
+                        val charMarkup1 = createdGuesses[index]?.letters?.map { it.markup }
+                        val charMarkup2 = guess.letters.map { it.markup }
+                        val changed = charMarkup1 != charMarkup2
+                        if (changed) onHintsReady()
+                        Pair(!changed, 200L)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun onHintsReady() {
+        if (!this.gameFeedbackHintsReady) {
+            this.gameFeedbackHintsReady = true
+            view?.setHintStatus(gameFeedbackHinting, gameFeedbackHintsReady, gameFeedbackHintsSupported)
+        }
+    }
+
+    private suspend fun generateFeedback(
+        constraints: List<Constraint>,
+        feedbackProvider: GameFeedbackProvider,
+        onFeedback: (feedback: Feedback) -> Pair<Boolean, Long>,
+        onGuess: (index: Int, guess: Guess) -> Pair<Boolean, Long>
+    ): Boolean {
+        suspend fun process(response: Pair<Boolean, Long>): Boolean {
+            if (!response.first) {
+                return false
+            }
+
+            if (response.second > 0) delay(response.second) else yield()
+            return true
+        }
+
+        var continuing = true
+        val feedback = feedbackProvider.getFeedback(constraints)
+        val response = onFeedback(feedback)
+        if (!process(response)) return false
+
+        feedbackProvider.toGuessesFlow(constraints, feedback, true)
+            .cancellable()
+            .takeWhile { continuing }
+            .collect { (index, guess) ->
+                val guessResponse = onGuess(index, guess)
+                continuing = process(guessResponse)
+            }
+
+        return continuing
+    }
+
     //---------------------------------------------------------------------------------------------
     //endregion
 

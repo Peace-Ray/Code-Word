@@ -16,6 +16,9 @@ class GameFeedbackManagerImpl @Inject constructor(
     @ForComputation private val computatationDispatcher: CoroutineDispatcher
 ): GameFeedbackManager {
 
+    //region GameFeedbackProvider Creation
+    //-----------------------------------------------------------------------------------------
+
     override suspend fun getGameFeedbackProvider(
         gameSetup: GameSetup,
         hints: Boolean
@@ -53,4 +56,21 @@ class GameFeedbackManagerImpl @Inject constructor(
     ): GameFeedbackProvider {
         return getGameFeedbackProvider(gameSaveData.setup, hints)
     }
+
+    //-----------------------------------------------------------------------------------------
+    //endregion
+
+    //region GameSetup Evaluation
+    //-----------------------------------------------------------------------------------------
+    override fun supportsHinting(gameSetup: GameSetup): Boolean {
+        // hinting is not support for daily challenges, or games with by-letter markup.
+        return !gameSetup.daily && !gameSetup.evaluation.type.isByLetter()
+    }
+
+    override fun supportsHinting(gameSaveData: GameSaveData): Boolean {
+        return supportsHinting(gameSaveData.setup)
+    }
+
+    //-----------------------------------------------------------------------------------------
+    //endregion
 }

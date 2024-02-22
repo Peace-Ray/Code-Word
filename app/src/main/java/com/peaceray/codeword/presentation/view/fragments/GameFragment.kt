@@ -635,6 +635,18 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                 }
                 displayGuessError(text)
             }
+            GameContract.ErrorType.HINTS_NOT_SUPPORTED -> {
+                val text = if (getGameSetup().daily) {
+                    getString(R.string.game_error_hints_not_supported_daily)
+                } else {
+                    getString(R.string.game_error_hints_not_supported)
+                }
+                displayError(text)
+            }
+            GameContract.ErrorType.HINTS_NOT_READY -> {
+                val text = getString(R.string.game_error_hints_not_ready)
+                displayError(text)
+            }
             GameContract.ErrorType.EVALUATION_INCONSISTENT -> {
                 val text = getString(R.string.game_error_evaluation_inconsistent)
                 displayEvaluationError(text)

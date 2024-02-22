@@ -20,6 +20,8 @@ interface GameContract: BaseContract {
         GUESS_LETTER_REPETITIONS,
         GUESS_INVALID,
         EVALUATION_INCONSISTENT,
+        HINTS_NOT_SUPPORTED,
+        HINTS_NOT_READY,
         UNKNOWN;
     }
 
