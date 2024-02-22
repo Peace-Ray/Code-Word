@@ -19,7 +19,11 @@
         app:layout_constrainedWidth="true"
         app:layout_constrainedHeight="true"
         android:overScrollMode="never"
-        android:padding="@dimen/guess_container_margin"
+        android:paddingStart="@dimen/guess_container_margin"
+        android:paddingEnd="@dimen/guess_container_margin"
+        android:paddingTop="@dimen/guess_container_margin_large"
+        android:paddingBottom="@dimen/guess_container_margin_large"
+        android:clipChildren="false"
         android:clipToPadding="false"
         />
 

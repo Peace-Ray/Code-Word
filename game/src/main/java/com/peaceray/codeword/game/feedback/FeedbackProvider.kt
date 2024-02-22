@@ -21,14 +21,23 @@ import com.peaceray.codeword.game.data.ConstraintPolicy
 interface FeedbackProvider {
 
     /**
-     * Given the provided code constraints, generate feedback.
+     * Given the provided code constraints, generate feedback. If a callback function is provided,
+     * it will be invoked at least once, upon completion. FeedbackProvider implementations are
+     * free to repeatedly invoke the callback as Feedback is updated, setting `done` false for
+     * each except the final invocation.
+     *
+     * @param policy The ConstraintPolicy under which Constraints should be considered.
+     * @param constraints The Constraints to examine.
+     * @param callback Optionally, a callback for partially constructed Feedbacks (Feedback
+     * instances which are correct, but not complete, with more granular analysis still pending).
+     * Input parameters: feedback (the analysis) and done (whether the analysis provided is
+     * complete). Return: whether the analysis was accepted; if so, no more calls will be made.
      */
-    fun getFeedback(policy: ConstraintPolicy, constraints: List<Constraint>): Feedback
-
-    /**
-     * Given the provided code constraints, generate character feedback.
-     */
-    fun getCharacterFeedback(policy: ConstraintPolicy, constraints: List<Constraint>): Map<Char, CharacterFeedback>
+    fun getFeedback(
+        policy: ConstraintPolicy,
+        constraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)? = null
+    ): Feedback
 
     /**
      * Is this FeedbackProvider capable of generating Feedback under this policy?

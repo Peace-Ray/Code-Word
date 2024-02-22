@@ -9,8 +9,11 @@
     <string name="share_outcome_rounds_loading">\?</string>
     <string name="share_outcome_etc">…</string>
 
-    <string name="action_how_to_play">How to Play</string>
+    <string name="action_set_hinting">Hints</string>
+    <string name="action_set_hinting_to_on">Turn Hints On</string>
+    <string name="action_set_hinting_to_off">Turn Hints Off</string>
     <string name="action_puzzle_info">Puzzle Info</string>
+    <string name="action_how_to_play">How to Play</string>
     <string name="action_new_puzzle">New Puzzle</string>
     <string name="action_start_puzzle">Start Puzzle</string>
     <string name="action_settings">Settings</string>
@@ -46,7 +49,13 @@
     <string name="game_error_word_letter_repetitions">Too many \'%1$s\'s</string>
     <string name="game_error_word_letter_repetitions_no_letter">Too many letter repetitions</string>
     <string name="game_error_evaluation_inconsistent">Evaluation must be consistent with previous clues</string>
+    <string name="game_error_hints_not_supported_daily">This Daily puzzle does not support hints</string>
+    <string name="game_error_hints_not_supported">This puzzle does not support hints</string>
+    <string name="game_error_hints_not_ready">No hints available</string>
     <string name="game_error_unknown">Something went wrong</string>
+    <!-- Game Messages -->
+    <string name="game_message_hints_on">Hints On</string>
+    <string name="game_message_hints_off">Hints Off</string>
 
     <!-- game setup -->
     <string name="game_setup_title">New Puzzle</string>

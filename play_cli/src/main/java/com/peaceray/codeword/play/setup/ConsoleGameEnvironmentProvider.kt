@@ -9,7 +9,6 @@ import com.peaceray.codeword.game.bot.modules.generation.CascadingGenerator
 import com.peaceray.codeword.game.bot.modules.generation.enumeration.CodeEnumeratingGenerator
 import com.peaceray.codeword.game.bot.modules.generation.enumeration.OneCodeEnumeratingGenerator
 import com.peaceray.codeword.game.bot.modules.generation.enumeration.SolutionTruncatedEnumerationCodeGenerator
-import com.peaceray.codeword.game.bot.modules.generation.vocabulary.OneCodeGenerator
 import com.peaceray.codeword.game.bot.modules.generation.vocabulary.VocabularyFileGenerator
 import com.peaceray.codeword.game.bot.modules.scoring.InformationGainScorer
 import com.peaceray.codeword.game.bot.modules.scoring.KnuthMinimumInvertedScorer
@@ -180,18 +179,23 @@ class ConsoleGameEnvironmentProvider {
 
         // feedback
         builder.feedbackProvider = when (settings.difficulty.letterFeedback) {
-            ConsoleGameSettings.Difficulty.LetterFeedback.NONE -> null
+            ConsoleGameSettings.Difficulty.LetterFeedback.NONE -> InferredMarkupFeedbackProvider(
+                characters,
+                settings.vocabulary.length,
+                if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
+            )
             ConsoleGameSettings.Difficulty.LetterFeedback.DIRECT -> InferredMarkupFeedbackProvider(
                 characters,
                 settings.vocabulary.length,
                 if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
-                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT)
+                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
             )
             ConsoleGameSettings.Difficulty.LetterFeedback.DIRECT_AND_INFERRED -> InferredMarkupFeedbackProvider(
                 characters,
                 settings.vocabulary.length,
                 if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
-                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED)
+                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION, InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED)
             )
         }
         builder.feedbackPolicy = settings.difficulty.feedbackPolicy

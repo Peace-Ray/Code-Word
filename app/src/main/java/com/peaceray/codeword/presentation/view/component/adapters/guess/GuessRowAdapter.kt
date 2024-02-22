@@ -6,7 +6,7 @@ import androidx.annotation.LayoutRes
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.GuessViewHolder
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.utils.extensions.toLifecycleOwner
 import timber.log.Timber
@@ -66,6 +66,15 @@ class GuessRowAdapter @Inject constructor(
     override fun guessRangeToItemRange(guessStart: Int, guessCount: Int) = Pair(guessStart, guessCount)
     override fun guessSliceToItemRange(guessPosition: Int, sliceStart: Int, sliceCount: Int) =
         Pair(guessPosition, 1)
+
+    override fun guessUpdateToItemsChanged(
+        guessPosition: Int,
+        oldGuess: Guess,
+        newGuess: Guess
+    ): Iterable<Int> {
+        return if (oldGuess == newGuess) emptyList() else listOf(guessPosition)
+    }
+
     override fun itemRangeToGuessRange(itemStart: Int, itemCount: Int) = Pair(itemStart, itemCount)
     //---------------------------------------------------------------------------------------------
     //endregion

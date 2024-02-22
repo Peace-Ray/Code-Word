@@ -19,6 +19,8 @@ import com.peaceray.codeword.game.feedback.CharacterFeedback
 import com.peaceray.codeword.presentation.attach
 import com.peaceray.codeword.presentation.contracts.GameContract
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.adapters.guess.GuessLetterAdapter
 import com.peaceray.codeword.presentation.view.component.layouts.GuessAggregateConstraintCellLayout
@@ -78,6 +80,12 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
             solved: Boolean,
             playerVictory: Boolean
         )
+
+        fun onHintStatusUpdated(
+            on: Boolean,
+            ready: Boolean,
+            supported: Boolean
+        )
     }
 
     /**
@@ -86,6 +94,14 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
      */
     fun forfeit() {
         presenter.onForfeit()
+    }
+
+    /**
+     * Hint status is reported and controlled from outside this Fragment. Outside messages to
+     * change hint status are passed on to the Presenter.
+     */
+    fun setHinting(on: Boolean) {
+        presenter.onSetHinting(on)
     }
 
     /**
@@ -275,12 +291,10 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                 binding.constraintRecyclerView.layoutManager = null
                 guessAdapter.setCellLayouts(mapOf(
                     Pair(GuessLetterAdapter.ItemStyle.LETTER_MARKUP, letterLayout),
-                    Pair(GuessLetterAdapter.ItemStyle.LETTER_ENTRY, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.LETTER_CODE, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.EMPTY, letterLayout),
                     Pair(GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER, pipLayout),
-                    Pair(GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER, pipLayout),
-                    Pair(GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER, pipLayout),
+                    Pair(GuessLetterAdapter.ItemStyle.AGGREGATED_DONUT_CLUSTER, pipLayout)
                 ))
                 binding.constraintRecyclerView.adapter = guessAdapter
                 binding.constraintRecyclerView.layoutManager = guessLayoutManager
@@ -423,17 +437,15 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         val itemStyles = mutableListOf<GuessLetterAdapter.ItemStyle>()
         if (locale == null) {
             itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_CODE)
-        } else if (feedbackPolicy.isByLetter()) {
-            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
         } else {
-            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_ENTRY)
+            itemStyles.add(GuessLetterAdapter.ItemStyle.LETTER_MARKUP)
         }
 
         // ...and aggregated pips
         if (feedbackPolicy.isByWord()) {
             itemStyles.add(when (feedbackPolicy) {
-                ConstraintPolicy.AGGREGATED_EXACT -> GuessLetterAdapter.ItemStyle.EXACT_PIP_CLUSTER
-                ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.INCLUDED_PIP_CLUSTER
+                ConstraintPolicy.AGGREGATED_EXACT,
+                ConstraintPolicy.AGGREGATED_INCLUDED -> GuessLetterAdapter.ItemStyle.AGGREGATED_DONUT_CLUSTER
                 ConstraintPolicy.AGGREGATED -> GuessLetterAdapter.ItemStyle.AGGREGATED_PIP_CLUSTER
                 else -> throw IllegalStateException("Don't know the isByWord() policy $feedbackPolicy")
             })
@@ -463,7 +475,7 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         binding.constraintRecyclerView.layoutManager = gridLayoutManager
     }
 
-    override fun setConstraints(constraints: List<Constraint>, animate: Boolean) {
+    override fun setConstraints(constraints: List<Guess>, animate: Boolean) {
         Timber.v("setConstraints: ${constraints.size}")
         // TODO deal with [animate]
         guessAdapter.replace(constraints = constraints)
@@ -472,20 +484,20 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         onRecyclerViewContentHeightChange()
     }
 
-    override fun setGuess(guess: String, animate: Boolean) {
+    override fun setGuess(guess: Guess, animate: Boolean) {
         Timber.v("setGuess: $guess")
         // TODO deal with [animate]
-        guessAdapter.update(guess = guess)
+        guessAdapter.advance(guess = guess)
 
         onRecyclerViewActiveItemChange()
 
         lastMoveAt = System.currentTimeMillis()
     }
 
-    override fun replaceGuessWithConstraint(constraint: Constraint, animate: Boolean) {
+    override fun replaceGuessWithConstraint(constraint: Guess, animate: Boolean) {
         Timber.v("replaceGuessWithConstraint: $constraint")
         // TODO deal with [animate]
-        guessAdapter.update(constraint = constraint)
+        guessAdapter.advance(constraint = constraint)
 
         onRecyclerViewActiveItemChange()
         onRecyclerViewContentHeightChange()
@@ -495,24 +507,37 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         if (animate) onPresenterPrompting()
     }
 
-    override fun setCharacterFeedback(feedback: Map<Char, CharacterFeedback>) {
-        Timber.v("setCharacterFeedback ${feedback.size}")
-        keyboardView?.setCharacterFeedback(feedback)
+    override fun updateConstraint(index: Int, constraint: Guess, animate: Boolean) {
+        Timber.v("updateConstraint: $index $constraint")
+        // TODO deal with [animate]
+        guessAdapter.update(constraints = listOf(Pair(index, constraint)))
     }
 
-    override fun promptForGuess(suggestedGuess: String?) {
+    override fun setGuessAlphabet(guessAlphabet: GuessAlphabet) {
+        Timber.v("setGuessAlphabet ${guessAlphabet.characters.size}")
+        keyboardView?.setGuessAlphabet(guessAlphabet)
+    }
+
+    override fun setHintStatus(on: Boolean, ready: Boolean, supported: Boolean) {
+        Timber.v("setHintStatus on=$on ready=$ready supported=$supported")
+        // hint status is not reported by the Fragment itself; this is the Listener's
+        // responsibility
+        listener?.onHintStatusUpdated(on, ready, supported)
+    }
+
+    override fun promptForGuess(suggestedGuess: Guess) {
         Timber.v("promptForGuess")
         // clear "guess" field or placeholder
-        guessAdapter.update(guess = (suggestedGuess ?: ""))
+        guessAdapter.advance(guess = suggestedGuess)
 
         keyboardView?.isEnabled = true
 
         onPresenterPrompting()
     }
 
-    override fun promptForEvaluation(guess: String) {
+    override fun promptForEvaluation(guess: Guess) {
         Timber.v("promptForEvaluation $guess")
-        guessAdapter.update(guess = guess)
+        guessAdapter.advance(guess = guess)
 
         keyboardView?.isEnabled = false
 
@@ -610,6 +635,18 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                     getString(R.string.game_error_word_not_valid)
                 }
                 displayGuessError(text)
+            }
+            GameContract.ErrorType.HINTS_NOT_SUPPORTED -> {
+                val text = if (getGameSetup().daily) {
+                    getString(R.string.game_error_hints_not_supported_daily)
+                } else {
+                    getString(R.string.game_error_hints_not_supported)
+                }
+                displayError(text)
+            }
+            GameContract.ErrorType.HINTS_NOT_READY -> {
+                val text = getString(R.string.game_error_hints_not_ready)
+                displayError(text)
             }
             GameContract.ErrorType.EVALUATION_INCONSISTENT -> {
                 val text = getString(R.string.game_error_evaluation_inconsistent)

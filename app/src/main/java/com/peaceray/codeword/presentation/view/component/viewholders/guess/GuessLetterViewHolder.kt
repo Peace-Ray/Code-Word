@@ -16,8 +16,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.animation.ArgbEvaluatorCompat
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
+import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessLetterAppearance
@@ -28,7 +30,8 @@ import kotlin.random.Random
 class GuessLetterViewHolder(
     itemView: View,
     val colorSwatchManager: ColorSwatchManager,
-    var appearance: GuessLetterAppearance
+    var appearance: GuessLetterAppearance,
+    var markupAppearance: Map<GuessMarkup, GuessLetterAppearance> = emptyMap()
 ): RecyclerView.ViewHolder(itemView) {
 
     //region View
@@ -70,7 +73,7 @@ class GuessLetterViewHolder(
     //---------------------------------------------------------------------------------------------
     private var bound = false
 
-    private var _guess = GuessLetter.placeholder
+    private var _guess = GuessLetter(0)
     var guess
         get() = _guess
         set(value) = bind(value)
@@ -302,6 +305,13 @@ class GuessLetterViewHolder(
                 )
             }
         }
+
+        fun isSameColor(values: GuessViewValues?): Boolean {
+            return values != null
+                    && value.color == values.value.color
+                    && stroke.color == values.stroke.color
+                    && solid.color == values.solid.color
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -328,7 +338,7 @@ class GuessLetterViewHolder(
         private val animatorMap: MutableMap<RecyclerView.ViewHolder, ValueAnimator> = mutableMapOf()
 
         class GuessLetterItemHolderInfo: ItemHolderInfo() {
-            var guess: GuessLetter = GuessLetter.placeholder
+            var guess: GuessLetter = GuessLetter(0)
             internal var style: GuessViewValues? = null
         }
 
@@ -344,8 +354,9 @@ class GuessLetterViewHolder(
         ): ItemHolderInfo {
             val info = super.recordPreLayoutInformation(state, viewHolder, changeFlags, payloads)
             if (viewHolder is GuessLetterViewHolder && info is GuessLetterItemHolderInfo) {
+                val appearance = viewHolder.markupAppearance[viewHolder.guess.markup] ?: viewHolder.appearance
                 info.guess = viewHolder.guess
-                info.style = GuessViewValues.create(viewHolder.appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
+                info.style = GuessViewValues.create(appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
             }
             return info
         }
@@ -356,8 +367,9 @@ class GuessLetterViewHolder(
         ): ItemHolderInfo {
             val info = super.recordPostLayoutInformation(state, viewHolder)
             if (viewHolder is GuessLetterViewHolder && info is GuessLetterItemHolderInfo) {
+                val appearance = viewHolder.markupAppearance[viewHolder.guess.markup] ?: viewHolder.appearance
                 info.guess = viewHolder.guess
-                info.style = GuessViewValues.create(viewHolder.appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
+                info.style = GuessViewValues.create(appearance, viewHolder.colorSwatchManager.colorSwatch, viewHolder.guess)
             }
             return info
         }
@@ -454,9 +466,10 @@ class GuessLetterViewHolder(
                         a
                     }
 
-                    // from guess to evaluation
-                    preInfo.guess.isGuess && postInfo.guess.isEvaluation
-                            && preInfo.guess.isSameCandidateAs(postInfo.guess) -> {
+                    // a change in markup producing a change in color
+                    preInfo.guess.isSameCandidateAs(postInfo.guess)
+                            && preInfo.guess.markup != postInfo.guess.markup
+                            && !preInfo.style!!.isSameColor(postInfo.style) -> {
 
                         // set style to "before" content
                         holder.setViewStyle(preInfo.style!!)
@@ -490,6 +503,29 @@ class GuessLetterViewHolder(
                             animatorMap.remove(holder)
 
                             holder.itemView.rotationY = 0f
+                            dispatchAnimationFinished(holder)
+                        }
+
+                        a
+                    }
+
+                    // from guess to evaluation, but markup did not change
+                    preInfo.guess.isSameCandidateAs(postInfo.guess)
+                            && preInfo.guess.isGuess && postInfo.guess.isEvaluation -> {
+
+                        // set style to "before" content
+                        holder.setViewStyle(preInfo.style!!)
+                        holder.setViewContent(postInfo.guess)
+
+                        // animate shape and color to the new status.
+                        val a = ObjectAnimator.ofFloat(0f, 1f)
+
+                        a.duration = holder.durationShortAnimation.toLong()
+                        a.addUpdateListener(holder.createViewStyleAnimatorUpdateListener(preInfo.style!!, postInfo.style!!))
+                        a.doOnEnd {
+                            animatorMap.remove(holder)
+
+                            holder.setViewContent(postInfo.guess)
                             dispatchAnimationFinished(holder)
                         }
 

@@ -2,7 +2,7 @@ package com.peaceray.codeword.presentation.view.component.adapters.guess
 
 import androidx.recyclerview.widget.RecyclerView
 import com.peaceray.codeword.game.data.Constraint
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
 import timber.log.Timber
 
 abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, RecyclerView.Adapter<T>() {
@@ -48,7 +48,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
     val guesses: List<Guess>
         get() = _guesses
 
-    var placeholder = Guess.placeholder
+    var placeholder = Guess.createPlaceholder(0)
         private set
 
     /**
@@ -64,10 +64,10 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         if (this.length != length || this.rows != rows) {
             if (this.length != length) {
                 _constraints.clear()
-                placeholder = Guess(length)
+                placeholder = Guess.createPlaceholder(length)
 
                 for (i in 0 until _guesses.size) {
-                    _guesses[i] = Guess(length, _guesses[i].candidate)
+                    _guesses[i] = Guess.createGuess(length, _guesses[i].candidate)
                 }
             }
 
@@ -89,7 +89,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
     }
 
     /**
-     * Sets existing constraints and guesses. The nuclear option; if possible, use [update]
+     * Sets existing constraints and guesses. The nuclear option; if possible, use [advance]
      * to append a constraint and/or replace a guess for smoother animation.
      *
      * @param constraints The new constraints to set. If null, no changes to constraints will be
@@ -99,7 +99,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
      * made; if non-null (even if empty) the guesses provided will fully replace those previously
      * there.
      */
-    override fun replace(constraints: List<Constraint>?, guesses: List<String>?) {
+    override fun replace(constraints: List<Guess>?, guesses: List<Guess>?) {
         if (constraints != null) updateConstraints(true, constraints)
         if (guesses != null) updateGuesses(true, guesses)
     }
@@ -116,12 +116,12 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
      * @param guesses The new guesses to add. Will be appended to any existing guesses. If null
      * or empty no changes will be made to guesses.
      */
-    override fun append(constraints: List<Constraint>?, guesses: List<String>?) {
+    override fun append(constraints: List<Guess>?, guesses: List<Guess>?) {
         if (constraints != null) updateConstraints(false, constraints)
         if (guesses != null) updateGuesses(false, guesses)
     }
 
-    private fun updateConstraints(replace: Boolean, constraints: List<Constraint>) {
+    private fun updateConstraints(replace: Boolean, constraints: List<Guess>) {
         Timber.v("updateConstraints")
         val removed = if (_constraints.isEmpty() || !replace) null else {
             val range = guessRangeToItemRange(0, _constraints.size)
@@ -130,14 +130,14 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         }
 
         val added = if (constraints.isEmpty()) null else {
-            _constraints.addAll(constraints.map { Guess(it) })
+            _constraints.addAll(constraints)
             guessRangeToItemRange(_constraints.size - constraints.size, constraints.size)
         }
 
         notifyRangeUpdates(removed = removed, added = added)
     }
 
-    private fun updateGuesses(replace: Boolean, guesses: List<String>) {
+    private fun updateGuesses(replace: Boolean, guesses: List<Guess>) {
         Timber.v("updateGuesses")
         val removed = if (_guesses.isEmpty() || !replace) null else {
             val range = guessRangeToItemRange(_constraints.size, _guesses.size)
@@ -146,7 +146,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         }
 
         val added = if (guesses.isEmpty()) null else {
-            _guesses.addAll(guesses.map { Guess(length, it) })
+            _guesses.addAll(guesses)
             guessRangeToItemRange(_constraints.size + _guesses.size - guesses.size, guesses.size)
         }
 
@@ -173,11 +173,11 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
      * guess will be appended to any existing constraints.
      *
      */
-    override fun update(constraint: Constraint?, guess: String?) {
-        Timber.v("update constraint = $constraint, guess = $guess")
+    override fun advance(constraint: Guess?, guess: Guess?) {
+        Timber.v("advance constraint = $constraint, guess = $guess")
         if (constraint != null) {
             // the new constraint replaces the first available guess or placeholder.
-            _constraints.add(Guess(constraint))
+            _constraints.add(constraint)
             val removed = _guesses.removeFirstOrNull()
 
             // notify
@@ -193,7 +193,7 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
             // could alter the guess, insert one, or remove the existing one.
             val oldGuess = _guesses.removeLastOrNull()
             val oldBinding = oldGuess ?: placeholder
-            val newBinding = Guess(length, guess)
+            val newBinding = guess
             _guesses.add(newBinding)
 
             if ((oldGuess != null) || _constraints.size + _guesses.size <= rows) {
@@ -205,6 +205,23 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
                 notifyItemRangeInserted(range.first, range.second)
             }
         }
+    }
+
+    override fun update(constraints: List<Pair<Int, Guess>>?, guesses: List<Pair<Int, Guess>>?, safe: Boolean) {
+        Timber.v("update constraints = $constraints, guesses = $guesses")
+
+        fun updateEntry(index: Int, entry: Guess, list: MutableList<Guess>, offset: Int) {
+            val replacing = list[index]
+            if (!safe || (replacing.candidate == entry.candidate && replacing.evaluation == entry.evaluation)) {
+                list[index] = entry
+                if (replacing != entry) {
+                    notifyGuessChanged(index + offset, replacing, entry)
+                }
+            }
+        }
+
+        constraints?.forEach { (index, guess) -> updateEntry(index, guess, _constraints, 0) }
+        guesses?.forEach { (index, guess) -> updateEntry(index, guess, _guesses, _constraints.size) }
     }
 
     private fun notifyGuessChangedFromPlaceholder(guessPosition: Int, guess: Guess?) {
@@ -227,15 +244,11 @@ abstract class BaseGuessAdapter<T: RecyclerView.ViewHolder>: GuessAdapter, Recyc
         if (oldGuess == null || newGuess == null) {
             notifyGuessChangedFromPlaceholder(guessPosition, oldGuess ?: newGuess)
         } else {
-            val zipped = oldGuess.lettersPadded.zip(newGuess.lettersPadded)
-            val changeStart = zipped.indexOfFirst { (old, new) -> !old.isSameAs(new) }
-
-            val range: Pair<Int, Int> = if (changeStart < 0) guessRangeToItemRange(guessPosition, 0) else {
-                val changeEnd = zipped.indexOfLast { (old, new) -> !old.isSameAs(new) }
-                guessSliceToItemRange(guessPosition, changeStart, changeEnd - changeStart + 1)
+            val items = guessUpdateToItemsChanged(guessPosition, oldGuess, newGuess)
+            items.forEach {
+                Timber.v("Guess position $guessPosition changed; notifying item $it")
+                notifyItemChanged(it)
             }
-
-            notifyItemRangeChanged(range.first, range.second)
         }
     }
     //---------------------------------------------------------------------------------------------

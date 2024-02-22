@@ -4,6 +4,9 @@ import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.game.feedback.CharacterFeedback
+import com.peaceray.codeword.game.feedback.Feedback
+import com.peaceray.codeword.presentation.datamodel.guess.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessAlphabet
 import java.util.*
 
 /**
@@ -18,6 +21,8 @@ interface GameContract: BaseContract {
         GUESS_LETTER_REPETITIONS,
         GUESS_INVALID,
         EVALUATION_INCONSISTENT,
+        HINTS_NOT_SUPPORTED,
+        HINTS_NOT_READY,
         UNKNOWN;
     }
 
@@ -102,7 +107,7 @@ interface GameContract: BaseContract {
          * @param constraints Current constraints.
          * @param animate Animate this change; if false, apply immediately.
          */
-        fun setConstraints(constraints: List<Constraint>, animate: Boolean = false)
+        fun setConstraints(constraints: List<Guess>, animate: Boolean = false)
 
         /**
          * Update the currently displayed guess for the Game.
@@ -110,7 +115,7 @@ interface GameContract: BaseContract {
          * @param guess The guess to apply
          * @param animate Animate this change; if false, apply immediately.
          */
-        fun setGuess(guess: String, animate: Boolean = false)
+        fun setGuess(guess: Guess, animate: Boolean = false)
 
         /**
          * Update the currently displayed guess by REPLACING it with the
@@ -120,7 +125,14 @@ interface GameContract: BaseContract {
          * @param constraint The new constraint to apply
          * @param animate Animate this change; if false, apply immediately.
          */
-        fun replaceGuessWithConstraint(constraint: Constraint, animate: Boolean = false)
+        fun replaceGuessWithConstraint(constraint: Guess, animate: Boolean = false)
+
+        /**
+         * Update the indicated Constraint by REPLACING it with the provided one. This
+         * is a simple operation, intended for in-place updates on the hints and feedback
+         * attached to the Guess.
+         */
+        fun updateConstraint(index: Int, constraint: Guess, animate: Boolean = false)
 
         //-----------------------------------------------------------------------------------------
         //endregion
@@ -134,7 +146,25 @@ interface GameContract: BaseContract {
          * keys. The mapping may be incomplete; treat any omitted character as having no evaluation,
          * i.e. having markup "null" and occurrences of 0..codeLength.
          */
-        fun setCharacterFeedback(evaluations: Map<Char, CharacterFeedback>)
+        fun setGuessAlphabet(guessAlphabet: GuessAlphabet)
+
+        //-----------------------------------------------------------------------------------------
+        //endregion
+
+
+        //region Hints Available
+        //-----------------------------------------------------------------------------------------
+
+        /**
+         * Set (for UI) whether hints are currently on, and whether they could be turned on.
+         *
+         * @param on Are hints currently set to "On" (i.e. they will be displayed by the Presenter)
+         * @param ready Are any hints currently Ready (i.e., will the Presenter behavior differ
+         * depending on whether hints are on or off)
+         * @param supported Is it ever possible for hints to be turned on or to be ready? Dependent
+         * on game type.
+         */
+        fun setHintStatus(on: Boolean, ready: Boolean, supported: Boolean)
 
         //-----------------------------------------------------------------------------------------
         //endregion
@@ -149,7 +179,7 @@ interface GameContract: BaseContract {
          *
          * @param suggestedGuess A suggestion for the next guess, perhaps partial.
          */
-        fun promptForGuess(suggestedGuess: String?)
+        fun promptForGuess(suggestedGuess: Guess)
 
         /**
          * Prompt the player for an evaluation of the provided guess (after this is done,
@@ -157,7 +187,7 @@ interface GameContract: BaseContract {
          *
          * @param guess The guess to evaluate
          */
-        fun promptForEvaluation(guess: String)
+        fun promptForEvaluation(guess: Guess)
 
         /**
          * Prompt the user to wait for an update.
@@ -219,6 +249,12 @@ interface GameContract: BaseContract {
          * permanent; the game will not proceed from this point and will not be reloaded later.
          */
         fun onForfeit()
+
+        /**
+         * The user has changed whether hints should be displayed as part of gameplay. It is
+         * up to the Presenter whether to update its behavior as a result.
+         */
+        fun onSetHinting(on: Boolean)
 
         //-----------------------------------------------------------------------------------------
         //endregion

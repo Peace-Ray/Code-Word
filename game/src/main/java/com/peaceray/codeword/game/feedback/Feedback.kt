@@ -1,5 +1,6 @@
 package com.peaceray.codeword.game.feedback
 
+import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.validators.Validator
 
 /**
@@ -14,10 +15,23 @@ data class Feedback(
     val candidates: List<Set<Char>>,
 
     /**
-     * The range of occurrences a character might have in the secret.
+     * The feedback -- markup and positioning -- for each character.
      */
-    val occurrences: Map<Char, IntRange>,
+    val characters: Map<Char, CharacterFeedback>
 ) {
+
+    constructor(candidates: List<Set<Char>>, occurrences: Map<Char, IntRange>, markup: Map<Char, Constraint.MarkupType?>): this(
+        candidates = candidates,
+        characters = occurrences.keys.associateWith { char ->
+            CharacterFeedback(
+                char,
+                occurrences[char] ?: 0..0,
+                candidates.indices.filter { char in candidates[it] && candidates[it].size == 1 }.toSet(),
+                candidates.indices.filter { char !in candidates[it] }.toSet(),
+                markup[char]
+            )
+        }
+    )
 
     /**
      * Construct an empty Feedback instance based on the available characters and word length.
@@ -26,10 +40,18 @@ data class Feedback(
      */
     constructor(characters: Set<Char>, length: Int, occurrences: IntRange = 0..length): this(
         candidates = List(length) { if (occurrences.last > 0) characters else emptySet() },
-        occurrences = characters.associateWith { occurrences }
+        characters = characters.associateWith { char ->
+            CharacterFeedback(
+                char,
+                occurrences,
+                emptySet(),
+                emptySet(),
+                null
+            )
+        }
     )
 
-    val characters = occurrences.keys
+    val occurrences: Map<Char, IntRange> = characters.mapValues { entry -> entry.value.occurrences }
 
     /**
      * Characters known to occur in a particular spot.

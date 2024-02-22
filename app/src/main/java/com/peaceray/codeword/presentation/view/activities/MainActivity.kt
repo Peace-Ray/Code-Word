@@ -12,6 +12,10 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.ViewCompat.animate
+import androidx.core.view.postDelayed
+import androidx.core.view.size
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
@@ -59,6 +63,7 @@ class MainActivity : CodeWordActivity(),
     @Inject lateinit var tutorialManager: TutorialManager
     @Inject lateinit var genieSettingsManager: GenieSettingsManager
     private lateinit var binding: ActivityMainBinding
+    private var menu: Menu? = null
 
     // Activity Launchers
     private lateinit var gameSetupLauncher: ActivityResultLauncher<Intent>
@@ -145,12 +150,27 @@ class MainActivity : CodeWordActivity(),
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        // Keep a reference to the menu
+        this.menu = menu
         // Add action bar items
         menuInflater.inflate(R.menu.toolbar_main, menu)
+        // Initial configuration
+        onHintStatusUpdated(gameHinting, gameHintsReady, gameHintsSupported)
+
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when(item.itemId) {
+        R.id.action_set_hinting -> {
+            Timber.v("Menu: clicked Set Hinting")
+            toggleGameHinting()
+            true
+        }
+        R.id.action_puzzle_info -> {
+            Timber.v("Menu: clicked Puzzle Info")
+            showPuzzleInfo()
+            true
+        }
         R.id.action_how_to_play -> {
             Timber.v("Menu: clicked Help / How To Play")
             val currentGame = game
@@ -159,11 +179,6 @@ class MainActivity : CodeWordActivity(),
             } else {
                 Timber.w("Menu: clicked Help / How To Play but 'game' is null!")
             }
-            true
-        }
-        R.id.action_puzzle_info -> {
-            Timber.v("Menu: clicked Puzzle Info")
-            showPuzzleInfo()
             true
         }
         R.id.action_settings -> {
@@ -222,7 +237,6 @@ class MainActivity : CodeWordActivity(),
 
     //region Game Launch
     //---------------------------------------------------------------------------------------------
-
 
     private fun loadGame() {
         // TODO Best Practices would limit the creation of Coroutines to the Presenter layer
@@ -292,6 +306,15 @@ class MainActivity : CodeWordActivity(),
         }
     }
 
+    private fun toggleGameHinting() {
+        setGameHinting(!gameHinting)
+    }
+
+    private fun setGameHinting(on: Boolean) {
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
+        if (fragment is GameFragment) fragment.setHinting(on)
+    }
+
     private fun setNewGameButtonVisible(visible: Boolean) {
         binding.newPuzzleButton.apply {
             // set initial state
@@ -323,6 +346,11 @@ class MainActivity : CodeWordActivity(),
 
     //region GameFragment.OnInteractionListener
     //---------------------------------------------------------------------------------------------
+    private var gameHinting: Boolean = false
+    private var gameHintsReady: Boolean = false
+    private var gameHintsSupported: Boolean = false
+    private var gameEverHinting: Boolean = false
+
     override fun onGameStart(fragment: Fragment, seed: String?, gameSetup: GameSetup) {
         if (!tutorialManager.hasExplained(gameSetup)) {
             Timber.v("onGameStart: not tutorialized; showing How To Play for $gameSetup")
@@ -370,6 +398,27 @@ class MainActivity : CodeWordActivity(),
             }
         }
     }
+
+    override fun onHintStatusUpdated(on: Boolean, ready: Boolean, supported: Boolean) {
+        gameHinting = on
+        gameHintsReady = ready
+        gameHintsSupported = supported
+
+        if (gameHinting && !gameEverHinting) {
+            Toast.makeText(this, R.string.game_message_hints_on, Toast.LENGTH_SHORT).show()
+            gameEverHinting = true
+        }
+
+        // update menu settings
+        menu?.findItem(R.id.action_set_hinting)?.let { item ->
+            item.title = if (on) getString(R.string.action_set_hinting_to_off) else getString(R.string.action_set_hinting_to_on)
+            item.isEnabled = ready
+            item.icon = ResourcesCompat.getDrawable(resources, if (on) R.drawable.round_lightbulb_off_white_48 else R.drawable.round_lightbulb_on_white_48, theme)
+            item.icon?.alpha = if (ready) 255 else 128
+            item.isVisible = supported
+        }
+    }
+
     //---------------------------------------------------------------------------------------------
     //endregion
 

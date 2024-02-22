@@ -9,59 +9,76 @@ import com.peaceray.codeword.game.feedback.FeedbackProvider
 abstract class CachingFeedbackProvider(val characters: Set<Char>, val length: Int, val occurrences: IntRange): FeedbackProvider {
 
     private var cachedInput: Pair<ConstraintPolicy, List<Constraint>>? = null
-    private var cachedOutput: Pair<Feedback, Map<Char, CharacterFeedback>>? = null
+    private var cachedOutput: Feedback? = null
 
     override fun getFeedback(
         policy: ConstraintPolicy,
-        constraints: List<Constraint>
-    ) = cachedGet(policy, constraints).first
+        constraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback {
+        val feedback = cachedGet(policy, constraints, callback)
+        if (callback != null) callback(feedback, true)
+        return feedback
+    }
 
-    override fun getCharacterFeedback(
+    private fun cachedGet(
         policy: ConstraintPolicy,
-        constraints: List<Constraint>
-    ) = cachedGet(policy, constraints).second
-
-    private fun cachedGet(policy: ConstraintPolicy, constraints: List<Constraint>): Pair<Feedback, Map<Char, CharacterFeedback>> {
+        constraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback {
+        val previousInput: Pair<ConstraintPolicy, List<Constraint>>?
+        val previousOutput: Feedback?
         synchronized(this) {
-            val previousInput = cachedInput
-            cachedInput = Pair(policy, constraints)
-            cachedOutput = when {
-                // cache hit
-                cachedInput == previousInput -> cachedOutput
+            previousInput = cachedInput
+            previousOutput = cachedOutput
+        }
 
-                // cache revision
-                policy == previousInput?.first && previousInput.second.all { it in constraints } ->
-                    constrainFeedback(
-                        cachedOutput!!,
-                        policy,
-                        constraints,
-                        constraints.filter { it !in previousInput.second }
-                    )
+        // perform computation, not synchronized (does not touch members)
+        val input = Pair(policy, constraints)
+        val output = when {
+            // cache hit
+            input == previousInput -> previousOutput
 
-                // cache miss
-                else -> constrainFeedback(
+            // cache revision
+            policy == previousInput?.first && previousInput.second.all { it in constraints } ->
+                constrainFeedback(
+                    previousOutput!!,
+                    policy,
+                    constraints,
+                    constraints.filter { it !in previousInput.second },
+                    callback
+                )
+
+            // cache miss
+            else -> {
+                val init = initializeFeedback(policy)
+                if (callback != null) callback(init, false)
+                constrainFeedback(
                     initializeFeedback(policy),
                     policy,
                     constraints,
-                    constraints
+                    constraints,
+                    callback
                 )
             }
-
-            return cachedOutput!!
         }
+
+        // update cache
+        synchronized(this) {
+            cachedInput = input
+            cachedOutput = output
+        }
+
+        return output!!
     }
 
-    open fun initializeFeedback(policy: ConstraintPolicy): Pair<Feedback, Map<Char, CharacterFeedback>> {
-        return Pair(
-            Feedback(characters, length, occurrences),
-            characters.associateWith { CharacterFeedback(it, occurrences) }
-        )
-    }
+    open fun initializeFeedback(policy: ConstraintPolicy) = Feedback(characters, length, occurrences)
 
     abstract fun constrainFeedback(
-        feedback: Pair<Feedback, Map<Char, CharacterFeedback>>,
+        feedback: Feedback,
         policy: ConstraintPolicy,
         constraints: List<Constraint>,
-        freshConstraints: List<Constraint>
-    ): Pair<Feedback, Map<Char, CharacterFeedback>>
+        freshConstraints: List<Constraint>,
+        callback: ((feedback: Feedback, done: Boolean) -> Boolean)?
+    ): Feedback
 }

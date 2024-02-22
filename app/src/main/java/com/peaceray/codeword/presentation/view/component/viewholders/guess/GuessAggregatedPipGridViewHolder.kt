@@ -9,13 +9,12 @@ import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.peaceray.codeword.R
-import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.Guess
+import com.peaceray.codeword.presentation.datamodel.guess.GuessEvaluation
+import com.peaceray.codeword.presentation.datamodel.guess.GuessMarkup
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.view.component.viewholders.guess.appearance.GuessAggregatedAppearance
 import com.peaceray.codeword.presentation.view.component.views.PipGridLayout
-import timber.log.Timber
 import kotlin.math.round
 
 class GuessAggregatedPipGridViewHolder(
@@ -34,26 +33,26 @@ class GuessAggregatedPipGridViewHolder(
 
     //region Data
     //---------------------------------------------------------------------------------------------
-    private var _guess = Guess.placeholder
-    var guess
-        get() = _guess
+    private var _evaluation: GuessEvaluation? = null
+    var evaluation
+        get() = _evaluation
         set(value) = bind(value)
 
-    fun bind(guess: Guess) {
-        val lengthChanged = _guess.length != guess.length
-        _guess = guess
+    fun bind(eval: GuessEvaluation?) {
+        val lengthChanged = _evaluation?.length != eval?.length
+        _evaluation = eval
 
         // configure pip layout
         if (lengthChanged) {
-            pipGrid.pipCount = _guess.length
+            pipGrid.pipCount = _evaluation?.length ?: 0
             refreshPipViews()
         }
 
         // configure pip/nopip visibility
-        if (guess.constraint == null) {
+        if (eval == null) {
             pipGrid.visibility = View.GONE
             noPipImageView.visibility = View.GONE
-        } else if (appearance.getTotalCount(guess) == 0) {
+        } else if (eval.total == 0) {
             pipGrid.visibility = View.GONE
             noPipImageView.visibility = View.VISIBLE
         } else {
@@ -62,10 +61,10 @@ class GuessAggregatedPipGridViewHolder(
         }
 
         // configure pip visible count
-        pipGrid.setPipsVisibility(if (guess.constraint == null) 0 else appearance.getTotalCount(guess))
+        pipGrid.setPipsVisibility(eval?.total ?: 0)
 
         // configure pip details
-        setConstraintDetails(guess, colorSwatchManager.colorSwatch)
+        setConstraintDetails(eval, colorSwatchManager.colorSwatch)
     }
 
     private fun refreshPipViews() {
@@ -79,49 +78,49 @@ class GuessAggregatedPipGridViewHolder(
         if (appearance.hasStableDimensions) {
             constraintPipViews.forEach { view ->
                 view.updateLayoutParams {
-                    val size = round(appearance.getPipSize(guess, null)).toInt()
+                    val size = round(appearance.getPipSize(evaluation, GuessMarkup.EMPTY)).toInt()
                     width = size
                     height = size
                     if (this is MarginLayoutParams) {
-                        setMargins(round(appearance.getPipMargin(guess, null)).toInt())
+                        setMargins(round(appearance.getPipMargin(evaluation, GuessMarkup.EMPTY)).toInt())
                     }
                 }
             }
         }
     }
 
-    private fun setConstraintDetails(guess: Guess, swatch: ColorSwatch) {
-        val exact = appearance.getExactCount(guess)
-        val inclu = appearance.getIncludedCount(guess)
-        List(guess.length) {
+    private fun setConstraintDetails(eval: GuessEvaluation?, swatch: ColorSwatch) {
+        val exact = eval?.exact ?: 0
+        val inclu = eval?.included ?: 0
+        List(eval?.length ?: 0) {
             when {
-                it < exact -> Constraint.MarkupType.EXACT
-                it < exact + inclu -> Constraint.MarkupType.INCLUDED
-                else -> Constraint.MarkupType.NO
+                it < exact -> GuessMarkup.EXACT
+                it < exact + inclu -> GuessMarkup.INCLUDED
+                else -> GuessMarkup.NO
             }
         }.zip(constraintPipViews).forEach { (markUp, pipView) ->
             // dimensions
             if (!appearance.hasStableDimensions) {
                 pipView.updateLayoutParams {
-                    val size = appearance.getPipSize(guess, markUp).toInt()
+                    val size = appearance.getPipSize(eval, markUp).toInt()
                     width = size
                     height = size
                     if (this is MarginLayoutParams) {
-                        setMargins(appearance.getPipMargin(guess, markUp).toInt())
+                        setMargins(appearance.getPipMargin(eval, markUp).toInt())
                     }
                 }
             }
 
             // colors / details
             if (pipView is MaterialCardView) {
-                pipView.radius = appearance.getPipCornerRadius(guess, markUp)
-                pipView.setCardBackgroundColor(appearance.getColorFill(guess, markUp, swatch))
-                pipView.strokeColor = appearance.getColorStroke(guess, markUp, swatch)
-                pipView.strokeWidth = appearance.getPipStrokeWidth(guess, markUp)
-                pipView.elevation = appearance.getPipElevation(guess, markUp)
+                pipView.radius = appearance.getPipCornerRadius(eval, markUp)
+                pipView.setCardBackgroundColor(appearance.getColorFill(eval, markUp, swatch))
+                pipView.strokeColor = appearance.getColorStroke(eval, markUp, swatch)
+                pipView.strokeWidth = appearance.getPipStrokeWidth(eval, markUp)
+                pipView.elevation = appearance.getPipElevation(eval, markUp)
             } else {
-                pipView.setBackgroundColor(appearance.getColorFill(guess, markUp, swatch))
-                pipView.elevation = appearance.getPipElevation(guess, markUp)
+                pipView.setBackgroundColor(appearance.getColorFill(eval, markUp, swatch))
+                pipView.elevation = appearance.getPipElevation(eval, markUp)
             }
         }
 

@@ -19,6 +19,8 @@ import com.peaceray.codeword.data.manager.version.impl.VersionsManagerImpl
 import com.peaceray.codeword.presentation.manager.color.ColorSettingsManager
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.manager.color.impl.ColorManager
+import com.peaceray.codeword.presentation.manager.feedback.GameFeedbackManager
+import com.peaceray.codeword.presentation.manager.feedback.impl.GameFeedbackManagerImpl
 import com.peaceray.codeword.presentation.manager.share.ShareManager
 import com.peaceray.codeword.presentation.manager.share.impl.ShareManagerImpl
 import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
@@ -87,6 +89,13 @@ abstract class ColorManagerModule {
 
     @Binds
     abstract fun bindColorSettingsManager(manager: ColorManager): ColorSettingsManager
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class GameFeedbackManagerModule {
+    @Binds
+    abstract fun bindGameFeedbackManager(manager: GameFeedbackManagerImpl): GameFeedbackManager
 }
 
 @Module

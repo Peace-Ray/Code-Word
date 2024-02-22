@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.annotation.Dimension
 import com.peaceray.codeword.R
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
-import com.peaceray.codeword.presentation.datamodel.GuessLetter
+import com.peaceray.codeword.presentation.datamodel.guess.GuessLetter
 import com.peaceray.codeword.presentation.view.component.layouts.GuessLetterCellLayout
 
 class GuessLetterMarkupAppearance(context: Context, private val layout: GuessLetterCellLayout): GuessLetterAppearance {
@@ -23,11 +23,19 @@ class GuessLetterMarkupAppearance(context: Context, private val layout: GuessLet
 
     override fun getAlphaText(guess: GuessLetter) = if (guess.isPlaceholder) 0f else 1.0f
 
-    override fun getCardElevation(guess: GuessLetter) = if (guess.isPlaceholder) 0f else layout.elevation
+    override fun getCardElevation(guess: GuessLetter) = when {
+        guess.isPlaceholder -> 0.0f
+        guess.isGuess -> layout.elevation * 1.5f
+        else -> layout.elevation
+    }
 
     override fun getCardStrokeWidth(guess: GuessLetter) = if (guess.isPlaceholder) layout.strokeWidth else cellAccentStrokeWidth
 
     override fun getCardCornerRadius(guess: GuessLetter) = if (guess.isPlaceholder) 0f else layout.cornerRadius
 
-    override fun getCardScale(guess: GuessLetter) = if (guess.isPlaceholder) 0.9f else 1.0f
+    override fun getCardScale(guess: GuessLetter) = when {
+        guess.isPlaceholder -> 0.9f
+        guess.isGuess -> 1.05f
+        else -> 1.0f
+    }
 }

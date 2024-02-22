@@ -30,6 +30,7 @@
     <dimen name="histogram_text_size">12sp</dimen>
 
     <!-- Puzzle Container -->
+    <dimen name="guess_container_margin_large">24dp</dimen>
     <dimen name="guess_container_margin">16dp</dimen>
     <dimen name="guess_container_margin_small">10dp</dimen>
     <dimen name="guess_container_margin_smaller">6dp</dimen>
