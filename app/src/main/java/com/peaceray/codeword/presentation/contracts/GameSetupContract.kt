@@ -1,7 +1,6 @@
 package com.peaceray.codeword.presentation.contracts
 
 import com.peaceray.codeword.data.model.code.CodeLanguage
-import com.peaceray.codeword.data.model.game.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import com.peaceray.codeword.presentation.datamodel.GameStatusReview

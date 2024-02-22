@@ -37,6 +37,19 @@ data class GameSetup(
     val daily: Boolean = false,
     val version: Int
 ): Parcelable {
+
+    @SuppressWarnings("unused")     // gson uses this
+    private constructor(): this(
+        board = Board(0),
+        evaluation = Evaluation(ConstraintPolicy.IGNORE, ConstraintPolicy.IGNORE),
+        vocabulary = Vocabulary(CodeLanguage.ENGLISH, GameSetup.Vocabulary.VocabularyType.LIST, 5, 26, 5),
+        solver = Solver.PLAYER,
+        evaluator = Evaluator.HONEST,
+        randomSeed = 0L,
+        daily = false,
+        version = 0
+    )
+
     @Parcelize data class Board(val rounds: Int): Parcelable {
         init {
             if (rounds < 0) throw IllegalArgumentException("rounds must be non-negative")
@@ -85,6 +98,8 @@ data class GameSetup(
 
     companion object {
         fun createSeed() = Random.nextLong(Int.MAX_VALUE.toLong())
+
+        val EMPTY = GameSetup()
     }
 
 }

@@ -97,7 +97,13 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                 gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = false),
                 if (!gameFeedbackHintsSupported) null else gameFeedbackManager.getGameFeedbackProvider(gameSetup, hints = true)
             )
-            // TODO check from save data if hinting had previously been activated
+
+            // activate hinting if previously on
+            if (gameFeedbackHintsSupported && gamePlaySession.gamePlayData.hinting) {
+                gameFeedbackHinting = true
+                gameFeedbackHintsReady = true
+            }
+
             gameFeedback = gameFeedbackProvider.getPlaceholderFeedback()
 
             // update hint status
@@ -164,6 +170,14 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                         ready = gameFeedbackHintsReady,
                         supported = gameFeedbackHintsSupported
                     )
+
+                    // update play data
+                    val playData = gamePlaySession.gamePlayData
+                    gamePlaySession.gamePlayData = playData.with(
+                        hinting = on,
+                        hintingEver = playData.hintingEver || on
+                    )
+                    gamePlaySession.save()
 
                     // update feedback; don't advance or save, as this should not alter game state
                     updateGameFeedback()

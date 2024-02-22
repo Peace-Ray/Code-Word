@@ -1,6 +1,6 @@
 package com.peaceray.codeword.data.manager.record
 
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.record.GameOutcome
 import com.peaceray.codeword.data.model.record.GameTypePerformanceRecord

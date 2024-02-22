@@ -1,5 +1,6 @@
-package com.peaceray.codeword.data.model.game
+package com.peaceray.codeword.data.model.game.save
 
+import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.Settings
@@ -10,12 +11,33 @@ import java.util.*
  * a [Game] is mutable, but this save data is not, meaning this object can be created from a Game
  * and sent to be saved while the Game itself continues.
  */
-data class GameSaveData(val seed: String?, val setup: GameSetup, val settings: Settings, val constraints: List<Constraint>, val currentGuess: String?, val uuid: UUID) {
+data class GameSaveData(
+    val seed: String?,
+    val setup: GameSetup,
+    val settings: Settings,
+    val constraints: List<Constraint>,
+    val currentGuess: String?,
+    val uuid: UUID,
+    val playData: GamePlayData = GamePlayData()
+) {
+
     constructor(
         seed: String?,
         setup: GameSetup,
-        game: Game
-    ): this(seed, setup, game.settings, game.constraints, game.currentGuess, game.uuid)
+        game: Game,
+        playData: GamePlayData
+    ): this(seed, setup, game.settings, game.constraints, game.currentGuess, game.uuid, playData)
+
+    @SuppressWarnings("unused")     // gson uses this
+    private constructor(): this(
+        null,
+        GameSetup.EMPTY,
+        Settings(5, 6),
+        emptyList(),
+        null,
+        UUID.randomUUID(),
+        GamePlayData()
+    )
 
     val state: Game.State
         get() = when {

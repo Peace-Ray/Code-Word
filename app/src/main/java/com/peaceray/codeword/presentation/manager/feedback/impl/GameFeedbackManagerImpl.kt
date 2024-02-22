@@ -1,7 +1,7 @@
 package com.peaceray.codeword.presentation.manager.feedback.impl
 
 import com.peaceray.codeword.data.manager.game.creation.GameCreationManager
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.feedback.providers.InferredMarkupFeedbackProvider
 import com.peaceray.codeword.glue.ForComputation

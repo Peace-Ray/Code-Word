@@ -3,7 +3,7 @@ package com.peaceray.codeword.data.manager.game.persistence.impl
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.manager.game.persistence.GamePersistenceManager
 import com.peaceray.codeword.data.manager.game.persistence.impl.legacy.V01GameSaveData

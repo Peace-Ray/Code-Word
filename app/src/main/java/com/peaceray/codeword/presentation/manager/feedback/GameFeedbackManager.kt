@@ -1,7 +1,6 @@
 package com.peaceray.codeword.presentation.manager.feedback
 
-import com.peaceray.codeword.data.manager.game.play.GamePlaySession
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 
 /**
