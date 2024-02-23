@@ -128,6 +128,7 @@ class GamePlayManagerImpl @Inject constructor(
         override suspend fun getGameSaveData() = withGame { GameSaveData(seed, gameSetup, it, gamePlayData) }
 
         override suspend fun getGameState() = withGame { it.state }
+        override suspend fun getGameRound() = withGame { it.round }
 
         //-----------------------------------------------------------------------------------------
         //endregion

@@ -178,9 +178,10 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                     // otherwise we don't want to save that Hints were used.
                     if (!gamePlaySession.getGameState().isOver) {
                         val playData = gamePlaySession.gamePlayData
+                        val playRound = gamePlaySession.getGameRound()
                         gamePlaySession.gamePlayData = playData.with(
                             hinting = on,
-                            hintingEver = on || playData.hintingEver
+                            hintingSinceRound = if (playData.hintingEver) playData.hintingSinceRound else playRound
                         )
                         gamePlaySession.save()
                     }

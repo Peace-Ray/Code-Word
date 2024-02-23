@@ -41,6 +41,8 @@ interface GamePlaySession {
 
     suspend fun getGameState(): Game.State
 
+    suspend fun getGameRound(): Int
+
     //-----------------------------------------------------------------------------------------
     //endregion
 
