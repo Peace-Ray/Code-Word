@@ -17,7 +17,7 @@
     <!-- "Puzzle Info", should appear as action button if possible -->
     <item
         android:id="@+id/action_puzzle_info"
-        android:icon="@drawable/ic_round_puzzle_info_white_24"
+        android:icon="@drawable/ic_rounded_puzzle_info_24"
         android:title="@string/action_puzzle_info"
         app:showAsAction="ifRoom"
         />

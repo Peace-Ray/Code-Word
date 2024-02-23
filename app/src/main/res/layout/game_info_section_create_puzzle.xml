@@ -16,7 +16,7 @@
         android:text="@string/game_info_puzzle_new_button"
         android:backgroundTint="?attr/colorSecondary"
         android:textColor="?attr/colorOnSecondary"
-        app:icon="@drawable/ic_round_puzzle_create_white_24"
+        app:icon="@drawable/ic_rounded_puzzle_create_24"
         app:drawableTint="?attr/colorOnSecondary"
         android:drawablePadding="@dimen/button_icon_padding"
         app:layout_constraintTop_toTopOf="parent"

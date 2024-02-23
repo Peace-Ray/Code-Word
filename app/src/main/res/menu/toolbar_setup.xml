@@ -6,7 +6,7 @@
     <!-- "Puzzle Launch", should appear as action button if possible -->
     <item
         android:id="@+id/action_start_puzzle"
-        android:icon="@drawable/ic_round_puzzle_create_white_24"
+        android:icon="@drawable/ic_rounded_puzzle_create_24"
         android:title="@string/action_start_puzzle"
         app:showAsAction="ifRoom"
         />
