@@ -3,10 +3,11 @@
 
     <string name="share_outcome_template_seed">%1$s\n%2$s\n%3$s</string>
     <string name="share_outcome_template_no_seed">%1$s\n%2$s</string>
-    <string name="share_outcome_rounds">%1$s/%2$s</string>
-    <string name="share_outcome_rounds_hard">*%1$s/%2$s</string>
+    <string name="share_outcome_rounds">%3$s%1$s%4$s/%2$s</string>
     <string name="share_outcome_rounds_lost">L</string>
     <string name="share_outcome_rounds_loading">\?</string>
+    <string name="share_outcome_rounds_hard_tag">*</string>
+    <string name="share_outcome_rounds_hints_tag">+</string>
     <string name="share_outcome_etc">…</string>
 
     <string name="action_set_hinting">Hints</string>
@@ -327,11 +328,15 @@
     <string name="game_outcome_language_length_word">%1$d letters</string>
     <string name="game_outcome_language_length_code">Length %1$d</string>
     <string name="game_outcome_language_letters">%1$d symbols</string>
-    <string name="game_outcome_rounds_unlimited">Guesses: %1$d</string>
-    <string name="game_outcome_rounds_won">Guesses: %1$d / %2$d</string>
-    <string name="game_outcome_rounds_lost">Guesses: %1$d</string>
-    <string name="game_outcome_rounds_forfeit">Guesses: %1$d / %2$d</string>
+    <string name="game_outcome_rounds_unlimited">Guesses: %1$d %2$s</string>
+    <string name="game_outcome_rounds_won">Guesses: %1$d / %2$d %3$s</string>
+    <string name="game_outcome_rounds_lost">Guesses: %1$d %2$s</string>
+    <string name="game_outcome_rounds_forfeit">Guesses: %1$d / %2$d %3$s</string>
     <string name="game_outcome_rounds_loading">Guesses: %1$d</string>
+    <string name="game_outcome_rounds_addendum_hints">(+ hints)</string>
+    <string name="game_outcome_rounds_addendum_no_hints"> </string>
+    <string name="game_outcome_hint_used_yes">(hints used)</string>
+    <string name="game_outcome_hint_used_no">(no hints!)</string>
     <string name="game_outcome_seed">Seed: %1$s</string>
 
 
