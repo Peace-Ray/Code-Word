@@ -2,6 +2,7 @@ package com.peaceray.codeword.data.manager.record
 
 import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
+import com.peaceray.codeword.data.model.game.save.GamePlayData
 import com.peaceray.codeword.data.model.record.GameOutcome
 import com.peaceray.codeword.data.model.record.GameTypePerformanceRecord
 import com.peaceray.codeword.data.model.record.GameTypePlayerStreak
@@ -24,9 +25,10 @@ interface GameRecordManager {
      * @param seed The seed used to create this game, if any
      * @param setup The GameSetup
      * @param game The Game that just finished
+     * @param gamePlayData Metadata for the game that was just finished
      * @param secret The secret for this game, if known
      */
-    suspend fun record(seed: String?, setup: GameSetup, game: Game, secret: String?)
+    suspend fun record(seed: String?, setup: GameSetup, game: Game, gamePlayData: GamePlayData, secret: String?)
 
     /**
      * Record the result of a completed game.

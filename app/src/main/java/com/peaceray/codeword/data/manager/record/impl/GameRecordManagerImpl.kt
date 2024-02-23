@@ -6,6 +6,7 @@ import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.*
 import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.data.manager.record.GameRecordManager
+import com.peaceray.codeword.data.model.game.save.GamePlayData
 import com.peaceray.codeword.data.source.CodeWordDb
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.glue.ForLocalIO
@@ -32,7 +33,7 @@ class GameRecordManagerImpl @Inject constructor(
     //---------------------------------------------------------------------------------------------
     private val recordMutex = Mutex()
 
-    override suspend fun record(seed: String?, setup: GameSetup, game: Game, secret: String?) {
+    override suspend fun record(seed: String?, setup: GameSetup, game: Game, gamePlayData: GamePlayData, secret: String?) {
         record(
             GameOutcome(
                 uuid = game.uuid,
@@ -48,6 +49,7 @@ class GameRecordManagerImpl @Inject constructor(
                     else -> GameOutcome.Outcome.FORFEIT
                 },
                 round = game.round,
+                hintingSinceRound = if (gamePlayData.hintingEver) gamePlayData.hintingSinceRound else -1,
                 constraints = game.constraints,
                 guess = game.currentGuess,
                 secret = secret,
@@ -73,6 +75,7 @@ class GameRecordManagerImpl @Inject constructor(
                     else -> GameOutcome.Outcome.FORFEIT
                 },
                 round = gameSaveData.round,
+                hintingSinceRound = if (gameSaveData.playData.hintingEver) gameSaveData.playData.hintingSinceRound else -1,
                 constraints = gameSaveData.constraints,
                 guess = gameSaveData.currentGuess,
                 secret = secret,
