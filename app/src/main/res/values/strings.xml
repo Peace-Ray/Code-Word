@@ -420,6 +420,11 @@
     <string name="pref_entry_code_colors_quantro">Quantro</string>
     <string name="pref_entry_code_colors_retro">Retro</string>
 
+    <string name="pref_accessibility">Accessibility</string>
+    <string name="pref_hardware_keyboard">Allow hardware keyboard</string>
+    <string name="pref_hardware_keyboard_detail_on">Type guesses</string>
+    <string name="pref_hardware_keyboard_detail_off">Guess by screen taps</string>
+
     <!-- GAME GENIE -->
     <!-- genie: custom secret -->
     <string name="genie_set_secret_hint">Secret</string>

@@ -16,6 +16,8 @@ import com.peaceray.codeword.data.manager.settings.BotSettingsManager
 import com.peaceray.codeword.data.manager.settings.impl.SettingsManager
 import com.peaceray.codeword.data.manager.version.VersionsManager
 import com.peaceray.codeword.data.manager.version.impl.VersionsManagerImpl
+import com.peaceray.codeword.presentation.manager.accessibility.AccessibilityManager
+import com.peaceray.codeword.presentation.manager.accessibility.impl.AccessibilityManagerImpl
 import com.peaceray.codeword.presentation.manager.color.ColorSettingsManager
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import com.peaceray.codeword.presentation.manager.color.impl.ColorManager
@@ -80,6 +82,12 @@ abstract class VersionsManagerModule {
 //region Presentation Managers
 //-------------------------------------------------------------------------------------------------
 
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AccessibilityManagerModule {
+    @Binds
+    abstract fun bindAccessibilityManager(manager: AccessibilityManagerImpl): AccessibilityManager
+}
 
 @Module
 @InstallIn(SingletonComponent::class)

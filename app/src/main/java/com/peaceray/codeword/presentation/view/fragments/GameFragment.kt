@@ -117,6 +117,15 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
         swappingIn = true
         return this
     }
+
+    /**
+     * A KeyPress has been captured from outside this Fragment. Attempt to treat it as
+     * a game interaction; return whether the interaction was accepted.
+     */
+    fun onKeyPress(keyCode: Int): Boolean {
+        // pass to the KeyboardView; treat it as if the user is typing a guess
+        return keyboardView?.onKeyPress(keyCode) ?: false
+    }
     //---------------------------------------------------------------------------------------------
     //endregion
 
