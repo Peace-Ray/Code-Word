@@ -171,16 +171,19 @@ class GamePresenter @Inject constructor(): GameContract.Presenter, BasePresenter
                         supported = gameFeedbackHintsSupported
                     )
 
-                    // update play data
-                    val playData = gamePlaySession.gamePlayData
-                    gamePlaySession.gamePlayData = playData.with(
-                        hinting = on,
-                        hintingEver = playData.hintingEver || on
-                    )
-                    gamePlaySession.save()
-
                     // update feedback; don't advance or save, as this should not alter game state
                     updateGameFeedback()
+
+                    // update play data, only if the game is still in progress.
+                    // otherwise we don't want to save that Hints were used.
+                    if (!gamePlaySession.getGameState().isOver) {
+                        val playData = gamePlaySession.gamePlayData
+                        gamePlaySession.gamePlayData = playData.with(
+                            hinting = on,
+                            hintingEver = on || playData.hintingEver
+                        )
+                        gamePlaySession.save()
+                    }
                 }
             }
         }

@@ -64,7 +64,13 @@ class Game(settings: Settings, val validator: Validator, uuid: UUID? = null) {
         }
     }
 
-    enum class State { GUESSING, EVALUATING, WON, LOST }
+    enum class State(val isOver: Boolean) {
+        GUESSING(false),
+        EVALUATING(false),
+        WON(true),
+        LOST(true);
+    }
+
     enum class SettingsError { LETTERS, ROUNDS, CONSTRAINT_POLICY }
     enum class GuessError { LENGTH, VALIDATION, CONSTRAINTS }
     enum class EvaluationError { GUESS }
@@ -110,7 +116,7 @@ class Game(settings: Settings, val validator: Validator, uuid: UUID? = null) {
         get() = state == State.LOST
 
     val over: Boolean
-        get() = won || lost
+        get() = state.isOver
 
     val round: Int
         get() { return if (over) constraints.size else constraints.size + 1 }
