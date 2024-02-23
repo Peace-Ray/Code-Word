@@ -1,43 +1,15 @@
 package com.peaceray.codeword.data.manager.record.impl
 
-import android.content.ContentValues
-import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
-import android.provider.BaseColumns
-import androidx.core.database.getIntOrNull
-import androidx.core.database.getLongOrNull
-import androidx.core.database.getStringOrNull
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.model.game.GameType
 import com.peaceray.codeword.data.model.record.*
 import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.data.manager.record.GameRecordManager
+import com.peaceray.codeword.data.model.game.save.GamePlayData
 import com.peaceray.codeword.data.source.CodeWordDb
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_CONSTRAINTS
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_CURRENT_ROUND
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_GAME_UUID
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_GUESS
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_HARD
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_OUTCOME
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_RECORDED_AT
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_ROUNDS
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_SECRET
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameOutcomeEntry.COLUMN_NAME_SEED
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameTypePerformanceEntry.COLUMN_NAME_FORFEIT_TURN_COUNTS
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameTypePerformanceEntry.COLUMN_NAME_LOSING_TURN_COUNTS
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameTypePerformanceEntry.COLUMN_NAME_WINNING_TURN_COUNTS
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.GameTypePerformanceEntry.COLUMN_VALUE_GAME_TYPE_ALL
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.PlayerStreakEntry.COLUMN_NAME_BEST_DAILY_STREAK
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.PlayerStreakEntry.COLUMN_NAME_BEST_STREAK
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.PlayerStreakEntry.COLUMN_NAME_DAILY_STREAK
-import com.peaceray.codeword.data.source.impl.CodeWordDbImpl.GameRecordContract.PlayerStreakEntry.COLUMN_NAME_STREAK
 import com.peaceray.codeword.game.Game
-import com.peaceray.codeword.game.data.Constraint
-import com.peaceray.codeword.glue.ForApplication
 import com.peaceray.codeword.glue.ForLocalIO
-import com.peaceray.codeword.utils.histogram.IntHistogram
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -61,7 +33,7 @@ class GameRecordManagerImpl @Inject constructor(
     //---------------------------------------------------------------------------------------------
     private val recordMutex = Mutex()
 
-    override suspend fun record(seed: String?, setup: GameSetup, game: Game, secret: String?) {
+    override suspend fun record(seed: String?, setup: GameSetup, game: Game, gamePlayData: GamePlayData, secret: String?) {
         record(
             GameOutcome(
                 uuid = game.uuid,
@@ -77,6 +49,7 @@ class GameRecordManagerImpl @Inject constructor(
                     else -> GameOutcome.Outcome.FORFEIT
                 },
                 round = game.round,
+                hintingSinceRound = if (gamePlayData.hintingEver) gamePlayData.hintingSinceRound else -1,
                 constraints = game.constraints,
                 guess = game.currentGuess,
                 secret = secret,
@@ -102,6 +75,7 @@ class GameRecordManagerImpl @Inject constructor(
                     else -> GameOutcome.Outcome.FORFEIT
                 },
                 round = gameSaveData.round,
+                hintingSinceRound = if (gameSaveData.playData.hintingEver) gameSaveData.playData.hintingSinceRound else -1,
                 constraints = gameSaveData.constraints,
                 guess = gameSaveData.currentGuess,
                 secret = secret,

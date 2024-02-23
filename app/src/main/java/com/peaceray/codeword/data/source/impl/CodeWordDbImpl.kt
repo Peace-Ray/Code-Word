@@ -279,8 +279,8 @@ class CodeWordDbImpl @Inject constructor(
         }
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-            if (oldVersion == 1) {
-                // after this version, GameTypes use an expanded string representation that
+            if (oldVersion < 2) {
+                // at this version, GameTypes use an expanded string representation that
                 // specifies ConstraintPolicy and letter occurrences. Convert rows to the new format.
                 val updateGameType: (table: String, column: String, omit: String) -> Unit = { table, column, omit ->
                     val queryGameTypes: () -> List<String> = {
@@ -320,11 +320,27 @@ class CodeWordDbImpl @Inject constructor(
                 GameRecordContract.PlayerStreakEntry
                     .run { updateGameType(TABLE_NAME, COLUMN_NAME_GAME_TYPE, "") }
             }
+
+            if (oldVersion < 3) {
+                // at this first, a "hinting_round" column was added to game_outcome, indicating
+                // when the player activated hints with "-1" meaning no hints activated.
+                GameRecordContract.GameOutcomeEntry.run {
+                    // wanted non-null, but with no default value. This is impossible to do in
+                    // SQLite, at least safely, since you can't ALTER COLUMN to add a "non-null"
+                    // constraint or remove a default value.
+                    db?.execSQL("ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_NAME_HINTING_ROUND INTEGER DEFAULT -1")
+                }
+            }
         }
 
         companion object {
+            /**
+             * Version 1: Original
+             * Version 2: Expanded GameType string representation to explicitly note Feedback Type
+             * Version 3: Adds "hinting_round" to Outcome, indicating when hinting was first enabled (-1 for never).
+             */
+            const val DATABASE_VERSION = 3
             const val DATABASE_NAME = "game_record.db"
-            const val DATABASE_VERSION = 2
         }
     }
     //---------------------------------------------------------------------------------------------
@@ -504,6 +520,7 @@ class CodeWordDbImpl @Inject constructor(
             const val COLUMN_NAME_SEED = "seed"
             const val COLUMN_NAME_OUTCOME = "outcome"
             const val COLUMN_NAME_CURRENT_ROUND = "current_round"
+            const val COLUMN_NAME_HINTING_ROUND = "hinting_round"
             const val COLUMN_NAME_CONSTRAINTS = "constraints"
             const val COLUMN_NAME_GUESS = "guess"
             const val COLUMN_NAME_SECRET = "secret"
@@ -521,6 +538,7 @@ class CodeWordDbImpl @Inject constructor(
                 COLUMN_NAME_SEED,
                 COLUMN_NAME_OUTCOME,
                 COLUMN_NAME_CURRENT_ROUND,
+                COLUMN_NAME_HINTING_ROUND,
                 COLUMN_NAME_CONSTRAINTS,
                 COLUMN_NAME_GUESS,
                 COLUMN_NAME_SECRET,
@@ -540,6 +558,7 @@ class CodeWordDbImpl @Inject constructor(
                         "$COLUMN_NAME_SEED TEXT," +
                         "$COLUMN_NAME_OUTCOME TEXT NOT NULL," +
                         "$COLUMN_NAME_CURRENT_ROUND INTEGER NOT NULL," +
+                        "$COLUMN_NAME_HINTING_ROUND INTEGER DEFAULT -1," +  // prefer no default but SQLite can't alter columns
                         "$COLUMN_NAME_CONSTRAINTS TEXT NOT NULL," +
                         "$COLUMN_NAME_GUESS TEXT," +
                         "$COLUMN_NAME_SECRET TEXT," +
@@ -565,6 +584,7 @@ class CodeWordDbImpl @Inject constructor(
                             GameOutcome.Outcome.LOADING -> "FORFEIT"
                         })
                         COLUMN_NAME_CURRENT_ROUND -> cv.putOrNull(column, t.round)
+                        COLUMN_NAME_HINTING_ROUND -> cv.putOrNull(column, t.hintingSinceRound)
                         COLUMN_NAME_CONSTRAINTS -> cv.putOrNull(column, t.constraints.joinToString("|") { it.toString() })
                         COLUMN_NAME_GUESS -> cv.putOrNull(column, t.guess)
                         COLUMN_NAME_SECRET -> cv.putOrNull(column, t.secret)
@@ -587,6 +607,7 @@ class CodeWordDbImpl @Inject constructor(
                 seed = cv.getAsStringOrNull(COLUMN_NAME_SEED),
                 outcome = GameOutcome.Outcome.valueOf(cv.getAsString(COLUMN_NAME_OUTCOME)),
                 round = cv.getAsInteger(COLUMN_NAME_CURRENT_ROUND),
+                hintingSinceRound = cv.getAsInteger(COLUMN_NAME_HINTING_ROUND),
                 constraints = cv.getAsString(COLUMN_NAME_CONSTRAINTS)
                     .split("|")
                     .filter { it.isNotBlank() }

@@ -45,11 +45,15 @@ class ShareManagerImpl @Inject constructor(
             GameOutcome.Outcome.FORFEIT -> Pair(resources.getString(R.string.share_outcome_rounds_lost), roundsAvailable)
             GameOutcome.Outcome.LOADING -> Pair(resources.getString(R.string.share_outcome_rounds_loading), roundsAvailable)
         }
-        val rounds = resources.getString(if (outcome.hard) {
-            R.string.share_outcome_rounds_hard
-        } else {
-            R.string.share_outcome_rounds
-        }, roundsPair.first, roundsPair.second)
+        val hardTag = if (outcome.hard) resources.getString(R.string.share_outcome_rounds_hard_tag) else ""
+        val hintTag = if (outcome.hintingSinceRound >= 0) resources.getString(R.string.share_outcome_rounds_hints_tag) else ""
+        val rounds = resources.getString(
+            R.string.share_outcome_rounds,
+            roundsPair.first,
+            roundsPair.second,
+            hardTag,
+            hintTag
+        )
 
         // first line: app name and game info
         append(if (seed == null) {

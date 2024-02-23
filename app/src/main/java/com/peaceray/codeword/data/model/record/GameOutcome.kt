@@ -21,6 +21,7 @@ class GameOutcome(
     val seed: String?,
     val outcome: Outcome,
     val round: Int,
+    val hintingSinceRound: Int, // -1 for "never"
     val constraints: List<Constraint>,
     val guess: String?,
     val secret: String?,

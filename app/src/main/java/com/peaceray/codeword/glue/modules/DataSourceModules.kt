@@ -1,8 +1,6 @@
 package com.peaceray.codeword.glue.modules
 
 import com.peaceray.codeword.BuildConfig
-import com.peaceray.codeword.data.manager.game.defaults.GameDefaultsManager
-import com.peaceray.codeword.data.manager.game.defaults.impl.GameDefaultsManagerImpl
 import com.peaceray.codeword.data.source.CodeWordApi
 import com.peaceray.codeword.data.source.CodeWordDb
 import com.peaceray.codeword.data.source.impl.CodeWordDbImpl

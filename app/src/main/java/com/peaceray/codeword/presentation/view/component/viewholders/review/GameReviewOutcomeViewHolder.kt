@@ -1,6 +1,7 @@
 package com.peaceray.codeword.presentation.view.component.viewholders.review
 
 import android.graphics.PorterDuff
+import android.opengl.Visibility
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
@@ -72,12 +73,17 @@ class GameReviewOutcomeViewHolder(
         }
 
         // rounds
+        val hintAddendum = if (outcome.hintingSinceRound < 0) {
+            context.getString(R.string.game_outcome_rounds_addendum_no_hints)
+        } else {
+            context.getString(R.string.game_outcome_rounds_addendum_hints)
+        }
         roundsTextView.text = if (outcome.rounds >= 100) {
-            context.getString(R.string.game_outcome_rounds_unlimited, outcome.round)
+            context.getString(R.string.game_outcome_rounds_unlimited, outcome.round, hintAddendum)
         } else when(outcome.outcome) {
-            GameOutcome.Outcome.WON -> context.getString(R.string.game_outcome_rounds_won, outcome.round, outcome.rounds)
-            GameOutcome.Outcome.LOST -> context.getString(R.string.game_outcome_rounds_lost, outcome.rounds)
-            GameOutcome.Outcome.FORFEIT -> context.getString(R.string.game_outcome_rounds_forfeit, outcome.round, outcome.rounds)
+            GameOutcome.Outcome.WON -> context.getString(R.string.game_outcome_rounds_won, outcome.round, outcome.rounds, hintAddendum)
+            GameOutcome.Outcome.LOST -> context.getString(R.string.game_outcome_rounds_lost, outcome.rounds, hintAddendum)
+            GameOutcome.Outcome.FORFEIT -> context.getString(R.string.game_outcome_rounds_forfeit, outcome.round, outcome.rounds, hintAddendum)
             GameOutcome.Outcome.LOADING -> context.getString(R.string.game_outcome_rounds_loading, outcome.rounds)
         }
     }

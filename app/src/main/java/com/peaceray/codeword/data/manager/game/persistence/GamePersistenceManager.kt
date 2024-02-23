@@ -1,6 +1,6 @@
 package com.peaceray.codeword.data.manager.game.persistence
 
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.game.Game
 

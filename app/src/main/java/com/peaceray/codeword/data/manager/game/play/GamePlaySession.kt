@@ -1,7 +1,8 @@
 package com.peaceray.codeword.data.manager.game.play
 
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
+import com.peaceray.codeword.data.model.game.save.GamePlayData
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.data.Constraint
 import com.peaceray.codeword.game.data.Settings
@@ -26,6 +27,8 @@ interface GamePlaySession {
 
     val gameSetup: GameSetup
 
+    var gamePlayData: GamePlayData
+
     suspend fun getConstraints(): List<Constraint>
 
     suspend fun getCurrentGuess(): String?
@@ -37,6 +40,8 @@ interface GamePlaySession {
     suspend fun getGameSaveData(): GameSaveData
 
     suspend fun getGameState(): Game.State
+
+    suspend fun getGameRound(): Int
 
     //-----------------------------------------------------------------------------------------
     //endregion

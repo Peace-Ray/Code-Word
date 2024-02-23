@@ -1,11 +1,12 @@
 package com.peaceray.codeword.data.manager.game.play.impl
 
-import com.peaceray.codeword.data.model.game.GameSaveData
+import com.peaceray.codeword.data.model.game.save.GameSaveData
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.manager.game.creation.GameCreationManager
 import com.peaceray.codeword.data.manager.game.persistence.GamePersistenceManager
 import com.peaceray.codeword.data.manager.game.play.GamePlayManager
 import com.peaceray.codeword.data.manager.game.play.GamePlaySession
+import com.peaceray.codeword.data.model.game.save.GamePlayData
 import com.peaceray.codeword.game.Game
 import com.peaceray.codeword.game.bot.Evaluator
 import com.peaceray.codeword.game.bot.Solver
@@ -32,7 +33,11 @@ class GamePlayManagerImpl @Inject constructor(
     //-----------------------------------------------------------------------------------------
 
     override suspend fun getGamePlaySession(seed: String?, gameSetup: GameSetup): GamePlaySession {
-        val game = coroutineScope { async { gameCreationManager.getGame(seed, gameSetup) } }
+        val save = gamePersistenceManager.load(seed, gameSetup)
+        if (save != null) return getGamePlaySession(save)
+
+        val playData = GamePlayData()
+        val game = coroutineScope { async { gameCreationManager.createGame(gameSetup) } }
         val solver = if (gameSetup.solver == GameSetup.Solver.PLAYER) null else {
             coroutineScope { async { gameCreationManager.getSolver(gameSetup) } }
         }
@@ -40,7 +45,7 @@ class GamePlayManagerImpl @Inject constructor(
             coroutineScope { async { gameCreationManager.getEvaluator(gameSetup) } }
         }
 
-        return ManagedGamePlaySession(seed, gameSetup, game, solver, evaluator)
+        return ManagedGamePlaySession(seed, gameSetup, playData, game, solver, evaluator)
     }
 
     override suspend fun getGamePlaySession(gameSaveData: GameSaveData): GamePlaySession {
@@ -54,22 +59,8 @@ class GamePlayManagerImpl @Inject constructor(
             coroutineScope { async { gameCreationManager.getEvaluator(gameSaveData.setup) } }
         }
 
-        return ManagedGamePlaySession(seed, setup, game, solver, evaluator)
+        return ManagedGamePlaySession(seed, setup, gameSaveData.playData, game, solver, evaluator)
     }
-
-    /*
-    private fun getGamePlaySession(scope: CoroutineScope, seed: String?, gameSetup: GameSetup): GamePlaySession {
-        val game = scope.async { gameCreationManager.getGame(seed, gameSetup) }
-        val solver = if (gameSetup.solver == GameSetup.Solver.PLAYER) null else {
-            scope.async { gameCreationManager.getSolver(gameSetup) }
-        }
-        val evaluator = if (gameSetup.evaluator == GameSetup.Evaluator.PLAYER) null else {
-            scope.async { gameCreationManager.getEvaluator(gameSetup) }
-        }
-
-        return ManagedGamePlaySession(seed, gameSetup, game, solver, evaluator)
-    }
-     */
 
     //-----------------------------------------------------------------------------------------
     //endregion
@@ -105,7 +96,7 @@ class GamePlayManagerImpl @Inject constructor(
             coroutineScope { async { gameCreationManager.getEvaluator(update) } }
         }
 
-        return ManagedGamePlaySession(seed, update, game, solver, evaluator)
+        return ManagedGamePlaySession(seed, update, save.playData, game, solver, evaluator)
     }
 
     //-----------------------------------------------------------------------------------------
@@ -117,6 +108,7 @@ class GamePlayManagerImpl @Inject constructor(
     private inner class ManagedGamePlaySession(
         override val seed: String?,
         override val gameSetup: GameSetup,
+        override var gamePlayData: GamePlayData,
         val deferredGame: Deferred<Game>,
         val deferredSolver: Deferred<Solver>?,
         val deferredEvaluator: Deferred<Evaluator>?
@@ -133,9 +125,10 @@ class GamePlayManagerImpl @Inject constructor(
 
         override suspend fun getSettings() = withGame { it.settings }
 
-        override suspend fun getGameSaveData() = withGame { GameSaveData(seed, gameSetup, it) }
+        override suspend fun getGameSaveData() = withGame { GameSaveData(seed, gameSetup, it, gamePlayData) }
 
         override suspend fun getGameState() = withGame { it.state }
+        override suspend fun getGameRound() = withGame { it.round }
 
         //-----------------------------------------------------------------------------------------
         //endregion
