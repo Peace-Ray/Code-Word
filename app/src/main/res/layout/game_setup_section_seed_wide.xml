@@ -73,7 +73,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/seedBackgroundView"
         app:layout_constraintBottom_toBottomOf="@id/seedBackgroundView"
-        android:src="@drawable/round_refresh_white_24"
+        android:src="@drawable/ic_rounded_refresh_24"
         android:background="#00ffffff"
         />
 

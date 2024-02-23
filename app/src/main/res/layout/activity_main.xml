@@ -36,7 +36,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:src="@drawable/round_puzzle_create_white_48"
+        android:src="@drawable/ic_round_puzzle_create_white_24"
         android:contentDescription="@string/action_new_puzzle"
         android:layout_margin="16dp"
         />

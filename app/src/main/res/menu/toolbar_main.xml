@@ -7,7 +7,7 @@
     <!-- Note: title and icon are set programmatically in MainActivity; mirror any changes there -->
     <item
         android:id="@+id/action_set_hinting"
-        android:icon="@drawable/round_lightbulb_white_48"
+        android:icon="@drawable/ic_rounded_lightbulb_24"
         android:title="@string/action_set_hinting"
         android:checkable="true"
         android:checked="false"
@@ -17,7 +17,7 @@
     <!-- "Puzzle Info", should appear as action button if possible -->
     <item
         android:id="@+id/action_puzzle_info"
-        android:icon="@drawable/round_puzzle_info_white_48"
+        android:icon="@drawable/ic_round_puzzle_info_white_24"
         android:title="@string/action_puzzle_info"
         app:showAsAction="ifRoom"
         />
@@ -25,26 +25,26 @@
     <!-- "Help / How to Play", don't put in action bar (Hinting is sometimes hidden) -->
     <item
         android:id="@+id/action_how_to_play"
-        android:icon="@drawable/round_help_white_48"
+        android:icon="@drawable/ic_rounded_help_24"
         android:title="@string/action_how_to_play"
         app:showAsAction="never"
         />
 
     <!-- App Info, should always be in the overflow -->
     <item android:id="@+id/action_app_info"
-        android:icon="@drawable/round_info_white_48"
+        android:icon="@drawable/ic_rounded_info_24"
         android:title="@string/action_app_info"
         app:showAsAction="never"/>
 
     <!-- App InfoCredits, should always be in the overflow -->
     <item android:id="@+id/action_credits"
-        android:icon="@drawable/round_info_white_48"
+        android:icon="@drawable/ic_rounded_info_24"
         android:title="@string/action_credits"
         app:showAsAction="never"/>
 
     <!-- Settings, should always be in the overflow -->
     <item android:id="@+id/action_settings"
-        android:icon="@drawable/round_settings_white_48"
+        android:icon="@drawable/ic_rounded_settings_24"
         android:title="@string/action_settings"
         app:showAsAction="never"/>
 

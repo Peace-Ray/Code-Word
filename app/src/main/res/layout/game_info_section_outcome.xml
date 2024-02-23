@@ -32,7 +32,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginTop="@dimen/guess_container_margin_small"
         android:background="#00ffffff"
-        android:src="@drawable/round_share_white_24"
+        android:src="@drawable/ic_rounded_share_24"
         />
 
     <androidx.constraintlayout.widget.Barrier
