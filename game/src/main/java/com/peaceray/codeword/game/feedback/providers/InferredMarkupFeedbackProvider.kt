@@ -531,6 +531,48 @@ class InferredMarkupFeedbackProvider(
                 }
             }
 
+            // Consider
+            // RUINS (1 included)
+            // SIZES (1 exact)
+            //
+            // Exact-only consideration of RUINS marks the final position as not having an S. Assume
+            // that has been done. SIZES reveals that the letter S does not occur anywhere except
+            // possibly the first position, since the first position is either EXACT or NO and
+            // the last S is marked NO (not "included"). Determine any Exact positions and attempt
+            // to account for Included positions.
+            val exactPositions = candidates.indices.filter { candidates[it].size == 1 && constraint.candidate[it] in candidates[it] }
+            val markedCount = chars.associateWith { char -> exactPositions.count { char == word[it] } }.toMutableMap()
+            // unmarked letters may still contribute to EXACT or INCLUDED, so only mark a letter
+            // INCLUDED if it could not possibly contribute to EXACT any more.
+            val maybeExactPositions = candidates.indices.filter { index ->
+                val char = word[index]
+                index !in exactPositions && char in candidates[index]
+            }
+            val maybeExactCount = chars.associateWith { char -> maybeExactPositions.count { char == word[it] } }
+            val includedPositions = candidates.indices.filter { index ->
+                val char = word[index]
+                val range = occurrences[char] ?: 0..0
+                val markedC = markedCount[char] ?: 0
+                val notExact = index !in exactPositions && (maybeExactCount[char] ?: 0) == 0
+                val included = notExact && markedC < range.first
+                if (included) markedCount[char] = markedC + 1
+                included
+            }
+            // If we accounted for all INCLUDED positions, any leftover letter must not occur anywhere
+            // other than where it is positioned.
+            if (includedPositions.size == constraint.included) {
+                val leftoverChars = candidates.indices.filter { index ->
+                    index !in exactPositions && index !in includedPositions
+                }.map { word[it] }.toSet()
+                leftoverChars.forEach { char ->
+                    // anywhere this letter ISN'T, it CANNOT BE.
+                    val notPresentIndices = candidates.indices.filter { char != word[it] }
+                    notPresentIndices.forEach { index ->
+                        if (candidates[index].remove(char)) changed = true
+                    }
+                }
+            }
+
             // revise bounds on occurrences for each character based on candidate sets.
             // update occurrences
             characters.forEach { char ->
