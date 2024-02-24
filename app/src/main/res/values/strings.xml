@@ -52,7 +52,7 @@
     <string name="game_error_evaluation_inconsistent">Evaluation must be consistent with previous clues</string>
     <string name="game_error_hints_not_supported_daily">This Daily puzzle does not support hints</string>
     <string name="game_error_hints_not_supported">This puzzle does not support hints</string>
-    <string name="game_error_hints_not_ready">No hints available</string>
+    <string name="game_error_hints_not_ready">Hints not ready</string>
     <string name="game_error_unknown">Something went wrong</string>
     <!-- Game Messages -->
     <string name="game_message_hints_on">Hints On</string>
