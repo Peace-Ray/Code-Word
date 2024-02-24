@@ -2,6 +2,7 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="LockedOrientationActivity"
     >
 
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -25,6 +26,7 @@
 
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true"
             >
             <intent-filter>
@@ -35,16 +37,19 @@
 
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.SettingsActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             />
 
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.GameSetupActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             />
 
         <activity
             android:name="com.peaceray.codeword.presentation.view.activities.DocViewerActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             />
 
