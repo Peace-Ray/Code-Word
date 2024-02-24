@@ -19,7 +19,7 @@
         android:layout_margin="2dp"
         android:gravity="center"
         android:scaleType="centerInside"
-        android:src="@drawable/round_done_white_24"
+        android:src="@drawable/ic_rounded_done_24"
         />
 
 </com.google.android.material.card.MaterialCardView>

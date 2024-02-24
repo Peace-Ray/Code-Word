@@ -42,17 +42,17 @@ Included Media Assets
   located in app/src/main/res and subdirectories, are derived from Material
   Symbol icons (all files with these prefixes):
 
-    round_close
-    round_content_copy
-    round_done
-    round_help
-    round_info
-    round_keyboard_backspace
-    round_keyboard_return
-    round_puzzle_create
-    round_puzzle_info
-    round_refresh
-    round_settings
-    round_share
+    ic_rounded_close
+    ic_rounded_done
+    ic_rounded_help
+    ic_rounded_info
+    ic_rounded_keyboard_backspace
+    ic_rounded_light_off
+    ic_rounded_lightbulb
+    ic_rounded_puzzle_create
+    ic_rounded_puzzle_info
+    ic_rounded_refresh
+    ic_rounded_settings
+    ic_rounded_share
 
 Code Word, Peace Ray, and the tiles logo are trademarks of Peace Ray LLC.

@@ -33,7 +33,7 @@
         android:paddingEnd="@dimen/guess_letter_cell_medium_less_margin"
         android:layout_gravity="center"
         android:scaleType="centerInside"
-        android:src="@drawable/round_close_white_24"
+        android:src="@drawable/ic_rounded_close_24"
         />
 
 </FrameLayout>

@@ -411,9 +411,10 @@ class MainActivity : CodeWordActivity(),
 
         // update menu settings
         menu?.findItem(R.id.action_set_hinting)?.let { item ->
+            val iconResId = if (on) R.drawable.ic_rounded_light_off_24 else R.drawable.ic_rounded_lightbulb_24
             item.title = if (on) getString(R.string.action_set_hinting_to_off) else getString(R.string.action_set_hinting_to_on)
             item.isEnabled = ready
-            item.icon = ResourcesCompat.getDrawable(resources, if (on) R.drawable.round_lightbulb_off_white_48 else R.drawable.round_lightbulb_on_white_48, theme)
+            item.icon = ResourcesCompat.getDrawable(resources, iconResId, theme)
             item.icon?.alpha = if (ready) 255 else 128
             item.isVisible = supported
         }
