@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.util.AttributeSet
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.AttrRes
@@ -240,6 +241,36 @@ class CodeKeyboardView: ConstraintLayout {
         super.setEnabled(enabled)
 
         keys.forEach { it.isEnabled = enabled }
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Processing Key Events
+    //---------------------------------------------------------------------------------------------
+    fun onKeyPress(keyCode: Int): Boolean {
+        // only process this keyCode if it corresponds to a valid key in the characters
+        if (onKeyListener == null) return false
+        return when(keyCode) {
+            KeyEvent.KEYCODE_ENTER -> {
+                onKeyListener?.onEnter()
+                true
+            }
+            KeyEvent.KEYCODE_FORWARD_DEL,
+            KeyEvent.KEYCODE_DEL -> {
+                onKeyListener?.onDelete()
+                true
+            }
+            in KeyEvent.KEYCODE_A..KeyEvent.KEYCODE_Z -> {
+                val character = (keyCode - KeyEvent.KEYCODE_A + 'a'.code).toChar()
+                val characters = listOf(character.lowercaseChar(), character.uppercaseChar())
+                val match = characters.firstOrNull { it in codeCharacters }
+                if (match == null) false else {
+                    onKeyListener?.onCharacter(match)
+                    true
+                }
+            }
+            else -> false
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion

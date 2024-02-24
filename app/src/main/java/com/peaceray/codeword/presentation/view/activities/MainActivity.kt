@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -26,6 +27,7 @@ import com.peaceray.codeword.databinding.ActivityMainBinding
 import com.peaceray.codeword.data.manager.game.persistence.GamePersistenceManager
 import com.peaceray.codeword.data.manager.game.setup.GameSetupManager
 import com.peaceray.codeword.data.manager.genie.GenieSettingsManager
+import com.peaceray.codeword.presentation.manager.accessibility.AccessibilityManager
 import com.peaceray.codeword.presentation.manager.tutorial.TutorialManager
 import com.peaceray.codeword.presentation.view.fragments.GameFragment
 import com.peaceray.codeword.presentation.view.fragments.GameInfoFragment
@@ -60,6 +62,7 @@ class MainActivity : CodeWordActivity(),
 
     @Inject lateinit var gameSetupManager: GameSetupManager
     @Inject lateinit var gamePersistenceManager: GamePersistenceManager
+    @Inject lateinit var accessibilityManager: AccessibilityManager
     @Inject lateinit var tutorialManager: TutorialManager
     @Inject lateinit var genieSettingsManager: GenieSettingsManager
     private lateinit var binding: ActivityMainBinding
@@ -202,6 +205,22 @@ class MainActivity : CodeWordActivity(),
     //---------------------------------------------------------------------------------------------
     //endregion
 
+    //region Keyboard Captures
+    //---------------------------------------------------------------------------------------------
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        Timber.v("onKeyUp $keyCode")
+        if (accessibilityManager.isHardwareKeyboardAllowed && !isGameOver) {
+            // the game can only capture keypresses that are sent to a specific view;
+            // capture them here to get everything
+            val processed = getGameFragment()?.onKeyPress(keyCode)
+            if (processed == true) return true
+        }
+
+        return super.onKeyUp(keyCode, event)
+    }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
     //region Game Info
     //---------------------------------------------------------------------------------------------
     private fun showHowToPlay(seed: String?, gameSetup: GameSetup) {
@@ -238,6 +257,11 @@ class MainActivity : CodeWordActivity(),
     //region Game Launch
     //---------------------------------------------------------------------------------------------
 
+    private fun getGameFragment(): GameFragment? {
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
+        return if (fragment is GameFragment) fragment else null
+    }
+
     private fun loadGame() {
         // TODO Best Practices would limit the creation of Coroutines to the Presenter layer
         // (equiv. the ViewModel layer). However, the MainActivity uses one single asynchronous
@@ -266,8 +290,7 @@ class MainActivity : CodeWordActivity(),
         isGameOver = false
 
         // forfeit ongoing game, if any
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
-        if (fragment is GameFragment) fragment.forfeit()
+        getGameFragment()?.forfeit()
 
         // genie announcement(s)?
         if (genieSettingsManager.developerMode) {
@@ -293,8 +316,7 @@ class MainActivity : CodeWordActivity(),
             if (game!!.second == gameSetup) {
                 Timber.v("Identical gameSetup: nothing to  update")
             } else {
-                val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
-                val currentGuess = if (fragment is GameFragment) fragment.getCurrentGuess() else null
+                val currentGuess = getGameFragment()?.getCurrentGuess()
 
                 supportFragmentManager.commit {
                     setReorderingAllowed(true)
@@ -311,8 +333,7 @@ class MainActivity : CodeWordActivity(),
     }
 
     private fun setGameHinting(on: Boolean) {
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerView)
-        if (fragment is GameFragment) fragment.setHinting(on)
+        getGameFragment()?.setHinting(on)
     }
 
     private fun setNewGameButtonVisible(visible: Boolean) {

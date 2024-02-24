@@ -53,4 +53,14 @@
             />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_accessibility">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/pref_key_hardware_keyboard"
+            android:title="@string/pref_hardware_keyboard"
+            android:summaryOn="@string/pref_hardware_keyboard_detail_on"
+            android:summaryOff="@string/pref_hardware_keyboard_detail_off"
+            />
+    </PreferenceCategory>
+
 </PreferenceScreen>
