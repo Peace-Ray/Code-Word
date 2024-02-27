@@ -1,9 +1,10 @@
 package com.peaceray.codeword.play.setup
 import com.peaceray.codeword.game.data.ConstraintPolicy
+import com.peaceray.codeword.random.ConsistentRandom
 
 data class ConsoleGameSettings(
-    val vocabulary: Vocabulary = Vocabulary(),
-    val difficulty: Difficulty = Difficulty(),
+    val vocabulary: Vocabulary? = null,
+    val difficulty: Difficulty? = null,
     val players: Players = Players()
 ) {
     data class Vocabulary (
@@ -11,7 +12,22 @@ data class ConsoleGameSettings(
         val length: Int = 5,
         val characterCount: Int = if (words) 26 else 6,
         val repetitions: Boolean = true
-    )
+    ) {
+        companion object {
+            fun random(seed: Long? = null): Vocabulary {
+                val r = ConsistentRandom(seed ?: System.currentTimeMillis())
+                val words = r.nextBoolean()
+                val length = (3..8).random(r)
+                val repetitions = r.nextBoolean()
+                val characterCount = when {
+                    words -> 26
+                    !repetitions -> (length..12).random(r)
+                    else -> (4..12).random(r)
+                }
+                return Vocabulary(words, length, characterCount, repetitions)
+            }
+        }
+    }
 
     data class Difficulty (
         val hard: Boolean = false,
@@ -25,11 +41,34 @@ data class ConsoleGameSettings(
             DIRECT_AND_INFERRED;
         }
 
-        constructor(vocabulary: Vocabulary): this(
+        constructor(vocabulary: Vocabulary?): this(
             hard = false,
-            feedbackPolicy = if (vocabulary.words) ConstraintPolicy.POSITIVE else ConstraintPolicy.AGGREGATED,
+            feedbackPolicy = if (vocabulary?.words == true) ConstraintPolicy.POSITIVE else ConstraintPolicy.AGGREGATED,
             letterFeedback = LetterFeedback.NONE
         )
+
+        companion object {
+            fun random(vocabulary: Vocabulary, seed: Long? = null): Difficulty {
+                val offset = (
+                        vocabulary.length
+                        + (if (vocabulary.words) 1 else 0) * 10
+                        + (if (vocabulary.repetitions) 1 else 0) * 20
+                        + (if (vocabulary.characterCount == 1) 1 else 0) * 40
+                )
+
+                val r = ConsistentRandom(offset + (seed ?: System.currentTimeMillis()))
+                val feedbackPolicy = listOf(
+                    ConstraintPolicy.POSITIVE,
+                    ConstraintPolicy.AGGREGATED,
+                    ConstraintPolicy.AGGREGATED_EXACT,
+                    ConstraintPolicy.AGGREGATED_INCLUDED
+                ).random(r)
+                val hard = if (feedbackPolicy == ConstraintPolicy.POSITIVE) r.nextBoolean() else false
+                val letterFeedback = LetterFeedback.entries.random(r)
+
+                return Difficulty(hard, feedbackPolicy, letterFeedback)
+            }
+        }
     }
 
     data class Players (
@@ -52,9 +91,11 @@ data class ConsoleGameSettings(
         }
     }
 
-    fun with(vocabulary: Vocabulary): ConsoleGameSettings {
+    fun with(vocabulary: Vocabulary?): ConsoleGameSettings {
         // may change difficulty
-        val difficulty: Difficulty = when {
+        val difficulty: Difficulty? = if (this.vocabulary == null || vocabulary == null) this.difficulty else when {
+            this.difficulty == null -> null
+
             // same style of secret, possibly changing length or character counts
             this.vocabulary.words == vocabulary.words && this.vocabulary.repetitions == vocabulary.repetitions ->
                 this.difficulty
@@ -64,27 +105,29 @@ data class ConsoleGameSettings(
 
             // repetitions: YES -> NO
             this.vocabulary.repetitions && !vocabulary.repetitions -> {
-                val feedbackPolicy = if (!this.difficulty.feedbackPolicy.isByLetter()) {
-                    this.difficulty.feedbackPolicy
-                } else {
-                    ConstraintPolicy.AGGREGATED_INCLUDED
-                }
+                if (this.difficulty == null) null else {
+                    val feedbackPolicy = if (!this.difficulty.feedbackPolicy.isByLetter()) {
+                        this.difficulty.feedbackPolicy
+                    } else {
+                        ConstraintPolicy.AGGREGATED_INCLUDED
+                    }
 
-                val letterFeedback = if (this.difficulty.letterFeedback == Difficulty.LetterFeedback.DIRECT) {
-                    Difficulty.LetterFeedback.DIRECT_AND_INFERRED
-                } else {
-                    this.difficulty.letterFeedback
-                }
+                    val letterFeedback = if (this.difficulty.letterFeedback == Difficulty.LetterFeedback.DIRECT) {
+                        Difficulty.LetterFeedback.DIRECT_AND_INFERRED
+                    } else {
+                        this.difficulty.letterFeedback
+                    }
 
-                Difficulty(this.difficulty.hard, feedbackPolicy, letterFeedback)
+                    Difficulty(this.difficulty.hard, feedbackPolicy, letterFeedback)
+                }
             }
 
             // repetitions: NO -> YES
             else -> {
-                val letterFeedback = if (this.difficulty.feedbackPolicy.isByLetter()) {
-                    Difficulty.LetterFeedback.DIRECT
-                } else {
-                    this.difficulty.letterFeedback
+
+                val letterFeedback = when {
+                    this.difficulty.feedbackPolicy.isByLetter() -> Difficulty.LetterFeedback.DIRECT
+                    else -> this.difficulty.letterFeedback
                 }
 
                 Difficulty(this.difficulty.hard, this.difficulty.feedbackPolicy, letterFeedback)
@@ -94,7 +137,7 @@ data class ConsoleGameSettings(
         return ConsoleGameSettings(vocabulary, difficulty, players)
     }
 
-    fun with(difficulty: Difficulty): ConsoleGameSettings = ConsoleGameSettings(vocabulary, difficulty, players)
+    fun with(difficulty: Difficulty?): ConsoleGameSettings = ConsoleGameSettings(vocabulary, difficulty, players)
 
     fun with(players: Players): ConsoleGameSettings = ConsoleGameSettings(vocabulary, difficulty, players)
 }

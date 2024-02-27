@@ -69,25 +69,33 @@ data class Feedback(
      */
     val absent: Set<Char> = occurrences.filter { it.value.last == 0 }.map { it.key }.toSet()
 
+    fun allows(code: String, partial: Boolean = false): Boolean {
+        // explicit length check
+        if (code.length > candidates.size || (!partial && code.length < candidates.size)) return false
+
+        // character positions: check that those characters are available in those places
+        if (!code.foldIndexed(true) { index, acc, c -> acc && c in candidates[index] }) return false
+
+        // occurrences: check that no character is under or over-represented.
+        var spaceAvailable = candidates.size - code.length
+        val codeCharCount = characters.keys.associateWith { c -> code.count { it == c } }
+        return codeCharCount.all { (char, count) ->
+            val range = (occurrences[char] ?: -1..-1)
+            if (count < range.first) {  // use some spaceAvailable to make up the difference
+                spaceAvailable -= (range.first - count)
+                spaceAvailable >= 0
+            } else {
+                count in range
+            }
+        }
+    }
+
     /**
      * A Validator that reports whether a given word is consistent with the Feedback received thus far.
      */
     val validator: Validator by lazy {
         object: Validator {
-            override fun invoke(code: String): Boolean {
-                // character positions: check that those characters are available in those places
-                if (!code.foldIndexed(true) { index, acc, c -> acc && c in candidates[index] }) return false
-
-                // occurrences: check that no character in the code is under or over-represented
-                val codeChars = code.toSet()
-                val codeCharCount = codeChars.associateWith { c -> code.count { it == c } }
-                if (!codeCharCount.all { it.value in (occurrences[it.key] ?: -1..-1) }) return false
-
-                // occurrences: check that no character not included in the code is required
-                if (occurrences.any { it.key !in codeChars && it.value.first > 0 }) return false
-
-                return true
-            }
+            override fun invoke(code: String) = allows(code)
         }
     }
 }

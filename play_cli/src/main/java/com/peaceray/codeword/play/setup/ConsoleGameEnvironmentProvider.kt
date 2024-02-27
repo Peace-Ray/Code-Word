@@ -43,9 +43,11 @@ class ConsoleGameEnvironmentProvider {
     }
 
     private fun getEnvironment(settings: ConsoleGameSettings): ConsoleGameEnvironment {
-        val uppercase = !settings.vocabulary.words
-        val characters = (if (settings.vocabulary.words) 'a'..'z' else 'A'..'Z')
-            .toList().subList(0, settings.vocabulary.characterCount).toSet()
+        val settingsVocabulary = settings.vocabulary ?: ConsoleGameSettings.Vocabulary.random()
+        val settingsDifficulty = settings.difficulty ?: ConsoleGameSettings.Difficulty.random(settingsVocabulary)
+        val uppercase = !settingsVocabulary.words
+        val characters = (if (settingsVocabulary.words) 'a'..'z' else 'A'..'Z')
+            .toList().subList(0, settingsVocabulary.characterCount).toSet()
 
         val builder = ConsoleGameEnvironment.Builder()
 
@@ -53,8 +55,8 @@ class ConsoleGameEnvironmentProvider {
         val generator: CandidateGenerationModule
         val secretGenerator: CandidateGenerationModule
         val cheaterSecretGenerator: CandidateGenerationModule
-        val generatorSP = settings.difficulty.feedbackPolicy
-        val generatorGP = if (settings.difficulty.hard && generatorSP == ConstraintPolicy.ALL) {
+        val generatorSP = settingsDifficulty.feedbackPolicy
+        val generatorGP = if (settingsDifficulty.hard && generatorSP == ConstraintPolicy.ALL) {
             ConstraintPolicy.POSITIVE
         } else {
             ConstraintPolicy.IGNORE
@@ -62,59 +64,59 @@ class ConsoleGameEnvironmentProvider {
         val guessTransform: ((String) -> String) = if (uppercase) { it -> it.uppercase() } else { it -> it.lowercase() }
 
         // game dimensions
-        builder.length = settings.vocabulary.length
+        builder.length = settingsVocabulary.length
         builder.rounds = when {
-            settings.difficulty.feedbackPolicy.isByLetter() -> 6
-            settings.vocabulary.length >= 8 -> 12
+            settingsDifficulty.feedbackPolicy.isByLetter() -> 6
+            settingsVocabulary.length >= 8 -> 12
             else -> 10
         }
 
         // vocabulary: validation and generation
         builder.policy = generatorGP
-        if (settings.vocabulary.words) {
+        if (settingsVocabulary.words) {
             validator = Validators.all(
-                Validators.vocabulary(File("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/valid.txt")),
-                Validators.characterOccurrences(max = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1)
+                Validators.vocabulary(File("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/valid.txt")),
+                Validators.characterOccurrences(max = if (settingsVocabulary.repetitions) settingsVocabulary.length else 1)
             )
             builder.validator = validator
             generator = CascadingGenerator(
                 solutions = 100,
                 generators = listOf(
-                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets-90.txt", generatorGP, generatorSP, filter = validator),
-                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets.txt", generatorGP, generatorSP, filter = validator),
-                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/guesses.txt", generatorGP, generatorSP, filter = validator,
-                        solutionFilename = "./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets.txt"),
-                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/guesses.txt", generatorGP, generatorSP, filter = validator)
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/secrets-90.txt", generatorGP, generatorSP, filter = validator),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/secrets.txt", generatorGP, generatorSP, filter = validator),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/guesses.txt", generatorGP, generatorSP, filter = validator,
+                        solutionFilename = "./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/secrets.txt"),
+                    VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/guesses.txt", generatorGP, generatorSP, filter = validator)
                 )
             )
-            secretGenerator = VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets-995.txt", generatorGP, generatorSP, filter = validator)
+            secretGenerator = VocabularyFileGenerator("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/secrets-995.txt", generatorGP, generatorSP, filter = validator)
             cheaterSecretGenerator = secretGenerator
         } else {
             validator = Validators.all(
                 Validators.alphabet(characters),
-                Validators.characterOccurrences(max = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1)
+                Validators.characterOccurrences(max = if (settingsVocabulary.repetitions) settingsVocabulary.length else 1)
             )
             builder.validator = validator
             generator = CodeEnumeratingGenerator(
                 characters,
-                settings.vocabulary.length,
+                settingsVocabulary.length,
                 generatorGP,
                 generatorSP,
-                maxOccurrences = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                maxOccurrences = if (settingsVocabulary.repetitions) settingsVocabulary.length else 1,
                 shuffle = true,
                 truncateAtProduct = 5000000,
                 truncateAtLength = 50000
             )
             secretGenerator = OneCodeEnumeratingGenerator(
                 characters,
-                settings.vocabulary.length,
-                maxOccurrences = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1
+                settingsVocabulary.length,
+                maxOccurrences = if (settingsVocabulary.repetitions) settingsVocabulary.length else 1
             )
             cheaterSecretGenerator = SolutionTruncatedEnumerationCodeGenerator(
                 characters,
-                settings.vocabulary.length,
+                settingsVocabulary.length,
                 generatorSP,
-                maxOccurrences = if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                maxOccurrences = if (settingsVocabulary.repetitions) settingsVocabulary.length else 1,
                 shuffle = true,
                 truncateAtSize = 5000000,
                 pretruncateAtSize = 5000000
@@ -137,8 +139,8 @@ class ConsoleGameEnvironmentProvider {
                 MaximumScoreSelector()
             )
             ConsoleGameSettings.Players.Guesser.REALISTIC_DECISION_TREE -> {
-                val weightMap: Map<String, Double> = if (!settings.vocabulary.words) emptyMap() else {
-                    val commonWords = File("./app/src/main/assets/words/en-US/standard/length-${settings.vocabulary.length}/secrets-90.txt")
+                val weightMap: Map<String, Double> = if (!settingsVocabulary.words) emptyMap() else {
+                    val commonWords = File("./app/src/main/assets/words/en-US/standard/length-${settingsVocabulary.length}/secrets-90.txt")
                         .readLines()
                         .filter { it.isNotBlank() }
                         .distinct()
@@ -178,34 +180,42 @@ class ConsoleGameEnvironmentProvider {
         }
 
         // feedback
-        builder.feedbackProvider = when (settings.difficulty.letterFeedback) {
+        builder.feedbackProvider = when (settingsDifficulty.letterFeedback) {
             ConsoleGameSettings.Difficulty.LetterFeedback.NONE -> InferredMarkupFeedbackProvider(
                 characters,
-                settings.vocabulary.length,
-                if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                settingsVocabulary.length,
+                if (settingsVocabulary.repetitions) settingsVocabulary.length else 1,
                 setOf(InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
             )
             ConsoleGameSettings.Difficulty.LetterFeedback.DIRECT -> InferredMarkupFeedbackProvider(
                 characters,
-                settings.vocabulary.length,
-                if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
+                settingsVocabulary.length,
+                if (settingsVocabulary.repetitions) settingsVocabulary.length else 1,
                 setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT, InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION)
             )
             ConsoleGameSettings.Difficulty.LetterFeedback.DIRECT_AND_INFERRED -> InferredMarkupFeedbackProvider(
                 characters,
-                settings.vocabulary.length,
-                if (settings.vocabulary.repetitions) settings.vocabulary.length else 1,
-                setOf(InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION, InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED)
+                settingsVocabulary.length,
+                if (settingsVocabulary.repetitions) settingsVocabulary.length else 1,
+                setOf(
+                    InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION,
+                    InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT,
+                    InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED
+                )
             )
         }
-        builder.feedbackPolicy = settings.difficulty.feedbackPolicy
+        builder.feedbackPolicy = settingsDifficulty.feedbackPolicy
 
         return builder.build()
     }
 
     private fun getSettings(): ConsoleGameSettings {
         val previousSettingsName = "previous"
-        var settings = loadSettings(previousSettingsName)?.settings ?: ConsoleGameSettings()
+        var settings = loadSettings(previousSettingsName)?.settings ?: ConsoleGameSettings(
+            ConsoleGameSettings.Vocabulary(),
+            ConsoleGameSettings.Difficulty(),
+            ConsoleGameSettings.Players()
+        )
 
         if (--loopCount > 0) return settings
 
@@ -217,7 +227,8 @@ class ConsoleGameEnvironmentProvider {
             PromptOption(3,"Play", setOf("play", "go", "now", "start", "begin")),
             PromptOption(4, "Print", hidden = true),
             PromptOption(5, "List", setOf("games", "saves"), hidden = true),
-            PromptOption(6, "Loop", setOf("iterate"), hidden = true)
+            PromptOption(6, "Loop", setOf("iterate"), hidden = true),
+            PromptOption(7, "Random", setOf("scramble"), hidden = true)
         )
         val savedSettingsOffset = mainOptionPrompts.size
 
@@ -393,6 +404,14 @@ class ConsoleGameEnvironmentProvider {
                     loopCount = promptInt("Iterations", 2..1000)
                     saveSettings(previousSettingsName, SettingsWrapper(previousSettingsName, setOf(), settings))
                     return settings
+                }
+                7 -> {
+                    // scramble / random
+                    settings = ConsoleGameSettings(
+                        vocabulary = null,
+                        difficulty = null,
+                        settings.players
+                    )
                 }
                 else -> {
                     val savedSettings = savedSettingsWrappers[selection - savedSettingsOffset]
@@ -571,8 +590,9 @@ class ConsoleGameEnvironmentProvider {
     //region ConsoleGameSettings to Prompts
     //---------------------------------------------------------------------------------------------
 
-    fun <T> ConsoleGameSettings.Vocabulary.toPromptOption(value: T): PromptOption<T> {
+    fun <T> ConsoleGameSettings.Vocabulary?.toPromptOption(value: T): PromptOption<T> {
         val title = when {
+            this == null -> "Random!"
             words && repetitions -> "Secret Word (length $length), e.g.'tower', 'roots'"
             words -> "Secret Word (length $length w/o letter repetitions), e.g. 'tower', 'reach'"
             repetitions -> "Secret Code (length $length, chars $characterCount), e.g. 'AAAA', 'ACAF'"
@@ -587,8 +607,15 @@ class ConsoleGameEnvironmentProvider {
         return PromptOption(value, title, aliases)
     }
 
-    fun <T> ConsoleGameSettings.Difficulty.toPromptOption(value: T): PromptOption<T> {
+    fun <T> ConsoleGameSettings.Difficulty?.toPromptOption(value: T): PromptOption<T> {
+        val aliases = setOf(
+            "difficulty", "feedback", "markup", "hint", "keyboard", "constraint", "hard", "easy"
+        )
+
+        if (this == null) return PromptOption(value, "Random!", aliases)
+
         val elements = mutableListOf<String>()
+
         when (feedbackPolicy) {
             ConstraintPolicy.IGNORE -> elements.add("No feedback")
             ConstraintPolicy.AGGREGATED_EXACT -> elements.add("Exact letter count")
@@ -615,9 +642,7 @@ class ConsoleGameEnvironmentProvider {
 
         val title = elements.joinToString(", ")
 
-        val aliases = setOf(
-            "difficulty", "feedback", "markup", "hint", "keyboard", "constraint", "hard", "easy"
-        )
+
 
         return PromptOption(value, title, aliases)
     }
@@ -644,7 +669,7 @@ class ConsoleGameEnvironmentProvider {
 
         val aliases = setOf(
             "players", "guesser", "keeper", "solver", "evaluator", "me", "knuth", "decision",
-            "random", "automatically", "manually", "honest", "cheating", "bot"
+            "automatically", "manually", "honest", "cheating", "bot"
         )
 
         return PromptOption(value, title, aliases)
