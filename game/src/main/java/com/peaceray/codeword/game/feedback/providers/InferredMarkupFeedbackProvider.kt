@@ -540,7 +540,7 @@ class InferredMarkupFeedbackProvider(
             // possibly the first position, since the first position is either EXACT or NO and
             // the last S is marked NO (not "included"). Determine any Exact positions and attempt
             // to account for Included positions.
-            val exactPositions = candidates.indices.filter { candidates[it].size == 1 && constraint.candidate[it] in candidates[it] }
+            val exactPositions = candidates.indices.filter { candidates[it].size == 1 && constraint.candidate[it] in candidates[it] }.toSet()
             val markedCount = chars.associateWith { char -> exactPositions.count { char == word[it] } }.toMutableMap()
             // unmarked letters may still contribute to EXACT or INCLUDED, so only mark a letter
             // INCLUDED if it could not possibly contribute to EXACT any more.
@@ -557,13 +557,26 @@ class InferredMarkupFeedbackProvider(
                 val included = notExact && markedC < range.first
                 if (included) markedCount[char] = markedC + 1
                 included
-            }
+            }.toSet()
+
             // If we accounted for all INCLUDED positions, any leftover letter must not occur anywhere
-            // other than where it is positioned.
+            // other than where it is positioned. Note that we can only make this inference if
+            // we are certain the letter does not occur in ALL "maybeExactPositions", PLUS more.
+            val allExactAccountedFor = exactPositions.size == constraint.exact
             if (includedPositions.size == constraint.included) {
-                val leftoverChars = candidates.indices.filter { index ->
-                    index !in exactPositions && index !in includedPositions
-                }.map { word[it] }.toSet()
+                val leftoverCandidateChars = chars.filter { char ->
+                    val indices = word.indices.filter { char == word[it] }
+                    // the letter occurred somewhere other than EXACT, and
+                    // did not occur at all in INCLUDED
+                    (indices - exactPositions).isNotEmpty() && indices.intersect(includedPositions).isEmpty()
+                }
+                // a character in "leftoverCandidateChars" fits the bill as a leftover if it is
+                // NOT POSSIBLE that it occurs in all maybeExactPositions plus at least one more.
+                val leftoverChars = leftoverCandidateChars.filter { char ->
+                    // maybe all exact are accounted for, or maybe there would be too many of this letter
+                    val roomForOneMore = word.count { it == char } < (occurrences[char] ?: 0..0).last
+                    allExactAccountedFor || !roomForOneMore
+                }
                 leftoverChars.forEach { char ->
                     // anywhere this letter ISN'T, it CANNOT BE.
                     val notPresentIndices = candidates.indices.filter { char != word[it] }
