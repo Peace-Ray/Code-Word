@@ -35,6 +35,7 @@ class CodeKeyboardView: ConstraintLayout {
         fun onCharacter(character: Char)
         fun onEnter()
         fun onDelete()
+        fun onDeleteFully()
     }
 
     var onKeyListener: OnKeyListener? = null
@@ -56,6 +57,23 @@ class CodeKeyboardView: ConstraintLayout {
                 view is CodeKeyView -> Timber.v("onClick: DISABLED ${view.type} (${view.character})")
                 else -> Timber.v("onClickListener invoked for non-CodeKeyView $view")
             }
+        }
+    }
+
+    private val onKeyLongClickListener = object: OnLongClickListener {
+        override fun onLongClick(view: View?): Boolean {
+            when {
+                view is CodeKeyView && isEnabled -> {
+                    Timber.v("onLongClick: ENABLED ${view.type} (${view.character})")
+                    if (view.type == CodeKeyView.KeyType.DELETE) {
+                        onKeyListener?.onDeleteFully()
+                        return true
+                    }
+                }
+                view is CodeKeyView -> Timber.v("onLongClick: DISABLED ${view.type} (${view.character})")
+                else -> Timber.v("onLongClickListener invoked for non-CodeKeyView $view")
+            }
+            return false
         }
     }
     //---------------------------------------------------------------------------------------------
@@ -127,6 +145,7 @@ class CodeKeyboardView: ConstraintLayout {
         // Assumption: Keys do not contain each other.
         if (parent is CodeKeyView) {
             parent.setOnClickListener(onKeyClickListener)
+            parent.setOnLongClickListener(onKeyLongClickListener)
             keys.add(parent)
         } else if (parent is ViewGroup) {
             parent.children.forEach { traverse(it) }

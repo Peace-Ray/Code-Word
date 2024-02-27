@@ -365,6 +365,13 @@ class GameFragment: Fragment(R.layout.fragment_game), GameContract.View {
                 presenter.onGuessUpdated(guess, guess.dropLast(1))
             }
         }
+
+        override fun onDeleteFully() {
+            val guess = guessAdapter.guesses.lastOrNull()?.candidate ?: ""
+            if (guess.isNotEmpty()) {
+                presenter.onGuessUpdated(guess, "")
+            }
+        }
     }
 
     private fun onKeyboardStyleUpdate(characters: Iterable<Char>, locale: Locale?) {
