@@ -20,6 +20,12 @@ release/
 # Console save files
 save_data/
 
+# Fastlane Files
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+
 # Gradle files
 .gradle/
 build/
