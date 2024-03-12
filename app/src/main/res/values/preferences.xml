@@ -30,6 +30,7 @@
 
     <!-- VALUES: color_scheme -->
     <string name="pref_entry_value_color_scheme_sky">sky</string>
+    <string name="pref_entry_value_color_scheme_dahlia">dahlia</string>
     <string name="pref_entry_value_color_scheme_semaphore">semaphore</string>
     <string name="pref_entry_value_color_scheme_contrast">contrast</string>
     <string name="pref_entry_value_color_scheme_blaze">blaze</string>
@@ -37,12 +38,14 @@
     <string-array name="pref_entry_values_color_scheme">
         <item>@string/pref_entry_value_color_scheme_sky</item>
         <item>@string/pref_entry_value_color_scheme_semaphore</item>
+        <item>@string/pref_entry_value_color_scheme_dahlia</item>
         <item>@string/pref_entry_value_color_scheme_contrast</item>
     </string-array>
 
     <string-array name="pref_entries_color_scheme">
         <item>@string/pref_entry_color_scheme_sky</item>
         <item>@string/pref_entry_color_scheme_semaphore</item>
+        <item>@string/pref_entry_color_scheme_dahlia</item>
         <item>@string/pref_entry_color_scheme_contrast</item>
     </string-array>
 

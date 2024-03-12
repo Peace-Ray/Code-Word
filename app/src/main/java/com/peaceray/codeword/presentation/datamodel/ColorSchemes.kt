@@ -3,6 +3,7 @@ package com.peaceray.codeword.presentation.datamodel
 enum class EvaluationColorScheme {
     SKY,
     SEMAPHORE,
+    DAHLIA,
     CONTRAST,
     BLAZE
 }

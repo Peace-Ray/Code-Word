@@ -404,6 +404,7 @@
 
     <string name="pref_entry_color_scheme_sky">Sky</string>
     <string name="pref_entry_color_scheme_semaphore">Semaphore</string>
+    <string name="pref_entry_color_scheme_dahlia">Dahlia</string>
     <string name="pref_entry_color_scheme_blaze">Blaze</string>
     <string name="pref_entry_color_scheme_contrast">High contrast</string>
 
