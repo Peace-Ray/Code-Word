@@ -87,8 +87,8 @@
     <string name="game_setup_daily_seed">Daily %1$s</string>
 
     <string name="game_setup_status_ongoing_daily">Resume the Daily Puzzle</string>
-    <string name="game_setup_status_new_daily">Today\'s Puzzle: %1$d-letter %2$s, %3$s</string>
-    <string name="game_setup_status_new_daily_no_letter_repetition">Today\'s Puzzle: %1$d-letter %2$s, feedback %3$s. No repeated letters.</string>
+    <string name="game_setup_status_new_daily">Today\'s Puzzle: %1$d-letter %2$s; %3$s</string>
+    <string name="game_setup_status_new_daily_no_letter_repetition">Today\'s Puzzle: %1$d-letter %2$s; %3$s. No repeated letters.</string>
     <string name="game_setup_status_new_daily_no_specs">Today\'s Puzzle</string>
     <string name="game_setup_status_won_daily">You solved the Daily Puzzle! See you tomorrow</string>
     <string name="game_setup_status_lost_daily">See you tomorrow for a new Daily Puzzle</string>
