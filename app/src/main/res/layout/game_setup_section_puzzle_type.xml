@@ -99,6 +99,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:spinnerMode="dropdown"
+            style="@style/Widget.CodeWord.SeekBar"
             />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
@@ -129,6 +130,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="@dimen/setup_control_spacing_half"
+            style="@style/Widget.CodeWord.SeekBar"
             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -159,6 +161,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="@dimen/setup_control_spacing_half"
+            style="@style/Widget.CodeWord.SeekBar"
             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

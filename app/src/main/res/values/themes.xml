@@ -1,4 +1,7 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    >
     <!-- BASE SCHEMES -->
 
     <!-- Base application theme. -->
@@ -51,9 +54,16 @@
         <item name="android:textSize">@dimen/text_size</item>
     </style>
 
-    <!-- Check Box Text -->
+    <!-- Check Box -->
     <style name="Widget.CodeWord.CompoundButton.CheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
         <item name="android:textColor">@color/text</item>
+        <item name="buttonTint">@color/checkable</item>
+    </style>
+
+    <!-- Seek Bar -->
+    <style name="Widget.CodeWord.SeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:progressTint">?attr/colorSecondary</item>
+        <item name="android:thumbTint">?attr/colorSecondaryVariant</item>
     </style>
 
     <!-- Overlays -->
