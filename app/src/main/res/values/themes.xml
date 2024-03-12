@@ -1,4 +1,7 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    >
     <!-- BASE SCHEMES -->
 
     <!-- Base application theme. -->
@@ -51,9 +54,16 @@
         <item name="android:textSize">@dimen/text_size</item>
     </style>
 
-    <!-- Check Box Text -->
+    <!-- Check Box -->
     <style name="Widget.CodeWord.CompoundButton.CheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
         <item name="android:textColor">@color/text</item>
+        <item name="buttonTint">@color/checkable</item>
+    </style>
+
+    <!-- Seek Bar -->
+    <style name="Widget.CodeWord.SeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:progressTint">?attr/colorSecondary</item>
+        <item name="android:thumbTint">?attr/colorSecondaryVariant</item>
     </style>
 
     <!-- Overlays -->
@@ -115,6 +125,17 @@
         <item name="colorSecondary">@color/md_amber_300</item>
         <item name="colorSecondaryVariant">@color/md_amber_500</item>
         <item name="colorOnSecondary">@color/white</item>
+    </style>
+
+    <!-- Dahlia Theme -->
+    <style name="Theme.CodeWord.Dahlia" parent="Theme.CodeWord">
+        <item name="colorPrimary">@color/md_pink_A100</item>
+        <item name="colorPrimaryVariant">@color/md_pink_A200</item>
+        <item name="colorOnPrimary">@color/md_pink_50</item>
+
+        <item name="colorSecondary">@color/md_pink_A100</item>
+        <item name="colorSecondaryVariant">@color/md_pink_A200</item>
+        <item name="colorOnSecondary">@color/md_pink_50</item>
     </style>
 
     <!-- Contrast Theme -->

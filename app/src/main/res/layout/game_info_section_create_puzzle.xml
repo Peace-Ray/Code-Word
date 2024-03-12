@@ -18,6 +18,7 @@
         android:textColor="?attr/colorOnSecondary"
         app:icon="@drawable/ic_rounded_puzzle_create_24"
         app:drawableTint="?attr/colorOnSecondary"
+        app:iconTint="?attr/colorOnSecondary"
         android:drawablePadding="@dimen/button_icon_padding"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"

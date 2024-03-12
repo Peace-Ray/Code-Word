@@ -61,6 +61,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="@dimen/setup_control_spacing_half"
+            style="@style/Widget.CodeWord.SeekBar"
             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

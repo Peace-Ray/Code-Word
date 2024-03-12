@@ -58,6 +58,7 @@ class ColorManager @Inject constructor(
     private fun EvaluationColorScheme.toPreferenceValue() = resources.getString(when(this) {
         EvaluationColorScheme.SKY -> R.string.pref_entry_value_color_scheme_sky
         EvaluationColorScheme.SEMAPHORE -> R.string.pref_entry_value_color_scheme_semaphore
+        EvaluationColorScheme.DAHLIA -> R.string.pref_entry_value_color_scheme_dahlia
         EvaluationColorScheme.CONTRAST -> R.string.pref_entry_value_color_scheme_contrast
         EvaluationColorScheme.BLAZE -> R.string.pref_entry_value_color_scheme_blaze
     })
@@ -65,6 +66,7 @@ class ColorManager @Inject constructor(
     private fun String.toEvaluationColorScheme() = when(this) {
         resources.getString(R.string.pref_entry_value_color_scheme_sky) -> EvaluationColorScheme.SKY
         resources.getString(R.string.pref_entry_value_color_scheme_semaphore) -> EvaluationColorScheme.SEMAPHORE
+        resources.getString(R.string.pref_entry_value_color_scheme_dahlia) -> EvaluationColorScheme.DAHLIA
         resources.getString(R.string.pref_entry_value_color_scheme_contrast) -> EvaluationColorScheme.CONTRAST
         resources.getString(R.string.pref_entry_value_color_scheme_blaze) -> EvaluationColorScheme.BLAZE
         else -> {
@@ -245,6 +247,7 @@ class ColorManager @Inject constructor(
         return when(key.evaluationColors) {
             EvaluationColorScheme.SKY -> R.style.Theme_CodeWord_Sky
             EvaluationColorScheme.SEMAPHORE -> R.style.Theme_CodeWord_Semaphore
+            EvaluationColorScheme.DAHLIA -> R.style.Theme_CodeWord_Dahlia
             EvaluationColorScheme.CONTRAST -> R.style.Theme_CodeWord_Contrast
             EvaluationColorScheme.BLAZE -> R.style.Theme_CodeWord_Blaze
         }
@@ -325,6 +328,14 @@ class ColorManager @Inject constructor(
                     getColor(R.color.md_amber_300),
                     getColor(R.color.md_amber_500),
                     getColor(R.color.md_orange_500),
+                    getColor(R.color.md_red_500)
+                )
+            }
+            EvaluationColorScheme.DAHLIA -> {
+                fullColorSteps = listOf(
+                    getColor(R.color.md_pink_A100),
+                    getColor(R.color.md_pink_A200),
+                    getColor(R.color.md_pink_A400),
                     getColor(R.color.md_red_500)
                 )
             }
@@ -448,6 +459,43 @@ class ColorManager @Inject constructor(
                     no = getColor(R.color.md_grey_600),
                     noVariant = getColor(R.color.md_grey_800),
                     onNo = getColor(R.color.white)
+                )
+            }
+            EvaluationColorScheme.DAHLIA -> if (key.darkMode) {
+                ColorSwatch.Evaluation(
+                    untried = getColor(R.color.md_grey_500),
+                    untriedVariant = getColor(R.color.md_grey_400),
+                    onUntried = getColor(R.color.white),
+
+                    exact = getColor(R.color.md_pink_A100),
+                    exactVariant = getColor(R.color.md_pink_A200),
+                    onExact = getColor(R.color.white),
+
+                    included = getColor(R.color.md_yellow_A100),
+                    includedVariant = getColor(R.color.md_yellow_A200),
+                    onIncluded = getColor(R.color.md_yellow_700),
+
+                    no = getColor(R.color.md_grey_200),
+                    noVariant = getColor(R.color.md_grey_200),
+                    onNo = getColor(R.color.md_grey_400)
+                )
+            } else {
+                ColorSwatch.Evaluation(
+                    untried = getColor(R.color.md_grey_300),
+                    untriedVariant = getColor(R.color.md_grey_400),
+                    onUntried = getColor(R.color.black),
+
+                    exact = getColor(R.color.md_pink_A100),
+                    exactVariant = getColor(R.color.md_pink_A200),
+                    onExact = getColor(R.color.md_pink_50),
+
+                    included = getColor(R.color.md_yellow_A100),
+                    includedVariant = getColor(R.color.md_yellow_A200),
+                    onIncluded = getColor(R.color.md_yellow_700),
+
+                    no = getColor(R.color.md_grey_200),
+                    noVariant = getColor(R.color.md_grey_200),
+                    onNo = getColor(R.color.md_grey_400)
                 )
             }
             EvaluationColorScheme.CONTRAST -> if (key.darkMode) {
@@ -579,6 +627,20 @@ class ColorManager @Inject constructor(
                 aggregated = ColorSwatch.Emoji(
                     untried = if (key.darkMode) "⚫" else "⚪",
                     exact = "\uD83D\uDFE2",     // green circle
+                    included = "\uD83D\uDFE1",  // yellow circle
+                    no = if (key.darkMode) "⚫" else "⚪",
+                )
+            )
+            EvaluationColorScheme.DAHLIA -> ColorSwatch.EmojiSet(
+                positioned = ColorSwatch.Emoji(
+                    untried = if (key.darkMode) "⬛" else "⬜",
+                    exact = "\uD83D\uDFEA",     // purple square
+                    included = "\uD83D\uDFE8",  // yellow square
+                    no = if (key.darkMode) "⬛" else "⬜",
+                ),
+                aggregated = ColorSwatch.Emoji(
+                    untried = if (key.darkMode) "⚫" else "⚪",
+                    exact = "\uD83D\uDFE3",     // purple circle
                     included = "\uD83D\uDFE1",  // yellow circle
                     no = if (key.darkMode) "⚫" else "⚪",
                 )
