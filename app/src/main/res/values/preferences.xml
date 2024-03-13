@@ -39,6 +39,7 @@
         <item>@string/pref_entry_value_color_scheme_sky</item>
         <item>@string/pref_entry_value_color_scheme_semaphore</item>
         <item>@string/pref_entry_value_color_scheme_dahlia</item>
+        <item>@string/pref_entry_value_color_scheme_blaze</item>
         <item>@string/pref_entry_value_color_scheme_contrast</item>
     </string-array>
 
@@ -46,6 +47,7 @@
         <item>@string/pref_entry_color_scheme_sky</item>
         <item>@string/pref_entry_color_scheme_semaphore</item>
         <item>@string/pref_entry_color_scheme_dahlia</item>
+        <item>@string/pref_entry_color_scheme_blaze</item>
         <item>@string/pref_entry_color_scheme_contrast</item>
     </string-array>
 

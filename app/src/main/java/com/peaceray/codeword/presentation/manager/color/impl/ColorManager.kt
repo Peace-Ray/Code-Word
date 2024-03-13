@@ -537,38 +537,38 @@ class ColorManager @Inject constructor(
             }
             EvaluationColorScheme.BLAZE -> if (key.darkMode) {
                 ColorSwatch.Evaluation(
-                    untried = getColor(R.color.md_yellow_500),
-                    untriedVariant = getColor(R.color.md_yellow_700),
-                    onUntried = getColor(R.color.black),
+                    untried = getColor(R.color.md_grey_500),
+                    untriedVariant = getColor(R.color.md_grey_400),
+                    onUntried = getColor(R.color.white),
 
-                    exact = getColor(R.color.md_amber_700),
-                    exactVariant = getColor(R.color.md_amber_900),
+                    exact = getColor(R.color.md_amber_A200),
+                    exactVariant = getColor(R.color.md_amber_A400),
                     onExact = getColor(R.color.black),
 
-                    included = getColor(R.color.md_deep_orange_600),
-                    includedVariant = getColor(R.color.md_deep_orange_800),
-                    onIncluded = getColor(R.color.black),
+                    included = getColor(R.color.md_deep_orange_500),
+                    includedVariant = getColor(R.color.md_deep_orange_600),
+                    onIncluded = getColor(R.color.md_brown_800),
 
-                    no = getColor(R.color.md_grey_200),
-                    noVariant = getColor(R.color.md_grey_300),
-                    onNo = getColor(R.color.black)
+                    no = getColor(R.color.md_brown_100),
+                    noVariant = getColor(R.color.md_brown_200),
+                    onNo = getColor(R.color.md_brown_800)
                 )
             } else {
                 ColorSwatch.Evaluation(
-                    untried = getColor(R.color.md_yellow_500),
-                    untriedVariant = getColor(R.color.md_yellow_700),
+                    untried = getColor(R.color.md_grey_200),
+                    untriedVariant = getColor(R.color.md_grey_300),
                     onUntried = getColor(R.color.black),
 
-                    exact = getColor(R.color.md_amber_700),
-                    exactVariant = getColor(R.color.md_amber_900),
+                    exact = getColor(R.color.md_amber_300),
+                    exactVariant = getColor(R.color.md_amber_500),
                     onExact = getColor(R.color.black),
 
-                    included = getColor(R.color.md_deep_orange_600),
-                    includedVariant = getColor(R.color.md_deep_orange_800),
-                    onIncluded = getColor(R.color.black),
+                    included = getColor(R.color.md_deep_orange_800),
+                    includedVariant = getColor(R.color.md_deep_orange_600),
+                    onIncluded = getColor(R.color.white),
 
-                    no = getColor(R.color.md_grey_800),
-                    noVariant = getColor(R.color.md_grey_900),
+                    no = getColor(R.color.md_brown_900), //getColor(R.color.md_grey_800),
+                    noVariant = getColor(R.color.md_brown_800), //getColor(R.color.md_grey_900),
                     onNo = getColor(R.color.white)
                 )
             }

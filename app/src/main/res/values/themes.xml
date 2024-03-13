@@ -68,7 +68,11 @@
 
     <!-- Overlays -->
     <style name="ThemeOverlay.CodeWord.ActionBar" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
-
+        <item name="iconTint">?attr/colorOnPrimary</item>
+        <item name="colorControlNormal">?attr/colorOnPrimary</item>
+        <item name="android:textColorPrimary">?attr/colorOnPrimary</item>
+        <item name="android:textColorSecondary">?attr/colorOnPrimary</item>
+        <item name="actionMenuTextColor">?attr/colorOnPrimary</item>
     </style>
 
     <style name="ThemeOverlay.CodeWord.Popup" parent="@style/ThemeOverlay.AppCompat.Light">
@@ -149,14 +153,16 @@
         <item name="colorOnSecondary">@color/white</item>
     </style>
 
-    <!-- Blaze Theme (not available) -->
+    <!-- Blaze Theme -->
     <style name="Theme.CodeWord.Blaze" parent="Theme.CodeWord">
-        <item name="colorPrimary">@color/md_amber_700</item>
-        <item name="colorPrimaryVariant">@color/md_amber_900</item>
+        <item name="colorPrimary">@color/md_amber_300</item>
+        <item name="colorPrimaryVariant">@color/md_amber_500</item>
         <item name="colorOnPrimary">@color/black</item>
 
-        <item name="colorSecondary">@color/md_deep_orange_600</item>
-        <item name="colorSecondaryVariant">@color/md_deep_orange_800</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorSecondary">@color/md_deep_orange_800</item>
+        <item name="colorSecondaryVariant">@color/md_deep_orange_600</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
 </resources>

@@ -115,8 +115,10 @@
 
     <!-- Blaze Theme (not available) -->
     <style name="Theme.CodeWord.Blaze" parent="Theme.CodeWord">
-        <item name="colorSecondary">@color/md_amber_700</item>
-        <item name="colorSecondaryVariant">@color/md_amber_900</item>
+        <item name="colorSecondary">@color/md_amber_A200</item>
+        <item name="colorSecondaryVariant">@color/md_amber_A400</item>
         <item name="colorOnSecondary">@color/black</item>
+
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
     </style>
 </resources>
