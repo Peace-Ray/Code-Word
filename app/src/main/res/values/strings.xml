@@ -149,9 +149,9 @@
 
     <string name="game_setup_feedback_prompt">Feedback:</string>
     <string name="game_setup_feedback_perfect">By Letter</string>
-    <string name="game_setup_feedback_aggregated_counts"># Exact, # Included</string>
-    <string name="game_setup_feedback_included_counts"># Included Letters</string>
-    <string name="game_setup_feedback_exacts_counts"># Exact Letters</string>
+    <string name="game_setup_feedback_aggregated_counts">Exact &amp; Included</string>
+    <string name="game_setup_feedback_included_counts">Included Count</string>
+    <string name="game_setup_feedback_exacts_counts">Exact Count</string>
 
     <string-array name="game_setup_feedback_values">
         <item>@string/game_setup_feedback_perfect</item>
