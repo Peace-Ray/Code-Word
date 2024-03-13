@@ -11,9 +11,20 @@
         <item name="colorPrimaryVariant">@color/md_light_blue_500</item>
         <item name="colorOnPrimary">@color/white</item>
 
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/md_amber_300</item>
-        <item name="colorSecondaryVariant">@color/md_amber_500</item>
+        <!-- Secondary brand color.
+            Convention: Secondary is used for many elements for which primary is inappropriate,
+            e.g. buttons, sliders, checkboxes, etc.
+            Variant is applied when two-tone colors are needed, e.g. as the progress bar
+            for a SeekBar whose thumb is secondary, for lighter elements such as a hairline
+            border around an element, and when the element is large and the OnSecondary
+            contrasting element will be applied (such as a button w/ icon or text).
+            Because some elements are difficult to apply custom styles (e.g. Preferences),
+            and because the Variant is often a more stark color than the original, color themes
+            here (usually) reverse the Secondary / SecondaryVariant colors used in ColorManager;
+            the SecondaryVariant is used when the colorscheme's "included" color is desired.
+            -->
+        <item name="colorSecondary">@color/md_amber_500</item>
+        <item name="colorSecondaryVariant">@color/md_amber_300</item>
         <item name="colorOnSecondary">@color/white</item>
 
         <!-- Status bar color. -->
@@ -24,6 +35,8 @@
         <item name="android:checkboxStyle">@style/Widget.CodeWord.CompoundButton.CheckBox</item>
 
         <!-- Action bar color -->
+        <item name="android:actionBarTabStyle">@style/Widget.AppCompat.ActionBar.TabText</item>
+        <item name="android:actionBarTabTextStyle">@style/Widget.AppCompat.ActionBar.TabText</item>
         <item name="android:actionBarTheme">@style/ThemeOverlay.CodeWord.ActionBar</item>
         <item name="android:popupTheme">@style/ThemeOverlay.CodeWord.Popup</item>
 
@@ -62,8 +75,8 @@
 
     <!-- Seek Bar -->
     <style name="Widget.CodeWord.SeekBar" parent="Widget.AppCompat.SeekBar">
-        <item name="android:progressTint">?attr/colorSecondary</item>
-        <item name="android:thumbTint">?attr/colorSecondaryVariant</item>
+        <item name="android:progressTint">?attr/colorSecondaryVariant</item>
+        <item name="android:thumbTint">?attr/colorSecondary</item>
     </style>
 
     <!-- Overlays -->
@@ -96,14 +109,14 @@
     </style>
 
     <style name="Widget.CodeWord.AlertDialog.PositiveButtonStyle" parent="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog">
-        <item name="android:textColor">?attr/colorSecondaryVariant</item>
+        <item name="android:textColor">?attr/colorSecondary</item>
     </style>
 
     <!-- Tabs -->
     <style name="Widget.CodeWord.TabLayout" parent="@style/Widget.Design.TabLayout">
         <item name="tabBackground">@color/white</item>
         <item name="tabTextColor">@color/md_grey_600</item>
-        <item name="tabIndicatorColor">?attr/colorSecondary</item>
+        <item name="tabIndicatorColor">?attr/colorSecondaryVariant</item>
         <item name="tabSelectedTextColor">?attr/colorSecondary</item>
     </style>
 
@@ -115,8 +128,8 @@
         <item name="colorPrimaryVariant">@color/md_light_blue_500</item>
         <item name="colorOnPrimary">@color/white</item>
 
-        <item name="colorSecondary">@color/md_amber_300</item>
-        <item name="colorSecondaryVariant">@color/md_amber_500</item>
+        <item name="colorSecondaryVariant">@color/md_amber_300</item>
+        <item name="colorSecondary">@color/md_amber_500</item>
         <item name="colorOnSecondary">@color/white</item>
     </style>
 
@@ -126,8 +139,8 @@
         <item name="colorPrimaryVariant">@color/md_green_700</item>
         <item name="colorOnPrimary">@color/white</item>
 
-        <item name="colorSecondary">@color/md_amber_300</item>
-        <item name="colorSecondaryVariant">@color/md_amber_500</item>
+        <item name="colorSecondaryVariant">@color/md_amber_300</item>
+        <item name="colorSecondary">@color/md_amber_500</item>
         <item name="colorOnSecondary">@color/white</item>
     </style>
 
@@ -137,20 +150,9 @@
         <item name="colorPrimaryVariant">@color/md_pink_A200</item>
         <item name="colorOnPrimary">@color/md_pink_50</item>
 
-        <item name="colorSecondary">@color/md_pink_A100</item>
-        <item name="colorSecondaryVariant">@color/md_pink_A200</item>
+        <item name="colorSecondaryVariant">@color/md_pink_A100</item>
+        <item name="colorSecondary">@color/md_pink_A200</item>
         <item name="colorOnSecondary">@color/md_pink_50</item>
-    </style>
-
-    <!-- Contrast Theme -->
-    <style name="Theme.CodeWord.Contrast" parent="Theme.CodeWord">
-        <item name="colorPrimary">@color/md_deep_orange_500</item>
-        <item name="colorPrimaryVariant">@color/md_deep_orange_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-
-        <item name="colorSecondary">@color/md_light_blue_A200</item>
-        <item name="colorSecondaryVariant">@color/md_light_blue_A400</item>
-        <item name="colorOnSecondary">@color/white</item>
     </style>
 
     <!-- Blaze Theme -->
@@ -159,10 +161,34 @@
         <item name="colorPrimaryVariant">@color/md_amber_500</item>
         <item name="colorOnPrimary">@color/black</item>
 
-        <item name="colorSecondary">@color/md_deep_orange_800</item>
-        <item name="colorSecondaryVariant">@color/md_deep_orange_600</item>
+        <item name="colorSecondaryVariant">@color/md_deep_orange_800</item>
+        <item name="colorSecondary">@color/md_deep_orange_600</item>
         <item name="colorOnSecondary">@color/white</item>
 
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
+
+    <!-- Ghost Theme -->
+    <style name="Theme.CodeWord.Ghost" parent="Theme.CodeWord">
+        <item name="colorPrimary">@color/md_purple_A200</item>
+        <item name="colorPrimaryVariant">@color/md_purple_A700</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- swapped from normal interface, for bolder controls -->
+        <item name="colorSecondaryVariant">@color/md_blue_100</item>
+        <item name="colorSecondary">@color/md_blue_300</item>
+        <item name="colorOnSecondary">@color/md_grey_700</item>
+    </style>
+
+    <!-- Contrast Theme -->
+    <style name="Theme.CodeWord.Contrast" parent="Theme.CodeWord">
+        <item name="colorPrimary">@color/md_deep_orange_500</item>
+        <item name="colorPrimaryVariant">@color/md_deep_orange_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <item name="colorSecondaryVariant">@color/md_light_blue_A200</item>
+        <item name="colorSecondary">@color/md_light_blue_A400</item>
+        <item name="colorOnSecondary">@color/white</item>
+    </style>
+
 </resources>

@@ -7,9 +7,21 @@
         <item name="colorOnPrimary">@color/white</item>
 
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/md_teal_200</item>
-        <item name="colorSecondaryVariant">@color/md_teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <!-- Secondary brand color.
+            Convention: Secondary is used for many elements for which primary is inappropriate,
+            e.g. buttons, sliders, checkboxes, etc.
+            Variant is applied when two-tone colors are needed, e.g. as the progress bar
+            for a SeekBar whose thumb is secondary, for lighter elements such as a hairline
+            border around an element, and when the element is large and the OnSecondary
+            contrasting element will be applied (such as a button w/ icon or text).
+            Because some elements are difficult to apply custom styles (e.g. Preferences),
+            and because the Variant is often a more stark color than the original, color themes
+            here (usually) reverse the Secondary / SecondaryVariant colors used in ColorManager;
+            the SecondaryVariant is used when the colorscheme's "included" color is desired.
+            -->
+        <item name="colorSecondary">@color/md_light_blue_500</item>
+        <item name="colorSecondaryVariant">@color/md_light_blue_300</item>
+        <item name="colorOnSecondary">@color/white</item>
 
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
@@ -87,38 +99,45 @@
 
     <!-- Sky Theme -->
     <style name="Theme.CodeWord.Sky" parent="Theme.CodeWord">
-        <item name="colorSecondary">@color/md_light_blue_300</item>
-        <item name="colorSecondaryVariant">@color/md_light_blue_500</item>
+        <item name="colorSecondaryVariant">@color/md_light_blue_300</item>
+        <item name="colorSecondary">@color/md_light_blue_500</item>
         <item name="colorOnSecondary">@color/white</item>
     </style>
 
     <!-- Semaphore Theme -->
     <style name="Theme.CodeWord.Semaphore" parent="Theme.CodeWord">
-        <item name="colorSecondary">@color/md_green_500</item>
-        <item name="colorSecondaryVariant">@color/md_green_700</item>
+        <item name="colorSecondaryVariant">@color/md_green_500</item>
+        <item name="colorSecondary">@color/md_green_700</item>
         <item name="colorOnSecondary">@color/white</item>
     </style>
 
     <!-- Dahlia Theme -->
     <style name="Theme.CodeWord.Dahlia" parent="Theme.CodeWord">
-        <item name="colorSecondary">@color/md_pink_A100</item>
-        <item name="colorSecondaryVariant">@color/md_pink_A200</item>
+        <item name="colorSecondaryVariant">@color/md_pink_A100</item>
+        <item name="colorSecondary">@color/md_pink_A200</item>
         <item name="colorOnSecondary">@color/md_pink_50</item>
-    </style>
-
-    <!-- Contrast Theme -->
-    <style name="Theme.CodeWord.Contrast" parent="Theme.CodeWord">
-        <item name="colorSecondary">@color/md_deep_orange_500</item>
-        <item name="colorSecondaryVariant">@color/md_deep_orange_700</item>
-        <item name="colorOnSecondary">@color/white</item>
     </style>
 
     <!-- Blaze Theme -->
     <style name="Theme.CodeWord.Blaze" parent="Theme.CodeWord">
-        <item name="colorSecondary">@color/md_amber_A200</item>
-        <item name="colorSecondaryVariant">@color/md_amber_A400</item>
+        <item name="colorSecondaryVariant">@color/md_amber_A200</item>
+        <item name="colorSecondary">@color/md_amber_A400</item>
         <item name="colorOnSecondary">@color/black</item>
 
         <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+    </style>
+
+    <!-- Ghost Theme -->
+    <style name="Theme.CodeWord.Ghost" parent="Theme.CodeWord">
+        <item name="colorSecondaryVariant">@color/md_purple_A200</item>
+        <item name="colorSecondary">@color/md_purple_A100</item>
+        <item name="colorOnSecondary">@color/white</item>
+    </style>
+
+    <!-- Contrast Theme -->
+    <style name="Theme.CodeWord.Contrast" parent="Theme.CodeWord">
+        <item name="colorSecondaryVariant">@color/md_deep_orange_500</item>
+        <item name="colorSecondary">@color/md_deep_orange_700</item>
+        <item name="colorOnSecondary">@color/white</item>
     </style>
 </resources>

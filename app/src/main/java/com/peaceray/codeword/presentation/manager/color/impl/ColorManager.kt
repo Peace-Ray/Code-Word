@@ -59,16 +59,18 @@ class ColorManager @Inject constructor(
         EvaluationColorScheme.SKY -> R.string.pref_entry_value_color_scheme_sky
         EvaluationColorScheme.SEMAPHORE -> R.string.pref_entry_value_color_scheme_semaphore
         EvaluationColorScheme.DAHLIA -> R.string.pref_entry_value_color_scheme_dahlia
-        EvaluationColorScheme.CONTRAST -> R.string.pref_entry_value_color_scheme_contrast
         EvaluationColorScheme.BLAZE -> R.string.pref_entry_value_color_scheme_blaze
+        EvaluationColorScheme.GHOST -> R.string.pref_entry_value_color_scheme_ghost
+        EvaluationColorScheme.CONTRAST -> R.string.pref_entry_value_color_scheme_contrast
     })
 
     private fun String.toEvaluationColorScheme() = when(this) {
         resources.getString(R.string.pref_entry_value_color_scheme_sky) -> EvaluationColorScheme.SKY
         resources.getString(R.string.pref_entry_value_color_scheme_semaphore) -> EvaluationColorScheme.SEMAPHORE
         resources.getString(R.string.pref_entry_value_color_scheme_dahlia) -> EvaluationColorScheme.DAHLIA
-        resources.getString(R.string.pref_entry_value_color_scheme_contrast) -> EvaluationColorScheme.CONTRAST
         resources.getString(R.string.pref_entry_value_color_scheme_blaze) -> EvaluationColorScheme.BLAZE
+        resources.getString(R.string.pref_entry_value_color_scheme_ghost) -> EvaluationColorScheme.GHOST
+        resources.getString(R.string.pref_entry_value_color_scheme_contrast) -> EvaluationColorScheme.CONTRAST
         else -> {
             Timber.e("Don't recognize EvaluationColorScheme entry value $this")
             EvaluationColorScheme.SEMAPHORE
@@ -248,8 +250,9 @@ class ColorManager @Inject constructor(
             EvaluationColorScheme.SKY -> R.style.Theme_CodeWord_Sky
             EvaluationColorScheme.SEMAPHORE -> R.style.Theme_CodeWord_Semaphore
             EvaluationColorScheme.DAHLIA -> R.style.Theme_CodeWord_Dahlia
-            EvaluationColorScheme.CONTRAST -> R.style.Theme_CodeWord_Contrast
             EvaluationColorScheme.BLAZE -> R.style.Theme_CodeWord_Blaze
+            EvaluationColorScheme.GHOST -> R.style.Theme_CodeWord_Ghost
+            EvaluationColorScheme.CONTRAST -> R.style.Theme_CodeWord_Contrast
         }
     }
 
@@ -339,20 +342,28 @@ class ColorManager @Inject constructor(
                     getColor(R.color.md_red_500)
                 )
             }
-            EvaluationColorScheme.CONTRAST -> {
-                fullColorSteps = listOf(
-                    getColor(R.color.md_light_blue_A200),
-                    getColor(R.color.md_light_blue_A400),
-                    getColor(R.color.md_cyan_A400),
-                    getColor(R.color.md_cyan_A200)
-                )
-            }
             EvaluationColorScheme.BLAZE -> {
                 fullColorSteps = listOf(
                     getColor(R.color.md_deep_orange_600),
                     getColor(R.color.md_deep_orange_800),
                     getColor(R.color.md_light_blue_A200),
                     getColor(R.color.md_light_blue_A400)
+                )
+            }
+            EvaluationColorScheme.GHOST -> {
+                fullColorSteps = listOf(
+                    getColor(R.color.md_blue_300),
+                    getColor(R.color.md_blue_A200),
+                    getColor(R.color.md_purple_A200),
+                    getColor(R.color.md_purple_A400)
+                )
+            }
+            EvaluationColorScheme.CONTRAST -> {
+                fullColorSteps = listOf(
+                    getColor(R.color.md_light_blue_A200),
+                    getColor(R.color.md_light_blue_A400),
+                    getColor(R.color.md_cyan_A400),
+                    getColor(R.color.md_cyan_A200)
                 )
             }
         }
@@ -535,6 +546,43 @@ class ColorManager @Inject constructor(
                     onNo = getColor(R.color.white)
                 )
             }
+            EvaluationColorScheme.GHOST -> if (key.darkMode) {
+                ColorSwatch.Evaluation(
+                    untried = getColor(R.color.md_grey_400),
+                    untriedVariant = getColor(R.color.md_grey_600),
+                    onUntried = getColor(R.color.black),
+
+                    exact = getColor(R.color.md_purple_A200),
+                    exactVariant = getColor(R.color.md_purple_A700),
+                    onExact = getColor(R.color.white),
+
+                    included = getColor(R.color.md_blue_100),
+                    includedVariant = getColor(R.color.md_blue_300),
+                    onIncluded = getColor(R.color.md_grey_700),
+
+                    no = getColor(R.color.md_grey_700),
+                    noVariant = getColor(R.color.md_grey_900),
+                    onNo = getColor(R.color.md_grey_300)
+                )
+            } else {
+                ColorSwatch.Evaluation(
+                    untried = getColor(R.color.md_grey_300),
+                    untriedVariant = getColor(R.color.md_grey_400),
+                    onUntried = getColor(R.color.md_grey_700),
+
+                    exact = getColor(R.color.md_purple_A200),
+                    exactVariant = getColor(R.color.md_purple_A700),
+                    onExact = getColor(R.color.white),
+
+                    included = getColor(R.color.md_blue_100),
+                    includedVariant = getColor(R.color.md_blue_300),
+                    onIncluded = getColor(R.color.md_grey_700),
+
+                    no = getColor(R.color.md_grey_50),
+                    noVariant = getColor(R.color.md_grey_200),
+                    onNo = getColor(R.color.md_grey_400)
+                )
+            }
             EvaluationColorScheme.CONTRAST -> if (key.darkMode) {
                 ColorSwatch.Evaluation(
                     untried = getColor(R.color.md_grey_500),
@@ -657,6 +705,20 @@ class ColorManager @Inject constructor(
                     exact = "\uD83D\uDFE1",     // yellow circle
                     included = "\uD83D\uDD34",     // red circle
                     no = if (key.darkMode)  "⚪" else "⚫",
+                )
+            )
+            EvaluationColorScheme.GHOST -> ColorSwatch.EmojiSet(
+                positioned = ColorSwatch.Emoji(
+                    untried = if (key.darkMode) "⬛" else "⬜",
+                    exact = "\uD83D\uDFEA",     // purple square
+                    included = "\uD83D\uDFE6",  // blue square
+                    no = if (key.darkMode) "⬛" else "⬜",
+                ),
+                aggregated = ColorSwatch.Emoji(
+                    untried = if (key.darkMode) "⚫" else "⚪",
+                    exact = "\uD83D\uDFE3",     // purple circle
+                    included = "\uD83D\uDD35",  // blue circle
+                    no = if (key.darkMode) "⚫" else "⚪",
                 )
             )
             EvaluationColorScheme.CONTRAST -> ColorSwatch.EmojiSet(
