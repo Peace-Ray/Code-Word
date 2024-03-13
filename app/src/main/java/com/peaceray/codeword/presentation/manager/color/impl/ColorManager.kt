@@ -661,15 +661,15 @@ class ColorManager @Inject constructor(
             )
             EvaluationColorScheme.BLAZE -> ColorSwatch.EmojiSet(
                 positioned = ColorSwatch.Emoji(
-                    untried = "\uD83D\uDFE8",  // yellow square
-                    exact = "\uD83D\uDFE7",     // orange square
+                    untried = if (key.darkMode) "⬛" else "⬜",
+                    exact = "\uD83D\uDFE8",  // yellow square
                     included = "\uD83D\uDFE5",  // red square
-                    no = if (key.darkMode) "⬜" else "⬛",
+                    no = if (key.darkMode)  "⬜" else "⬛"
                 ),
                 aggregated = ColorSwatch.Emoji(
                     untried = if (key.darkMode) "⚫" else "⚪",
-                    exact = "\uD83D\uDFE0",     // orange circle
-                    included = "\uD83D\uDD34",  // red circle
+                    exact = "\uD83D\uDFE1",     // yellow circle
+                    included = "\uD83D\uDD34",     // red circle
                     no = if (key.darkMode)  "⚪" else "⚫",
                 )
             )
