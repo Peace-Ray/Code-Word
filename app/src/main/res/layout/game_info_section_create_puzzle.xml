@@ -9,12 +9,13 @@
     android:id="@+id/mainViewCreatePuzzle"
     >
 
+    <!-- colorSecondaryVariant is used; see styles.xml -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/createPuzzleButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/game_info_puzzle_new_button"
-        android:backgroundTint="?attr/colorSecondary"
+        android:backgroundTint="?attr/colorSecondaryVariant"
         android:textColor="?attr/colorOnSecondary"
         app:icon="@drawable/ic_rounded_puzzle_create_24"
         app:drawableTint="?attr/colorOnSecondary"

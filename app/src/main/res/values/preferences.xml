@@ -32,13 +32,16 @@
     <string name="pref_entry_value_color_scheme_sky">sky</string>
     <string name="pref_entry_value_color_scheme_dahlia">dahlia</string>
     <string name="pref_entry_value_color_scheme_semaphore">semaphore</string>
-    <string name="pref_entry_value_color_scheme_contrast">contrast</string>
     <string name="pref_entry_value_color_scheme_blaze">blaze</string>
+    <string name="pref_entry_value_color_scheme_ghost">ghost</string>
+    <string name="pref_entry_value_color_scheme_contrast">contrast</string>
 
     <string-array name="pref_entry_values_color_scheme">
         <item>@string/pref_entry_value_color_scheme_sky</item>
         <item>@string/pref_entry_value_color_scheme_semaphore</item>
         <item>@string/pref_entry_value_color_scheme_dahlia</item>
+        <item>@string/pref_entry_value_color_scheme_blaze</item>
+        <item>@string/pref_entry_value_color_scheme_ghost</item>
         <item>@string/pref_entry_value_color_scheme_contrast</item>
     </string-array>
 
@@ -46,6 +49,8 @@
         <item>@string/pref_entry_color_scheme_sky</item>
         <item>@string/pref_entry_color_scheme_semaphore</item>
         <item>@string/pref_entry_color_scheme_dahlia</item>
+        <item>@string/pref_entry_color_scheme_blaze</item>
+        <item>@string/pref_entry_color_scheme_ghost</item>
         <item>@string/pref_entry_color_scheme_contrast</item>
     </string-array>
 

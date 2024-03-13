@@ -4,8 +4,9 @@ enum class EvaluationColorScheme {
     SKY,
     SEMAPHORE,
     DAHLIA,
-    CONTRAST,
-    BLAZE
+    BLAZE,
+    GHOST,
+    CONTRAST
 }
 
 enum class CodeColorScheme {
