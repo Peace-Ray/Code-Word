@@ -498,6 +498,43 @@ class ColorManager @Inject constructor(
                     onNo = getColor(R.color.md_grey_400)
                 )
             }
+            EvaluationColorScheme.BLAZE -> if (key.darkMode) {
+                ColorSwatch.Evaluation(
+                    untried = getColor(R.color.md_grey_200),
+                    untriedVariant = getColor(R.color.md_grey_300),
+                    onUntried = getColor(R.color.black),
+
+                    exact = getColor(R.color.md_amber_A200),
+                    exactVariant = getColor(R.color.md_amber_A400),
+                    onExact = getColor(R.color.black),
+
+                    included = getColor(R.color.md_deep_orange_500),
+                    includedVariant = getColor(R.color.md_deep_orange_600),
+                    onIncluded = getColor(R.color.md_brown_800),
+
+                    no = getColor(R.color.md_brown_200),
+                    noVariant = getColor(R.color.md_brown_400),
+                    onNo = getColor(R.color.md_brown_800)
+                )
+            } else {
+                ColorSwatch.Evaluation(
+                    untried = getColor(R.color.md_grey_200),
+                    untriedVariant = getColor(R.color.md_grey_300),
+                    onUntried = getColor(R.color.black),
+
+                    exact = getColor(R.color.md_amber_300),
+                    exactVariant = getColor(R.color.md_amber_500),
+                    onExact = getColor(R.color.black),
+
+                    included = getColor(R.color.md_deep_orange_800),
+                    includedVariant = getColor(R.color.md_deep_orange_600),
+                    onIncluded = getColor(R.color.white),
+
+                    no = getColor(R.color.md_brown_900), //getColor(R.color.md_grey_800),
+                    noVariant = getColor(R.color.md_brown_800), //getColor(R.color.md_grey_900),
+                    onNo = getColor(R.color.white)
+                )
+            }
             EvaluationColorScheme.CONTRAST -> if (key.darkMode) {
                 ColorSwatch.Evaluation(
                     untried = getColor(R.color.md_grey_500),
@@ -532,43 +569,6 @@ class ColorManager @Inject constructor(
 
                     no = getColor(R.color.md_grey_600),
                     noVariant = getColor(R.color.md_grey_800),
-                    onNo = getColor(R.color.white)
-                )
-            }
-            EvaluationColorScheme.BLAZE -> if (key.darkMode) {
-                ColorSwatch.Evaluation(
-                    untried = getColor(R.color.md_grey_500),
-                    untriedVariant = getColor(R.color.md_grey_400),
-                    onUntried = getColor(R.color.white),
-
-                    exact = getColor(R.color.md_amber_A200),
-                    exactVariant = getColor(R.color.md_amber_A400),
-                    onExact = getColor(R.color.black),
-
-                    included = getColor(R.color.md_deep_orange_500),
-                    includedVariant = getColor(R.color.md_deep_orange_600),
-                    onIncluded = getColor(R.color.md_brown_800),
-
-                    no = getColor(R.color.md_brown_100),
-                    noVariant = getColor(R.color.md_brown_200),
-                    onNo = getColor(R.color.md_brown_800)
-                )
-            } else {
-                ColorSwatch.Evaluation(
-                    untried = getColor(R.color.md_grey_200),
-                    untriedVariant = getColor(R.color.md_grey_300),
-                    onUntried = getColor(R.color.black),
-
-                    exact = getColor(R.color.md_amber_300),
-                    exactVariant = getColor(R.color.md_amber_500),
-                    onExact = getColor(R.color.black),
-
-                    included = getColor(R.color.md_deep_orange_800),
-                    includedVariant = getColor(R.color.md_deep_orange_600),
-                    onIncluded = getColor(R.color.white),
-
-                    no = getColor(R.color.md_brown_900), //getColor(R.color.md_grey_800),
-                    noVariant = getColor(R.color.md_brown_800), //getColor(R.color.md_grey_900),
                     onNo = getColor(R.color.white)
                 )
             }
@@ -645,20 +645,6 @@ class ColorManager @Inject constructor(
                     no = if (key.darkMode) "⚫" else "⚪",
                 )
             )
-            EvaluationColorScheme.CONTRAST -> ColorSwatch.EmojiSet(
-                positioned = ColorSwatch.Emoji(
-                    untried = if (key.darkMode) "⬛" else "⬜",
-                    exact = "\uD83D\uDFE7",     // orange square
-                    included = "\uD83D\uDFE6",  // blue square
-                    no = if (key.darkMode) "⬛" else "⬜",
-                ),
-                aggregated = ColorSwatch.Emoji(
-                    untried = if (key.darkMode) "⚫" else "⚪",
-                    exact = "\uD83D\uDFE0",     // orange circle
-                    included = "\uD83D\uDD35",  // blue circle
-                    no = if (key.darkMode) "⚫" else "⚪",
-                )
-            )
             EvaluationColorScheme.BLAZE -> ColorSwatch.EmojiSet(
                 positioned = ColorSwatch.Emoji(
                     untried = if (key.darkMode) "⬛" else "⬜",
@@ -671,6 +657,20 @@ class ColorManager @Inject constructor(
                     exact = "\uD83D\uDFE1",     // yellow circle
                     included = "\uD83D\uDD34",     // red circle
                     no = if (key.darkMode)  "⚪" else "⚫",
+                )
+            )
+            EvaluationColorScheme.CONTRAST -> ColorSwatch.EmojiSet(
+                positioned = ColorSwatch.Emoji(
+                    untried = if (key.darkMode) "⬛" else "⬜",
+                    exact = "\uD83D\uDFE7",     // orange square
+                    included = "\uD83D\uDFE6",  // blue square
+                    no = if (key.darkMode) "⬛" else "⬜",
+                ),
+                aggregated = ColorSwatch.Emoji(
+                    untried = if (key.darkMode) "⚫" else "⚪",
+                    exact = "\uD83D\uDFE0",     // orange circle
+                    included = "\uD83D\uDD35",  // blue circle
+                    no = if (key.darkMode) "⚫" else "⚪",
                 )
             )
         }

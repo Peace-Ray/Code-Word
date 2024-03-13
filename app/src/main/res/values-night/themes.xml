@@ -113,7 +113,7 @@
         <item name="colorOnSecondary">@color/white</item>
     </style>
 
-    <!-- Blaze Theme (not available) -->
+    <!-- Blaze Theme -->
     <style name="Theme.CodeWord.Blaze" parent="Theme.CodeWord">
         <item name="colorSecondary">@color/md_amber_A200</item>
         <item name="colorSecondaryVariant">@color/md_amber_A400</item>
