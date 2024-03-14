@@ -1,0 +1,6 @@
+Hints: tap 💡 to see tips based on your previous guesses (not available on Dailies or By Letter feedback)
+Hold ⬅️ to fully delete an in-progress guess
+Hardware keyboard support
+New action icons throughout
+Portrait mode everywhere
+Bug fixes and optimization

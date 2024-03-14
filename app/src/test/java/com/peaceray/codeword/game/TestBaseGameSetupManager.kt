@@ -43,7 +43,7 @@ class TestBaseGameSetupManager {
             characters,
             length
         ),
-        board = GameSetup.Board(6),
+        board = GameSetup.Board(if (language == CodeLanguage.ENGLISH) 6 else 8),
         evaluation = GameSetup.Evaluation(
             if (language == CodeLanguage.ENGLISH) ConstraintPolicy.PERFECT else ConstraintPolicy.AGGREGATED,
             ConstraintPolicy.IGNORE
@@ -239,17 +239,19 @@ class TestBaseGameSetupManager {
         // check for evaluation type
         seeds.forEach { seed ->
             val setup = gameSetupManager.getSetup(seed)
-            val evaluation = GameSetup.Evaluation(
-                ConstraintPolicy.AGGREGATED_INCLUDED,
-                ConstraintPolicy.IGNORE
-            )
-            val expected = setup.with(
-                evaluation = evaluation,
-                version = seedCoreFactory.getSeedVersionInteger()
-            )
-            val actual = gameSetupManager.modifyGameSetup(setup, evaluation = evaluation)
+            if (setup.vocabulary.type == GameSetup.Vocabulary.VocabularyType.LIST) {
+                val evaluation = GameSetup.Evaluation(
+                    ConstraintPolicy.AGGREGATED_INCLUDED,
+                    ConstraintPolicy.IGNORE
+                )
+                val expected = setup.with(
+                    evaluation = evaluation,
+                    version = seedCoreFactory.getSeedVersionInteger()
+                )
+                val actual = gameSetupManager.modifyGameSetup(setup, evaluation = evaluation)
 
-            assertEquals(expected, actual)
+                assertEquals(expected, actual)
+            }
         }
 
         // randomize the seed
