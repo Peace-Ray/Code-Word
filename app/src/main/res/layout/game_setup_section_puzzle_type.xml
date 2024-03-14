@@ -99,7 +99,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:spinnerMode="dropdown"
-            style="@style/Widget.CodeWord.SeekBar"
             />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
