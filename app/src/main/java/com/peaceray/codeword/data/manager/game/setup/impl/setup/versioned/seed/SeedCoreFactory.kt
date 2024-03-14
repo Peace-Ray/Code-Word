@@ -35,20 +35,22 @@ class SeedCoreFactory {
     private val defaultVersion = SeedVersion.V2
 
     // Do not change these after launch without building in compensation for legacy values!
-    private val firstDaily: Calendar = Calendar.getInstance()
     private val dailyRandomSeedA = 51202493L
     private val dailyRandomSeedB = 487145950223L
 
-    init {
-        // Remember that months begin at 0 = January
-        firstDaily.set(2024, 0, 22)     // January 22, 2024
-    }
+    private val _firstDaily: MutableMap<SeedVersion, Calendar> = mutableMapOf()
 
-    private fun seedVersionFirstDaily(seedVersion: SeedVersion): Calendar = when (seedVersion) {
-        SeedVersion.V1 -> firstDaily
-        SeedVersion.V2 -> { // February 12th, 2024
+    private fun seedVersionFirstDaily(seedVersion: SeedVersion): Calendar {
+        return _firstDaily[seedVersion] ?: synchronized(_firstDaily) {
             val calendar = Calendar.getInstance()
-            calendar.set(2024, 1, 12)
+
+            when (seedVersion) {
+                SeedVersion.V1 -> calendar.set(2024, 0, 22, 0, 0, 0)    // January 22, 2024
+                SeedVersion.V2 -> calendar.set(2024, 1, 12, 0, 0, 0)    // February 12, 2024
+            }
+            calendar.set(Calendar.MILLISECOND, 0)
+
+            _firstDaily[seedVersion] = calendar
             calendar
         }
     }
@@ -68,7 +70,7 @@ class SeedCoreFactory {
             // canonical reference (e.g. an external API) to determine if an app update is required
             // for the "Daily" feature to function.
             val moment = getDailyDay(seedCore).timeInMillis
-            SeedVersion.values().sortedByDescending { it.numberEncoding }.first {
+            SeedVersion.entries.sortedByDescending { it.numberEncoding }.first {
                 moment >= seedVersionFirstDaily(it).timeInMillis
             }.numberEncoding
         } else {
@@ -107,7 +109,7 @@ class SeedCoreFactory {
     }
 
     fun getDailySeedCore(day: Calendar): String {
-        val diff = day.timeInMillis - firstDaily.timeInMillis
+        val diff = day.timeInMillis - seedVersionFirstDaily(SeedVersion.V1).timeInMillis
         val days = if (diff < 0) 0 else TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS)
         return "#${days + 1}"   // first daily is #1, not #0
     }
@@ -116,7 +118,7 @@ class SeedCoreFactory {
         val days = seedCore.substring(1).toLong() - 1    // first daily is #1, not #0
         val diff = TimeUnit.MILLISECONDS.convert(days, TimeUnit.DAYS)
         val calendar = Calendar.getInstance()
-        calendar.timeInMillis = firstDaily.timeInMillis + diff
+        calendar.timeInMillis = seedVersionFirstDaily(SeedVersion.V1).timeInMillis + diff
         return calendar
     }
 

@@ -287,7 +287,8 @@ class TestSeedCoreFactory {
 
     init {
         // Remember that months begin at 0 = January
-        firstDaily.set(2024, 0, 22)     // January 22, 2024
+        firstDaily.set(2024, 0, 22, 0, 0, 0)     // January 22, 2024
+        firstDaily.set(Calendar.MILLISECOND, 0)
 
         fun calendarFor(year: Int, month: Int, date: Int): Calendar {
             val cal = Calendar.getInstance()
@@ -484,6 +485,11 @@ class TestSeedCoreFactory {
 
     @Test
     fun factory_getSeedVersion_daily_transitionV2() {
+        (1..30).forEach { num ->
+            val seed = "#$num"
+            println("Seed $seed version ${factory.getSeedVersion(seed)}")
+        }
+
         assertEquals(SeedVersion.V1, factory.getSeedVersion("#20"))
         assertEquals(SeedVersion.V1, factory.getSeedVersion("#21"))
         assertEquals(SeedVersion.V2, factory.getSeedVersion("#22"))
