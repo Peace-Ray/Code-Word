@@ -1,0 +1,2 @@
+Three new color schemes: Dahlia, Blaze, and Ghost
+Various bug fixes
