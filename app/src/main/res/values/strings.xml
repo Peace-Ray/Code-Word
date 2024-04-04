@@ -411,6 +411,7 @@
 
     <string name="pref_code_appearance">Code Appearance</string>
     <string name="pref_code_colors">Code color scheme</string>
+    <string name="pref_reverse_code_colors">Reverse color order</string>
     <string name="pref_invert_code_colors">Invert code colors</string>
     <string name="pref_show_code_characters">Code characters</string>
 

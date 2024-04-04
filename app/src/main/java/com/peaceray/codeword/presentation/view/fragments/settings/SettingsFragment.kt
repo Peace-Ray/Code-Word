@@ -55,6 +55,7 @@ class SettingsFragment: PreferenceFragmentCompat(), SharedPreferences.OnSharedPr
                 // item color changes; push to ColorSwatch listeners
                 getString(R.string.pref_key_color_scheme_invert),
                 getString(R.string.pref_key_code_colors),
+                getString(R.string.pref_key_code_colors_reverse),
                 getString(R.string.pref_key_code_colors_invert),
                 getString(R.string.pref_key_code_characters) -> {
                     colorSettingsManager.reloadColors()

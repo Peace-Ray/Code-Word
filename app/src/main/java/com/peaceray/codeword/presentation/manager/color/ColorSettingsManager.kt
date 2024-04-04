@@ -28,6 +28,7 @@ interface ColorSettingsManager {
     var evaluationColorScheme: EvaluationColorScheme
     var evaluationColorsInverted: Boolean
     var codeColorScheme: CodeColorScheme
+    var codeColorsReversed: Boolean
     var codeColorsInverted: Boolean
     //---------------------------------------------------------------------------------------------
     //endregion

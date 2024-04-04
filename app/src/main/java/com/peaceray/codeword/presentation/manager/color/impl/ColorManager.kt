@@ -173,6 +173,14 @@ class ColorManager @Inject constructor(
             preferences.edit { putString(R.string.pref_key_code_colors, value.toPreferenceValue()) }
             onColorChange()
         }
+
+    override var codeColorsReversed: Boolean
+        get() = preferences.getBoolean(R.string.pref_key_code_colors_reverse, false)
+        set(value) {
+            preferences.edit { putBoolean(R.string.pref_key_code_colors_reverse, value) }
+            onColorChange()
+        }
+
     override var codeColorsInverted: Boolean
         get() = preferences.getBoolean(R.string.pref_key_code_colors_invert, false)
         set(value) {
@@ -208,7 +216,7 @@ class ColorManager @Inject constructor(
         val infoKey = ColorSwatchInformationKey(darkMode, evaluationColorScheme)
         val evalKey = ColorSwatchEvaluationKey(darkMode, evaluationColorScheme, evaluationColorsInverted)
         val emojKey = ColorSwatchEmojiKey(darkMode, evaluationColorScheme, evaluationColorsInverted)
-        val codeKey = ColorSwatchCodeKey(darkMode, codeColorScheme, codeColorsInverted)
+        val codeKey = ColorSwatchCodeKey(darkMode, codeColorScheme, codeColorsReversed, codeColorsInverted)
 
         Timber.d("loadSwatch for color scheme $evaluationColorScheme inverted $evaluationColorsInverted dark mode $darkMode")
 
@@ -757,16 +765,17 @@ class ColorManager @Inject constructor(
     private data class ColorSwatchCodeKey(
         val darkMode: Boolean,
         val codeColors: CodeColorScheme,
+        val codeColorsReversed: Boolean,
         val codeColorsInverted: Boolean
     )
 
     private fun create(key: ColorSwatchCodeKey): ColorSwatch.Code {
-        val codes: List<Int>
-        val onCodes: List<Int>
+        val baseCodes: List<Int>
+        val baseOnCodes: List<Int>
 
         when (key.codeColors) {
             CodeColorScheme.SUNRISE -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.cc_sunrise_pink),
                     getColor(R.color.cc_sunrise_red),
                     getColor(R.color.cc_sunrise_peach),
@@ -783,10 +792,10 @@ class ColorManager @Inject constructor(
                     getColor(R.color.cc_sunrise_dark_orange),
                     getColor(R.color.cc_sunrise_dark_yellow),
                 )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
             CodeColorScheme.SUNSET -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.cc_sunset_deep_purple),
                     getColor(R.color.cc_sunset_purple),
                     getColor(R.color.cc_sunset_magenta),
@@ -803,10 +812,10 @@ class ColorManager @Inject constructor(
                     getColor(R.color.cc_sunset_dark_pink),
                     getColor(R.color.cc_sunset_dark_blush),
                     )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
             CodeColorScheme.HORIZON -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.cc_sunrise_yellow),
                     getColor(R.color.cc_sunrise_orange),
                     getColor(R.color.cc_sunrise_peach),
@@ -828,10 +837,10 @@ class ColorManager @Inject constructor(
                     getColor(R.color.cc_sunset_light_purple),
                     getColor(R.color.cc_sunset_light_deep_purple),
                 )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
             CodeColorScheme.PLAYROOM -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.cc_playroom_teal),
                     getColor(R.color.cc_playroom_yellow),
                     getColor(R.color.cc_playroom_orange),
@@ -848,10 +857,10 @@ class ColorManager @Inject constructor(
                     getColor(R.color.cc_playroom_dark_purple),
                     getColor(R.color.cc_playroom_dark_blue),
                 )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
             CodeColorScheme.PRIMARY -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.cs_purple_dark_orchid),
                     getColor(R.color.cs_blue_rich_electric_blue),
                     getColor(R.color.cs_light_green_kiwi),
@@ -859,10 +868,10 @@ class ColorManager @Inject constructor(
                     getColor(R.color.cs_deep_orange_deep_saffron),
                     getColor(R.color.cs_red_red_salsa)
                 )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
             CodeColorScheme.QUANTRO -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.quantro_standard_red),
                     getColor(R.color.quantro_standard_blue),
                     getColor(R.color.quantro_standard_gold),
@@ -876,10 +885,10 @@ class ColorManager @Inject constructor(
                     getColor(R.color.quantro_standard_dawn_red),
 
                 )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
             CodeColorScheme.RETRO -> {
-                codes = listOf(
+                baseCodes = listOf(
                     getColor(R.color.quantro_retro_red_fiery),
                     getColor(R.color.quantro_retro_yellow_gold),
                     getColor(R.color.quantro_retro_green_light),
@@ -890,14 +899,36 @@ class ColorManager @Inject constructor(
                     getColor(R.color.quantro_retro_blue_deep),
                     getColor(R.color.quantro_retro_orange_burnt),
                 )
-                onCodes = listOf(getColor(R.color.white))
+                baseOnCodes = listOf(getColor(R.color.white))
             }
         }
 
-        return ColorSwatch.Code(
-            if (!key.codeColorsInverted) codes else onCodes,
-            if (!key.codeColorsInverted) onCodes else codes
-        )
+        val codes: List<Int>
+        val onCodes: List<Int>
+
+        when {
+            key.codeColorsReversed && key.codeColorsInverted -> {
+                codes = baseOnCodes.reversed()
+                onCodes = baseCodes.reversed()
+            }
+
+            key.codeColorsReversed -> {
+                codes = baseCodes.reversed()
+                onCodes = baseOnCodes.reversed()
+            }
+
+            key.codeColorsInverted -> {
+                codes = baseOnCodes
+                onCodes = baseCodes
+            }
+
+            else -> {
+                codes = baseCodes
+                onCodes = baseOnCodes
+            }
+        }
+
+        return ColorSwatch.Code(codes, onCodes)
     }
     //---------------------------------------------------------------------------------------------
     //endregion
