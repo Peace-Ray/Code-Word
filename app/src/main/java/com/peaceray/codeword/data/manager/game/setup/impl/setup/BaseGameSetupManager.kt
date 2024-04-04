@@ -338,7 +338,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 else -> newDetails.codeCharactersRecommended
             }
 
-            val repetitionsSupported = newDetails.codeCharacterRepetitionsSupported.map { if (it == 0) candidate.vocabulary.length else it }
+            val repetitionsSupported = newDetails.codeCharacterRepetitionsSupported.map { if (it == 0) vocabLength else it }
             val charOccurrences = when {
                 vocabulary != null -> vocabulary.characterOccurrences
                 candidate.vocabulary.characterOccurrences in repetitionsSupported -> candidate.vocabulary.characterOccurrences
@@ -370,6 +370,12 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 if (preferredHard) hardModeConstraint else ConstraintPolicy.IGNORE
             )
 
+            val newBoard = when {
+                board != null -> board
+                evaluationPolicy != candidate.evaluation.type -> GameSetup.Board(getRecommendedRounds(newVocabulary, newEvaluation).first)
+                else -> null
+            }
+
             // seed is already used. We've just consumed vocabulary and hard; seed is known-null.
             // recur with the remaining settings.
             return modifyGameSetup(
@@ -377,7 +383,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                     vocabulary = newVocabulary,
                     evaluation = newEvaluation
                 ),
-                board = board,
+                board = newBoard,
                 evaluation = evaluation,
                 solver = solver,
                 evaluator = evaluator,
@@ -456,7 +462,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
             // character occurrences must be supported by the language
             val repetitionsSupported = lDetails.codeCharacterRepetitionsSupported.map { if (it == 0) candidate.vocabulary.length else it }
             if (candidate.vocabulary.characterOccurrences !in repetitionsSupported) {
-                throw UnsupportedOperationException("Vocabulary character occurrences not supported by language")
+                throw UnsupportedOperationException("Vocabulary character occurrences ${candidate.vocabulary.characterOccurrences} not supported by language ${repetitionsSupported}")
             }
 
             // character occurrences must be possible given length and characters

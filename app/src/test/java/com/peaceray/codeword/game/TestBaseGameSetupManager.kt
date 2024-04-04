@@ -4,6 +4,7 @@ import com.peaceray.codeword.data.model.code.CodeLanguage
 import com.peaceray.codeword.data.model.game.GameSetup
 import com.peaceray.codeword.data.manager.game.setup.impl.setup.BaseGameSetupManager
 import com.peaceray.codeword.data.manager.game.setup.impl.setup.versioned.seed.SeedCoreFactory
+import com.peaceray.codeword.data.manager.game.setup.impl.setup.versioned.seed.SeedVersion
 import com.peaceray.codeword.game.bot.modules.generation.enumeration.OneCodeEnumeratingGenerator
 import com.peaceray.codeword.game.data.ConstraintPolicy
 import org.junit.Assert.*
@@ -35,7 +36,13 @@ class TestBaseGameSetupManager {
     //region V1 Seeds
     //---------------------------------------------------------------------------------------------
 
-    private fun createV1GameSetup(language: CodeLanguage, length: Int, characters: Int = 26, seed: String? = null) = GameSetup(
+    private fun createV1GameSetup(
+        language: CodeLanguage,
+        length: Int,
+        characters: Int = if (language == CodeLanguage.ENGLISH) 26 else 6,
+        rounds: Int = if (language == CodeLanguage.ENGLISH) 6 else 8,
+        seed: String? = null
+    ) = GameSetup(
         vocabulary = GameSetup.Vocabulary(
             language,
             type = if (language == CodeLanguage.ENGLISH) GameSetup.Vocabulary.VocabularyType.LIST else GameSetup.Vocabulary.VocabularyType.ENUMERATED,
@@ -43,7 +50,7 @@ class TestBaseGameSetupManager {
             characters,
             length
         ),
-        board = GameSetup.Board(if (language == CodeLanguage.ENGLISH) 6 else 8),
+        board = GameSetup.Board(rounds),
         evaluation = GameSetup.Evaluation(
             if (language == CodeLanguage.ENGLISH) ConstraintPolicy.PERFECT else ConstraintPolicy.AGGREGATED,
             ConstraintPolicy.IGNORE
@@ -52,7 +59,34 @@ class TestBaseGameSetupManager {
         evaluator = GameSetup.Evaluator.HONEST,
         randomSeed = if (seed == null) 0L else seedCoreFactory.getRandomSeed(seed.split("/")[0]),
         daily = false,
-        version = 1
+        version = SeedVersion.V1.numberEncoding
+    )
+
+    private fun createV2GameSetup(
+        language: CodeLanguage,
+        length: Int,
+        characters: Int = if (language == CodeLanguage.ENGLISH) 26 else 6,
+        rounds: Int = if (language == CodeLanguage.ENGLISH) 6 else 8,
+        repetitions: Boolean = true,
+        seed: String? = null
+    ) = GameSetup(
+        vocabulary = GameSetup.Vocabulary(
+            language,
+            type = if (language == CodeLanguage.ENGLISH) GameSetup.Vocabulary.VocabularyType.LIST else GameSetup.Vocabulary.VocabularyType.ENUMERATED,
+            length,
+            characters,
+            characterOccurrences = if (repetitions) length else 1
+        ),
+        board = GameSetup.Board(rounds),
+        evaluation = GameSetup.Evaluation(
+            if (language == CodeLanguage.ENGLISH) ConstraintPolicy.PERFECT else ConstraintPolicy.AGGREGATED,
+            ConstraintPolicy.IGNORE
+        ),
+        solver = GameSetup.Solver.PLAYER,
+        evaluator = GameSetup.Evaluator.HONEST,
+        randomSeed = if (seed == null) 0L else seedCoreFactory.getRandomSeed(seed.split("/")[0]),
+        daily = false,
+        version = SeedVersion.V2.numberEncoding
     )
 
     private fun createV1DataSet(): Map<GameSetup, List<String>> {
@@ -264,6 +298,28 @@ class TestBaseGameSetupManager {
             )
 
             assertEquals(expected, actual)
+        }
+    }
+
+    @Test
+    fun modifyGameSetup_changeLanguage_crashRegression() {
+        val data = listOf(
+            Pair(
+                createV1GameSetup(CodeLanguage.ENGLISH, 12),
+                createV1GameSetup(CodeLanguage.CODE, 4)
+            ),
+            Pair(
+                createV2GameSetup(CodeLanguage.ENGLISH, 12, repetitions = true),
+                createV2GameSetup(CodeLanguage.CODE, 4, repetitions = true)
+            ),
+            Pair(
+                createV2GameSetup(CodeLanguage.ENGLISH, 12, repetitions = false),
+                createV2GameSetup(CodeLanguage.CODE, 4, repetitions = false)
+            )
+        )
+
+        data.forEach { (setup, expected) ->
+            assertEquals(expected, gameSetupManager.modifyGameSetup(setup, language = CodeLanguage.CODE))
         }
     }
 
