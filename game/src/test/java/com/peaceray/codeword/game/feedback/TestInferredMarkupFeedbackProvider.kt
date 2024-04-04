@@ -27,37 +27,42 @@ class TestInferredMarkupFeedbackProvider {
         characters: Collection<Char>,
         lettersRepeat: Boolean,
         policy: ConstraintPolicy,
-        providerPolicies: Set<InferredMarkupFeedbackProvider.MarkupPolicy>
-    ): Feedback {
+        vararg providerPolicies: Set<InferredMarkupFeedbackProvider.MarkupPolicy>
+    ): List<Feedback> {
         val length = secret.length
         val maxOccurrences = if (lettersRepeat) length else 1
         val constraints = guesses.map { Constraint.create(it, secret) }
-        val provider = InferredMarkupFeedbackProvider(
-            characters.toSet(),
-            length,
-            maxOccurrences,
-            providerPolicies
-        )
-        val feedback = constraints.indices.map {
+        val providers = providerPolicies.map {
+            InferredMarkupFeedbackProvider(
+                characters.toSet(),
+                length,
+                maxOccurrences,
+                it
+            )
+        }
+
+        val feedbacks = constraints.indices.map {
             val constraintsHere = constraints.subList(0, it + 1)
-            val feedback = provider.getFeedback(policy, constraintsHere)
+            val feedbacks = providers.map { provider -> provider.getFeedback(policy, constraintsHere) }
 
             // verify secret is possible, given feedback
-            assert(feedback.allows(secret))
+            assert(feedbacks.all { it.allows(secret) })
             // provide
-            feedback
+            feedbacks
         }.last()
 
         if (secret == guesses.last()) {
             // verify solution is only possible word under feedback
-            assertEquals(secret.toList().map { setOf(it) }, feedback.candidates)
-            assertEquals(characters.associateWith { char ->
-                val count = secret.count { it == char }
-                count..count
-            }, feedback.occurrences)
+            feedbacks.forEach { feedback ->
+                assertEquals(secret.toList().map { setOf(it) }, feedback.candidates)
+                assertEquals(characters.associateWith { char ->
+                    val count = secret.count { it == char }
+                    count..count
+                }, feedback.occurrences)
+            }
         }
 
-        return feedback
+        return feedbacks
     }
 
     //region Feedback Tests
@@ -72,7 +77,7 @@ class TestInferredMarkupFeedbackProvider {
             true,
             ConstraintPolicy.AGGREGATED,
             InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED
-        )
+        ).first()
 
         // letter "S" should not be a candidate in any position but 0
         for (i in 0..4) {
@@ -139,6 +144,24 @@ class TestInferredMarkupFeedbackProvider {
     }
 
     @Test
+    fun constraint_testProvideFeedback_aggregated_infiniteLoop_regression_4() {
+        testFeedback(
+            "RAZOR",
+            listOf("PIOUS", "SPITE", "LANCE", "QUERY", "CLUNK", "RADON", "WAGON", "YAHOO"),
+            CHARS_AZ,
+            true,
+            ConstraintPolicy.AGGREGATED,
+            setOf(InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT),
+            setOf(InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED),
+            setOf(
+                InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED,
+                InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT,
+                InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION
+            )
+        )
+    }
+
+    @Test
     fun constraint_testProvideFeedback_aggregated_incorrect_regression_1() {
         val feedback = testFeedback(
             "MATCH",
@@ -147,7 +170,7 @@ class TestInferredMarkupFeedbackProvider {
             false,
             ConstraintPolicy.AGGREGATED,
             InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED
-        )
+        ).first()
 
         // verify that 'M' is known to be EXACT at position 0
         assertEquals(setOf('M'), feedback.candidates[0])
@@ -187,7 +210,6 @@ class TestInferredMarkupFeedbackProvider {
             InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION
         )
     }
-
     //---------------------------------------------------------------------------------------------
     //endregion
 
