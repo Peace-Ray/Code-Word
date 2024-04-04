@@ -5,6 +5,7 @@
     <string name="pref_key_color_scheme">color_scheme</string>
     <string name="pref_key_color_scheme_invert">color_scheme_invert</string>
     <string name="pref_key_code_colors">code_color_scheme</string>
+    <string name="pref_key_code_colors_reverse">code_color_reverse</string>
     <string name="pref_key_code_colors_invert">code_color_invert</string>
     <string name="pref_key_code_characters">code_characters</string>
     <string name="pref_key_hardware_keyboard">hardware_keyboard</string>

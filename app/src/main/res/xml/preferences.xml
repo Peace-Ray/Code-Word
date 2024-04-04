@@ -48,6 +48,12 @@
 
         <CheckBoxPreference
             android:defaultValue="false"
+            android:key="@string/pref_key_code_colors_reverse"
+            android:title="@string/pref_reverse_code_colors"
+            />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:key="@string/pref_key_code_colors_invert"
             android:title="@string/pref_invert_code_colors"
             />
