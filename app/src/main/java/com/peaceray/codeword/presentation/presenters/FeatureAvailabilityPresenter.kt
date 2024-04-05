@@ -96,7 +96,6 @@ class FeatureAvailabilityPresenter @Inject constructor():
                 }
             }
             FeatureAvailabilityContract.Feature.LOCAL_DAILY -> viewScope.launch {
-                // TODO read this value from a Manager
                 view?.setFeatureAvailability(
                     FeatureAvailabilityContract.Feature.LOCAL_DAILY,
                     FeatureAvailabilityContract.Availability.DISABLED

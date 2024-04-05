@@ -71,21 +71,22 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
      * Respond to a button press on a "launch" button which exists outside of this Fragment.
      */
     fun onLaunchButtonClicked() {
-        if (isPresented) presenter.onLaunchButtonClicked()
+        if (hasPresenter) presenter.onLaunchButtonClicked()
     }
 
     /**
      * Respond to a button press on a "cancel" button which exists outside of this Fragment.
      */
     fun onCancelButtonClicked() {
-        if (isPresented) presenter.onCancelButtonClicked()
+        if (hasPresenter) presenter.onCancelButtonClicked()
     }
 
     fun onTypeChanged(type: GameSetupContract.Type, qualifiers: Set<GameSetupContract.Qualifier> = emptySet()) {
+        Timber.d("feature: onTypeChanged $type $qualifiers")
         this.type = type
         this.qualifiers = qualifiers
 
-        if (isPresented) presenter.onTypeSelected(type, qualifiers)
+        if (hasPresenter) presenter.onTypeSelected(type, qualifiers)
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -95,7 +96,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
     //---------------------------------------------------------------------------------------------
     private var _binding: GameSetupBinding? = null
     private val binding get() = _binding!!
-    private var isPresented: Boolean = false
+    private val hasPresenter get() = this::presenter.isInitialized
 
     // ViewHolder section wrappers
     lateinit var seedViewHolder: GameReviewSeedViewHolder
@@ -135,13 +136,13 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         super.onCreate(savedInstanceState)
 
         // set type and qualifiers: from saved state, arguments, or default.
-        type = GameSetupContract.Type.valueOf(
+        type = if (this::type.isInitialized) type else GameSetupContract.Type.valueOf(
             savedInstanceState?.getString(ARG_GAME_TYPE)
                 ?: arguments?.getString(ARG_GAME_TYPE)
                 ?: "SEEDED"
         )
 
-        qualifiers = (
+        qualifiers = if (this::qualifiers.isInitialized) qualifiers else  (
                 savedInstanceState?.getStringArray(ARG_GAME_TYPE_QUALIFIERS)
                     ?: arguments?.getStringArray(ARG_GAME_TYPE_QUALIFIERS)
                     ?: emptyArray<String>()
@@ -201,7 +202,6 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         seedViewHolder = GameReviewSeedViewHolder(binding.sectionSeed.mainViewSeed, colorManager, gameSetupListener)
 
         // attach to presenter for logic
-        isPresented = true
         attach(presenter)
     }
 
@@ -217,7 +217,6 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        isPresented = false
     }
     //---------------------------------------------------------------------------------------------
     //endregion
