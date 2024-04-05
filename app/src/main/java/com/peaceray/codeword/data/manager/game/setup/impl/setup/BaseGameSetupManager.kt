@@ -295,6 +295,44 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
         language: CodeLanguage?,
         randomized: Boolean?
     ): GameSetup {
+        // perform the modification s.t. errors are verbose
+        return try {
+            modifyGameSetupInternal(setup, board, evaluation, vocabulary, solver, evaluator, hard, seed, language, randomized)
+        } catch (error: Exception) {
+            val params = listOf(
+                Pair("board", board?.toString()),
+                Pair("evaluation", evaluation?.toString()),
+                Pair("vocabulary", vocabulary?.toString()),
+                Pair("solver", solver?.toString()),
+                Pair("evaluator", evaluator?.toString()),
+                Pair("hard", hard?.toString()),
+                Pair("seed", seed),
+                Pair("language", language?.toString()),
+                Pair("randomized", randomized?.toString())
+            ).filter { (_, value) -> value != null }
+
+            // log and throw the details of this invocation
+            val name = "BaseGameSetupManager.modifyGameSetup ${seedCoreFactory.getSeedVersion()}"
+            val details = "setup = $setup, params = ${params.map { (name, value) -> "$name = $value" }}"
+            val msg = "$name ${error.message}: $details"
+            val exception = UnsupportedOperationException(msg, error)
+            Timber.e(exception, msg)
+            throw exception
+        }
+    }
+
+    private fun modifyGameSetupInternal(
+        setup: GameSetup,
+        board: GameSetup.Board?,
+        evaluation: GameSetup.Evaluation?,
+        vocabulary: GameSetup.Vocabulary?,
+        solver: GameSetup.Solver?,
+        evaluator: GameSetup.Evaluator?,
+        hard: Boolean?,
+        seed: String?,
+        language: CodeLanguage?,
+        randomized: Boolean?
+    ): GameSetup {
         var candidate = setup
         val defaultVersion = seedCoreFactory.getSeedVersion()
         val candidateIsHard = candidate.evaluation.enforced != ConstraintPolicy.IGNORE
