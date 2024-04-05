@@ -26,7 +26,14 @@ interface GameSetupContract: BaseContract {
         VERSION_CHECK_FAILED(Information.Level.ERROR),
         VERSION_UPDATE_AVAILABLE(Information.Level.TIP),
         VERSION_UPDATE_RECOMMENDED(Information.Level.WARN),
-        VERSION_UPDATE_REQUIRED(Information.Level.ERROR);
+        VERSION_UPDATE_REQUIRED(Information.Level.ERROR),
+
+        /**
+         * For DAILY types only; indicates that the Daily puzzle is not Global, and should not be
+         * represented or shared as such. This Qualifier should probably be ignored, if not
+         * omitted entirely, from anything but Type.DAILY or Type.ONGOING for a Daily game.
+         */
+        LOCAL_DAILY(Information.Level.INFO);
     }
 
     enum class Feature {

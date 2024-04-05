@@ -205,6 +205,7 @@ interface GameSetupManager {
      * @param hard Hard mode setting
      * @param seed The seed string
      * @param language The vocabulary language to use (other Vocabulary settings will be inferred)
+     * @param daily Set whether the GameSetup is a Daily, or just some other type of puzzle
      * @param randomized Randomize the seed value w/o affecting game settings.
      */
     @Throws(UnsupportedOperationException::class)

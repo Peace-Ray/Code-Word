@@ -77,6 +77,12 @@ data class GameStatusReview(
          * play it has not arrived.
          */
         GAME_FORTHCOMING(Information.Level.ERROR),
+
+        /**
+         * The game will be Local Only -- other installations may not be able to experience this
+         * game as defined, and it may be useful to communicate that to the user.
+         */
+        GAME_LOCAL_ONLY(Information.Level.INFO),
     }
     //---------------------------------------------------------------------------------------------
     //endregion

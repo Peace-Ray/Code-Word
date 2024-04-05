@@ -33,7 +33,7 @@ class GamePlayManagerImpl @Inject constructor(
     //-----------------------------------------------------------------------------------------
 
     override suspend fun getGamePlaySession(seed: String?, gameSetup: GameSetup): GamePlaySession {
-        val save = gamePersistenceManager.load(seed, gameSetup)
+        val save = gamePersistenceManager.load(gameSetup, seed)
         if (save != null) return getGamePlaySession(save)
 
         val playData = GamePlayData()

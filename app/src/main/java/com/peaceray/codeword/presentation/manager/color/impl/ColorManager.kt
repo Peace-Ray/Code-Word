@@ -11,12 +11,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.preference.PreferenceManager
 import com.peaceray.codeword.R
 import com.peaceray.codeword.glue.ForApplication
 import com.peaceray.codeword.presentation.datamodel.CodeColorScheme
 import com.peaceray.codeword.presentation.datamodel.ColorSwatch
 import com.peaceray.codeword.presentation.datamodel.EvaluationColorScheme
+import com.peaceray.codeword.presentation.manager.preferences.AbstractPreferencesManager
 import com.peaceray.codeword.presentation.manager.color.ColorSettingsManager
 import com.peaceray.codeword.presentation.manager.color.ColorSwatchManager
 import timber.log.Timber
@@ -25,16 +25,12 @@ import javax.inject.Singleton
 
 @Singleton
 class ColorManager @Inject constructor(
-    @ForApplication private val context: Context,
-    @ForApplication private val resources: Resources
-): ColorSettingsManager, ColorSwatchManager, SharedPreferences.OnSharedPreferenceChangeListener {
+    @ForApplication context: Context,
+    @ForApplication resources: Resources
+): ColorSettingsManager, ColorSwatchManager, SharedPreferences.OnSharedPreferenceChangeListener, AbstractPreferencesManager(context, resources) {
 
     //region SharedPreferences and Preference Mapping
     //---------------------------------------------------------------------------------------------
-    private val preferences: SharedPreferences by lazy {
-        PreferenceManager.getDefaultSharedPreferences(context)
-    }
-
     init {
         preferences.registerOnSharedPreferenceChangeListener(this)
     }
@@ -99,24 +95,6 @@ class ColorManager @Inject constructor(
             Timber.e("Don't recognize CodeColorScheme entry value $this")
             CodeColorScheme.PRIMARY
         }
-    }
-
-    private fun SharedPreferences.getString(keyId: Int, defaultValue: String? = null): String? {
-        val key = resources.getString(keyId)
-        return getString(key, defaultValue)
-    }
-
-    private fun SharedPreferences.Editor.putString(keyId: Int, value: String?) {
-        putString(resources.getString(keyId), value)
-    }
-
-    private fun SharedPreferences.getBoolean(keyId: Int, defaultValue: Boolean = false): Boolean {
-        val key = resources.getString(keyId)
-        return getBoolean(key, defaultValue)
-    }
-
-    private fun SharedPreferences.Editor.putBoolean(keyId: Int, value: Boolean) {
-        putBoolean(resources.getString(keyId), value)
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

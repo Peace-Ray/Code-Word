@@ -71,21 +71,21 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
      * Respond to a button press on a "launch" button which exists outside of this Fragment.
      */
     fun onLaunchButtonClicked() {
-        presenter.onLaunchButtonClicked()
+        if (isPresented) presenter.onLaunchButtonClicked()
     }
 
     /**
      * Respond to a button press on a "cancel" button which exists outside of this Fragment.
      */
     fun onCancelButtonClicked() {
-        presenter.onCancelButtonClicked()
+        if (isPresented) presenter.onCancelButtonClicked()
     }
 
     fun onTypeChanged(type: GameSetupContract.Type, qualifiers: Set<GameSetupContract.Qualifier> = emptySet()) {
         this.type = type
         this.qualifiers = qualifiers
 
-        presenter.onTypeSelected(type, qualifiers)
+        if (isPresented) presenter.onTypeSelected(type, qualifiers)
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -95,6 +95,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
     //---------------------------------------------------------------------------------------------
     private var _binding: GameSetupBinding? = null
     private val binding get() = _binding!!
+    private var isPresented: Boolean = false
 
     // ViewHolder section wrappers
     lateinit var seedViewHolder: GameReviewSeedViewHolder
@@ -200,6 +201,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
         seedViewHolder = GameReviewSeedViewHolder(binding.sectionSeed.mainViewSeed, colorManager, gameSetupListener)
 
         // attach to presenter for logic
+        isPresented = true
         attach(presenter)
     }
 
@@ -215,6 +217,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        isPresented = false
     }
     //---------------------------------------------------------------------------------------------
     //endregion
@@ -1116,6 +1119,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
                         GameStatusReview.Note.SEED_ERA_UNDETERMINED -> context?.getString(R.string.game_setup_note_seed_undetermined)
                         GameStatusReview.Note.GAME_EXPIRED -> context?.getString(R.string.game_setup_note_game_expired)
                         GameStatusReview.Note.GAME_FORTHCOMING -> context?.getString(R.string.game_setup_note_game_forthcoming)
+                        GameStatusReview.Note.GAME_LOCAL_ONLY -> context?.getString(R.string.game_setup_note_game_local_daily)
                         null -> null
                     }
                 }
@@ -1155,6 +1159,8 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
                         if (daily) R.string.game_setup_qualifier_version_update_required_daily
                         else R.string.game_setup_qualifier_version_update_required_seeded
                     )
+
+                    GameSetupContract.Qualifier.LOCAL_DAILY -> null
 
                     null -> null
                 }

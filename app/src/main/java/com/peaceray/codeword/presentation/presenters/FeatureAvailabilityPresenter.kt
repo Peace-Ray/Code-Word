@@ -4,6 +4,7 @@ import com.peaceray.codeword.data.model.version.SupportedVersions
 import com.peaceray.codeword.data.model.version.Versions
 import com.peaceray.codeword.data.manager.version.VersionsManager
 import com.peaceray.codeword.presentation.contracts.FeatureAvailabilityContract
+import com.peaceray.codeword.presentation.manager.privacy.PrivacyManager
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ class FeatureAvailabilityPresenter @Inject constructor():
     BasePresenter<FeatureAvailabilityContract.View>()
 {
     @Inject lateinit var versionsManager: VersionsManager
+    @Inject lateinit var privacyManager: PrivacyManager
 
     // progress holders: features, progress, disposable operations
     private val features: MutableSet<FeatureAvailabilityContract.Feature> = mutableSetOf()
@@ -29,8 +31,13 @@ class FeatureAvailabilityPresenter @Inject constructor():
         featuresPending.addAll(features)
 
         // check availability of each
+        val updateCheck = privacyManager.isCheckingForUpdates
         for (feature in featuresPending) {
-            checkFeatureAvailability(feature)
+            if (updateCheck) {
+                checkFeatureAvailabilityByVersions(feature)
+            } else {
+                checkFeatureAvailabilityByLocal(feature)
+            }
         }
     }
 
@@ -41,9 +48,24 @@ class FeatureAvailabilityPresenter @Inject constructor():
         featuresPending.clear()
     }
 
-    private fun checkFeatureAvailability(feature: FeatureAvailabilityContract.Feature) {
+    private fun checkFeatureAvailabilityByLocal(feature: FeatureAvailabilityContract.Feature) {
         when (feature) {
-            FeatureAvailabilityContract.Feature.APPLICATION -> viewScope.launch{
+            FeatureAvailabilityContract.Feature.APPLICATION,
+            FeatureAvailabilityContract.Feature.SEED -> {
+                view?.setFeatureAvailability(feature, FeatureAvailabilityContract.Availability.AVAILABLE)
+            }
+            FeatureAvailabilityContract.Feature.DAILY -> {
+                view?.setFeatureAvailability(feature, FeatureAvailabilityContract.Availability.DISABLED)
+            }
+            FeatureAvailabilityContract.Feature.LOCAL_DAILY -> {
+                view?.setFeatureAvailability(feature, FeatureAvailabilityContract.Availability.AVAILABLE)
+            }
+        }
+    }
+
+    private fun checkFeatureAvailabilityByVersions(feature: FeatureAvailabilityContract.Feature) {
+        when (feature) {
+            FeatureAvailabilityContract.Feature.APPLICATION -> viewScope.launch {
                 versionsDeferred.awaitAndReport(feature) { f, supportedVersions ->
                     reportFeatureAvailabilityByVersion(
                         f,
@@ -53,7 +75,7 @@ class FeatureAvailabilityPresenter @Inject constructor():
                     )
                 }
             }
-            FeatureAvailabilityContract.Feature.SEED -> viewScope.launch{
+            FeatureAvailabilityContract.Feature.SEED -> viewScope.launch {
                 versionsDeferred.awaitAndReport(feature) { f, supportedVersions ->
                     reportFeatureAvailabilityByVersion(
                         f,
@@ -63,7 +85,7 @@ class FeatureAvailabilityPresenter @Inject constructor():
                     )
                 }
             }
-            FeatureAvailabilityContract.Feature.DAILY -> viewScope.launch{
+            FeatureAvailabilityContract.Feature.DAILY -> viewScope.launch {
                 versionsDeferred.awaitAndReport(feature) { f, supportedVersions ->
                     reportFeatureAvailabilityByVersion(
                         f,
@@ -72,6 +94,13 @@ class FeatureAvailabilityPresenter @Inject constructor():
                         supportedVersions.minimum.seed
                     )
                 }
+            }
+            FeatureAvailabilityContract.Feature.LOCAL_DAILY -> viewScope.launch {
+                // TODO read this value from a Manager
+                view?.setFeatureAvailability(
+                    FeatureAvailabilityContract.Feature.LOCAL_DAILY,
+                    FeatureAvailabilityContract.Availability.DISABLED
+                )
             }
         }
     }

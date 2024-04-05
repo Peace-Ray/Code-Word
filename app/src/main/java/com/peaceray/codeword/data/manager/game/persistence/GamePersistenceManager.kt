@@ -13,21 +13,23 @@ interface GamePersistenceManager {
      * Load the persisted game state; i.e. determine if currently waiting for a guess or evaluation,
      * or if over. May be more efficient than [load] for determining the current game status.
      *
-     * @param seed The seed string identifying the game, if any
-     * @param setup The GameSetup describing the game settings
+     * @param setup The GameSetup describing the game settings. Will be compared against the
+     * loaded game (if found) to verify a match.
+     * @param seeds The seed strings identifying the game, if any.
      * @return The current game state, if found, or null.
      */
-    suspend fun loadState(seed: String? = null, setup: GameSetup? = null): Game.State?
+    suspend fun loadState(setup: GameSetup? = null, vararg seeds: String?): Game.State?
 
     /**
      * Loads the persisted game save data described by the setup, if available. May throw an
      * exception if IO access fails, but not if the saved Game simply can't be found.
      *
-     * @param seed The seed string identifying the game, if any
-     * @param setup The GameSetup describing the game settings
+     * @param setup The GameSetup describing the game settings. Will be compared against the
+     *      * loaded game (if found) to verify a match.
+     *      * @param seeds The seed strings identifying the game, if any.
      * @return The GameSaveData at its most recently saved state, or null if not available.
      */
-    suspend fun load(seed: String? = null, setup: GameSetup? = null): GameSaveData?
+    suspend fun load(setup: GameSetup? = null, vararg seeds: String?): GameSaveData?
 
     /**
      * Persist the current state of the game; after this call, [load] will return an identical

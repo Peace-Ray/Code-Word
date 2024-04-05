@@ -269,6 +269,10 @@ class GameSetupActivity:
     @Inject lateinit var genie: GenieGameSetupSettingsManager
     @Inject lateinit var inflater: LayoutInflater
 
+    // daily availability: if the DAILY is disabled, use the LOCAL DAILY setting instead.
+    private var dailyAvailability: FeatureAvailabilityContract.Availability? = null
+    private var localDailyAvailability: FeatureAvailabilityContract.Availability? = null
+
     val gameTypeQualifiers = mutableMapOf(
         Pair(GameSetupContract.Type.DAILY, setOf(GameSetupContract.Qualifier.VERSION_CHECK_PENDING)),
         Pair(GameSetupContract.Type.SEEDED, setOf(GameSetupContract.Qualifier.VERSION_CHECK_PENDING)),
@@ -276,7 +280,8 @@ class GameSetupActivity:
     )
     override fun getFeatures() = listOf(
         FeatureAvailabilityContract.Feature.SEED,
-        FeatureAvailabilityContract.Feature.DAILY
+        FeatureAvailabilityContract.Feature.DAILY,
+        FeatureAvailabilityContract.Feature.LOCAL_DAILY
     )
 
     override fun setFeatureAvailability(availability: Map<FeatureAvailabilityContract.Feature, FeatureAvailabilityContract.Availability>) {
@@ -308,6 +313,7 @@ class GameSetupActivity:
                     FeatureAvailabilityContract.Availability.UPDATE_URGENT -> GameSetupContract.Qualifier.VERSION_UPDATE_AVAILABLE
                     FeatureAvailabilityContract.Availability.UPDATE_REQUIRED,
                     FeatureAvailabilityContract.Availability.RETIRED -> GameSetupContract.Qualifier.VERSION_UPDATE_RECOMMENDED
+                    FeatureAvailabilityContract.Availability.DISABLED -> null
                     FeatureAvailabilityContract.Availability.UNKNOWN -> null
                 }
                 updateVersionQualifier(GameSetupContract.Type.SEEDED, seededQualifier)
@@ -317,21 +323,24 @@ class GameSetupActivity:
                     FeatureAvailabilityContract.Availability.UPDATE_URGENT -> null
                     FeatureAvailabilityContract.Availability.UPDATE_REQUIRED,
                     FeatureAvailabilityContract.Availability.RETIRED -> GameSetupContract.Qualifier.VERSION_UPDATE_AVAILABLE
+                    FeatureAvailabilityContract.Availability.DISABLED -> null
                     FeatureAvailabilityContract.Availability.UNKNOWN -> null
                 }
                 updateVersionQualifier(GameSetupContract.Type.CUSTOM, customQualifier)
             }
             FeatureAvailabilityContract.Feature.DAILY -> {
-                // always recommended to perform an update!
-                val qualifier = when(availability) {
-                    FeatureAvailabilityContract.Availability.AVAILABLE -> null
-                    FeatureAvailabilityContract.Availability.UPDATE_AVAILABLE,
-                    FeatureAvailabilityContract.Availability.UPDATE_URGENT -> GameSetupContract.Qualifier.VERSION_UPDATE_RECOMMENDED
-                    FeatureAvailabilityContract.Availability.UPDATE_REQUIRED,
-                    FeatureAvailabilityContract.Availability.RETIRED -> GameSetupContract.Qualifier.VERSION_UPDATE_REQUIRED
-                    FeatureAvailabilityContract.Availability.UNKNOWN -> GameSetupContract.Qualifier.VERSION_CHECK_FAILED
+                dailyAvailability = availability
+                if (localDailyAvailability != null) {
+                    // shouldn't ever become non-null after assignment
+                    applyDailyFeatureAvailability(dailyAvailability!!, localDailyAvailability!!)
                 }
-                updateVersionQualifier(GameSetupContract.Type.DAILY, qualifier)
+            }
+            FeatureAvailabilityContract.Feature.LOCAL_DAILY -> {
+                localDailyAvailability = availability
+                if (dailyAvailability != null) {
+                    // shoudn't ever become non-null after assignment
+                    applyDailyFeatureAvailability(dailyAvailability!!, localDailyAvailability!!)
+                }
             }
             FeatureAvailabilityContract.Feature.APPLICATION -> {
                 // nothing to do
@@ -339,8 +348,34 @@ class GameSetupActivity:
         }
     }
 
+    private fun applyDailyFeatureAvailability(
+        globalAvailability: FeatureAvailabilityContract.Availability,
+        localAvailability: FeatureAvailabilityContract.Availability
+    ) {
+        val global = globalAvailability != FeatureAvailabilityContract.Availability.DISABLED
+        val qualifier = when(if (global) globalAvailability else localAvailability) {
+            FeatureAvailabilityContract.Availability.AVAILABLE -> null
+            FeatureAvailabilityContract.Availability.UPDATE_AVAILABLE,
+            FeatureAvailabilityContract.Availability.UPDATE_URGENT -> GameSetupContract.Qualifier.VERSION_UPDATE_RECOMMENDED
+            FeatureAvailabilityContract.Availability.UPDATE_REQUIRED,
+            FeatureAvailabilityContract.Availability.DISABLED -> GameSetupContract.Qualifier.VERSION_CHECK_FAILED
+            FeatureAvailabilityContract.Availability.RETIRED -> GameSetupContract.Qualifier.VERSION_UPDATE_REQUIRED
+            FeatureAvailabilityContract.Availability.UNKNOWN -> GameSetupContract.Qualifier.VERSION_CHECK_FAILED
+        }
+
+        val qualifiers = setOfNotNull(
+            qualifier,
+            if (global) null else GameSetupContract.Qualifier.LOCAL_DAILY
+        )
+
+        updateVersionQualifiers(GameSetupContract.Type.DAILY, qualifiers)
+    }
+
     private fun updateVersionQualifier(type: GameSetupContract.Type, qualifier: GameSetupContract.Qualifier?) {
-        val qualifiers = if (qualifier == null) emptySet() else setOf(qualifier)
+        updateVersionQualifiers(type, setOfNotNull(qualifier))
+    }
+
+    private fun updateVersionQualifiers(type: GameSetupContract.Type, qualifiers: Set<GameSetupContract.Qualifier>) {
         gameTypeQualifiers[type] = qualifiers
         val fragment = fragmentMap[type]
         if (fragment is GameSetupFragment) {

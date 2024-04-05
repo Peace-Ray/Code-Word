@@ -323,10 +323,11 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         )
     }
 
-    private suspend fun getSessionProgress(seed: String?): GameStatusReview.Status {
+    private suspend fun getSessionProgress(setup: GameSetup?, seed: String?): GameStatusReview.Status {
         return if (seed == null) GameStatusReview.Status.NEW else {
-            val loadedState = gamePersistenceManager.loadState(seed)
-            Timber.v("gamePersistenceManager loaded state for $seed : $loadedState")
+            val alternativeSeed = if (setup?.daily == true) gameSetupManager.getSeed(setup.with(daily = false)) else null
+            val loadedState = gamePersistenceManager.loadState(null, seed, alternativeSeed)
+            Timber.v("gamePersistenceManager loaded state for $seed (alt $alternativeSeed) : $loadedState")
             when (loadedState) {
                 Game.State.GUESSING, Game.State.EVALUATING -> GameStatusReview.Status.ONGOING
                 Game.State.WON -> GameStatusReview.Status.WON
@@ -387,10 +388,10 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             when (it) {
                 GameSetupContract.Qualifier.VERSION_CHECK_PENDING,
                 GameSetupContract.Qualifier.VERSION_CHECK_FAILED -> GameStatusReview.Note.SEED_ERA_UNDETERMINED
-
                 GameSetupContract.Qualifier.VERSION_UPDATE_AVAILABLE -> null
                 GameSetupContract.Qualifier.VERSION_UPDATE_RECOMMENDED -> null
                 GameSetupContract.Qualifier.VERSION_UPDATE_REQUIRED -> GameStatusReview.Note.SEED_FUTURISTIC
+                GameSetupContract.Qualifier.LOCAL_DAILY -> if (type == GameSetupContract.Type.DAILY) GameStatusReview.Note.GAME_LOCAL_ONLY else null
             }
         }
 
@@ -593,7 +594,10 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             // the loadJob will be canceled if any inputs change
             loadJob = viewScope.launch {
                 ensureActive()
-                val saveData = if (review.seed == null) null else gamePersistenceManager.load(review.seed)
+                val saveData = if (review.seed == null) null else {
+                    val alternativeSeed = if (setup.daily) gameSetupManager.getSeed(setup.with(daily = false)) else null
+                    gamePersistenceManager.load(null, review.seed, alternativeSeed)
+                }
                 ensureActive()
                 // sanity check; should always be true if the job wasn't canceled, but just to be safe
                 if (newReview.seed == seed) {
@@ -791,7 +795,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         viewScope.launch { 
             // if loading, independently verify status
             if (configuration.review.status == GameStatusReview.Status.LOADING) {
-                val status = getSessionProgress(configuration.seed)
+                val status = getSessionProgress(configuration.setup, configuration.seed)
                 configuration = ConfigurationState(
                     configuration,
                     review = createGameStatusReview(
@@ -805,7 +809,23 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             }
             
             val canLaunch = isLaunchAllowed(configuration)
-            if (canLaunch.first) performLaunch(configuration.type, configuration.review) else {
+            if (canLaunch.first) {
+                // at this point, if local dailies only, convert the daily to a non-daily for
+                // launch.
+                if (configuration.type == GameSetupContract.Type.DAILY && GameSetupContract.Qualifier.LOCAL_DAILY in configuration.qualifiers) {
+                    val alternativeSetup = configuration.setup.with(daily = false)
+                    val alternativeReview = createGameStatusReview(
+                        GameSetupContract.Type.DAILY,
+                        configuration.qualifiers,
+                        gameSetupManager.getSeed(alternativeSetup),
+                        alternativeSetup,
+                        configuration.review.status
+                    )
+                    performLaunch(GameSetupContract.Type.DAILY, alternativeReview)
+                } else {
+                    performLaunch(configuration.type, configuration.review)
+                }
+            } else {
                 view?.showError(GameSetupContract.Feature.LAUNCH, GameSetupContract.Error.FEATURE_NOT_ALLOWED, canLaunch.second)
             }
         }

@@ -843,6 +843,9 @@ class GameInfoFragment: Fragment(R.layout.game_info), GameSetupContract.View {
             GameSetupContract.Qualifier.VERSION_CHECK_FAILED -> {
                 // TODO note that a version check failed? Probably not necessary for GameInfo
             }
+            GameSetupContract.Qualifier.LOCAL_DAILY -> {
+                // TODO note that the feature's availabiliyt is influenced by local-only dailies
+            }
             null -> {
                 // TODO clear Qualifier for this feature
             }

@@ -69,4 +69,14 @@
             />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_privacy">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/pref_key_check_for_updates"
+            android:title="@string/pref_check_for_updates"
+            android:summaryOn="@string/pref_check_for_updates_detail_on"
+            android:summaryOff="@string/pref_check_for_updates_detail_off"
+            />
+    </PreferenceCategory>
+
 </PreferenceScreen>
