@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Colors used in flags -->
+
+    <!-- Gay Pride Flag: https://en.wikipedia.org/wiki/File:Gay_Pride_Flag.svg -->
+    <color name="fl_pride_red">#e50000</color>
+    <color name="fl_pride_orange">#ff8d00</color>
+    <color name="fl_pride_yellow">#ffee00</color>
+    <color name="fl_pride_green">#028121</color>
+    <color name="fl_pride_blue">#004cff</color>
+    <color name="fl_pride_purple">#770088</color>
+
+</resources>

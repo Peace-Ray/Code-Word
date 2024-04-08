@@ -64,6 +64,9 @@
     <string name="pref_entry_value_code_colors_primary">primary</string>
     <string name="pref_entry_value_code_colors_quantro">quantro</string>
     <string name="pref_entry_value_code_colors_retro">retro</string>
+    <string name="pref_entry_value_code_colors_plain">plain</string>
+    <string name="pref_entry_value_code_colors_pastels">pastels</string>
+    <string name="pref_entry_value_code_colors_pride">pride</string>
 
     <string-array name="pref_entry_values_code_colors">
         <item>@string/pref_entry_value_code_colors_sunrise</item>
@@ -73,6 +76,9 @@
         <item>@string/pref_entry_value_code_colors_primary</item>
         <item>@string/pref_entry_value_code_colors_quantro</item>
         <item>@string/pref_entry_value_code_colors_retro</item>
+        <item>@string/pref_entry_value_code_colors_plain</item>
+        <item>@string/pref_entry_value_code_colors_pastels</item>
+        <item>@string/pref_entry_value_code_colors_pride</item>
     </string-array>
 
     <string-array name="pref_entries_code_colors">
@@ -83,5 +89,8 @@
         <item>@string/pref_entry_code_colors_primary</item>
         <item>@string/pref_entry_code_colors_quantro</item>
         <item>@string/pref_entry_code_colors_retro</item>
+        <item>@string/pref_entry_code_colors_plain</item>
+        <item>@string/pref_entry_code_colors_pastels</item>
+        <item>@string/pref_entry_code_colors_pride</item>
     </string-array>
 </resources>

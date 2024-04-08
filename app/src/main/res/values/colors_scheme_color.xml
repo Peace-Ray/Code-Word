@@ -7,9 +7,11 @@
     <color name="cs_red_red_salsa">#f93644</color>
 
     <!-- pinks -->
+    <color name="cs_pink_pale_pink">#ffdede</color>
 
     <!-- purples -->
     <color name="cs_purple_dark_orchid">#9032d1</color>
+    <color name="cs_purple_pale_lavendar">#dcd6ff</color>
 
     <!-- deep purples -->
 
@@ -19,8 +21,10 @@
     <color name="cs_blue_rich_electric_blue">#1299e2</color>
 
     <!-- light blue-->
+    <color name="cs_light_blue_water">#d6f0ff</color>
 
     <!-- cyan -->
+    <color name="cs_cyan_light_cyan">#deffef</color>
 
     <!-- teal -->
 
@@ -32,11 +36,13 @@
     <!-- lime-->
 
     <!--yellow -->
-
-    <!--amber-->
+    <color name="cs_yellow_floral_white">#fffaf0</color>
     <color name="cs_yellow_lemon_yellow">#ffeb48</color>
 
+    <!--amber-->
+
     <!--orange-->
+    <color name="cs_orange_seashell">#ffeded</color>
 
     <!--deep orange-->
     <color name="cs_deep_orange_deep_saffron">#ff9230</color>

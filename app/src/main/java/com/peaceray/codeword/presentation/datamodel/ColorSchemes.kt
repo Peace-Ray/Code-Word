@@ -16,5 +16,8 @@ enum class CodeColorScheme {
     PLAYROOM,
     PRIMARY,
     QUANTRO,
-    RETRO
+    RETRO,
+    PLAIN,
+    PASTELS,
+    PRIDE
 }
