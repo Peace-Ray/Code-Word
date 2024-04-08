@@ -55,7 +55,21 @@ class SeedCoreFactory {
         }
     }
 
+    /**
+     * Is this a Daily seed (explicitly encoded as a Daily)
+     */
     fun isDaily(seedCore: String? = null) = seedCore != null && seedCore.firstOrNull() == '#'
+
+    /**
+     * Is this a Daily seed (explicitly encoded as a Daily), or the equivalent of one (a non-daily
+     * Seed that seems to encode a random value generated from a Daily)
+     */
+    fun isDailyOrEquivalent(seedCore: String? = null) = when {
+        seedCore == null -> false
+        seedCore.firstOrNull() == '#' -> true
+        else -> (decode(seedCore).first - dailyRandomSeedB) % dailyRandomSeedA == 0L
+    }
+
 
     fun getSeedVersionInteger(seedCore: String? = null): Int {
         if (seedCore == null) {

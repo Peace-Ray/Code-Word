@@ -206,6 +206,8 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         val availabilityMap: MutableMap<GameSetupContract.Feature, GameSetupContract.Availability> = mutableMapOf()
         val qualifierMap: MutableMap<GameSetupContract.Feature, GameSetupContract.Qualifier> = mutableMapOf()
 
+        val daily = gameSetupManager.isDaily(setup)
+
         // only include LAUNCH if actually available; e.g. for DAILY, check if not yet complete
         val canLaunch: Pair<Boolean, GameSetupContract.Qualifier?> = isLaunchAllowed(configuration)
         val canLaunchQualifier = canLaunch.second
@@ -232,13 +234,13 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         val gameRound = saveData?.round ?: 1
         availabilityMap[GameSetupContract.Feature.ROUNDS] = if (
             gameOver
-            || setup.daily
+            || daily
             || (gameRound..(roundRec.second)).toList().size <= 1
         ) GameSetupContract.Availability.LOCKED else GameSetupContract.Availability.AVAILABLE
 
         // language: locked for in-progress, disabled for dailies
         val languageAvailability = when {
-            type == GameSetupContract.Type.DAILY || setup.daily -> GameSetupContract.Availability.DISABLED
+            type == GameSetupContract.Type.DAILY || daily -> GameSetupContract.Availability.DISABLED
             type == GameSetupContract.Type.ONGOING || gameExists -> GameSetupContract.Availability.LOCKED
             else -> GameSetupContract.Availability.AVAILABLE
         }
@@ -325,7 +327,9 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
 
     private suspend fun getSessionProgress(setup: GameSetup?, seed: String?): GameStatusReview.Status {
         return if (seed == null) GameStatusReview.Status.NEW else {
-            val alternativeSeed = if (setup?.daily == true) gameSetupManager.getSeed(setup.with(daily = false)) else null
+            val alternativeSeed = if (setup == null || !gameSetupManager.isDaily(setup)) null else {
+                gameSetupManager.getSeed(setup.with(daily = false))
+            }
             val loadedState = gamePersistenceManager.loadState(null, seed, alternativeSeed)
             Timber.v("gamePersistenceManager loaded state for $seed (alt $alternativeSeed) : $loadedState")
             when (loadedState) {
@@ -403,9 +407,16 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             GameSetupManager.SeedEra.UNKNOWN -> emptySet()  // either no notes, or seed should not have reached this point
         }
 
+        val notesLocal = when {
+            gameSetupManager.isDaily(gameSetup) -> emptySet()
+            !gameSetupManager.isDailyOrEquivalent(gameSetup) -> emptySet()
+            type == GameSetupContract.Type.DAILY -> setOf(GameStatusReview.Note.GAME_LOCAL_ONLY)
+            else -> setOf(GameStatusReview.Note.SEED_IS_LOCAL_DAILY)
+        }
+
         // combine notes. Strongly suspect either or both are empty in all cases, but keep this
         // construction to simplify future updates where this may no longer be the case.
-        val notes = notesVersionQualifier.union(notesSeedEra)
+        val notes = notesVersionQualifier.union(notesSeedEra).union(notesLocal)
 
         return GameStatusReview(seed, gameSetup, status ?: GameStatusReview.Status.NEW, purpose, notes)
     }
@@ -595,7 +606,9 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             loadJob = viewScope.launch {
                 ensureActive()
                 val saveData = if (review.seed == null) null else {
-                    val alternativeSeed = if (setup.daily) gameSetupManager.getSeed(setup.with(daily = false)) else null
+                    val alternativeSeed = if (!gameSetupManager.isDaily(setup)) null else {
+                        gameSetupManager.getSeed(setup.with(daily = false))
+                    }
                     gamePersistenceManager.load(null, review.seed, alternativeSeed)
                 }
                 ensureActive()
@@ -842,7 +855,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
 
                 // consider whether the modification is acceptable
                 return when {
-                    modifiedSetup.daily -> {
+                    gameSetupManager.isDaily(modifiedSetup) -> {
                         Timber.w("Daily seed $seed entered")
                         view?.showError(GameSetupContract.Feature.SEED, GameSetupContract.Error.FEATURE_VALUE_NOT_ALLOWED, null)
                         false

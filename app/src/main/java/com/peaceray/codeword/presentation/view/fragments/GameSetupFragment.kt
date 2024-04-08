@@ -1116,6 +1116,7 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
                         GameStatusReview.Note.SEED_RETIRED -> context?.getString(R.string.game_setup_note_seed_retired)
                         GameStatusReview.Note.SEED_FUTURISTIC -> context?.getString(R.string.game_setup_note_seed_futuristic)
                         GameStatusReview.Note.SEED_ERA_UNDETERMINED -> context?.getString(R.string.game_setup_note_seed_undetermined)
+                        GameStatusReview.Note.SEED_IS_LOCAL_DAILY -> context?.getString(R.string.game_setup_note_seed_local_daily)
                         GameStatusReview.Note.GAME_EXPIRED -> context?.getString(R.string.game_setup_note_game_expired)
                         GameStatusReview.Note.GAME_FORTHCOMING -> context?.getString(R.string.game_setup_note_game_forthcoming)
                         GameStatusReview.Note.GAME_LOCAL_ONLY -> context?.getString(R.string.game_setup_note_game_local_daily)

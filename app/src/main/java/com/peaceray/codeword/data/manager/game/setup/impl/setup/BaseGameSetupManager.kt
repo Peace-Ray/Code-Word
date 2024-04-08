@@ -204,6 +204,11 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
         return setup.evaluation.enforced != ConstraintPolicy.IGNORE
     }
 
+    override fun isDaily(setup: GameSetup) = setup.daily
+
+    override fun isDailyOrEquivalent(setup: GameSetup) = setup.daily
+            || seedCoreFactory.isDailyOrEquivalent(seedCoreFactory.getSeedCore(setup))
+
     override fun getType(setup: GameSetup): GameType {
         val details = CodeLanguageDetailsFactory.get(
             SeedVersion.forNumberEncoding(setup.version),
