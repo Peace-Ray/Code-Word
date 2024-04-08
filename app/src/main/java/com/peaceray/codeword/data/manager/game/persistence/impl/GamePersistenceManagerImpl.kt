@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.io.FileNotFoundException
+import java.util.stream.Collectors.toList
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,26 +35,31 @@ class GamePersistenceManagerImpl @Inject constructor(
     private var lastSaveData: GameSaveData? = null
     private val saveMutex = Mutex()
 
-    override suspend fun loadState(seed: String?, setup: GameSetup?): Game.State? {
+    override suspend fun loadState(setup: GameSetup?, vararg seeds: String?): Game.State? {
         // currently no more efficient than [load]
         // TODO: a way to load State _AND_ verify seed / setup matches without full read/deserialization?
-        return load(seed, setup)?.state
+        return load(setup, *seeds)?.state
     }
 
-    override suspend fun load(seed: String?, setup: GameSetup?): GameSaveData? {
+    override suspend fun load(setup: GameSetup?, vararg seeds: String?): GameSaveData? {
+        val seedList = if (seeds.filterNotNull().isEmpty()) listOf(null) else seeds.filterNotNull().toList()
+
         // held in memory
         val lastSave = lastSaveData
-        if (isGameSaveData(seed, setup, lastSave)) return lastSave
+        if (seedList.any { isGameSaveData(it, setup, lastSave) }) return lastSave
 
         // serialization from disk
-        val persistedSerialization = withContext(ioDispatcher) {
-            saveMutex.withLock { loadSerializedGameSaveDataFromDisk(seed, setup) }
+        val persistedSerializations = withContext(ioDispatcher) {
+            saveMutex.withLock {
+                seedList.mapNotNull { loadSerializedGameSaveDataFromDisk(it, setup) }
+            }
         }
 
-        // deserialize
-        return if (persistedSerialization == null) null else withContext(computationDispatcher) {
-            val save = deserialize(persistedSerialization)
-            if (isGameSaveData(seed, setup, save)) save else null
+        // deserialize the first match
+        return if (persistedSerializations.isEmpty()) null else withContext(computationDispatcher) {
+            persistedSerializations.asSequence()
+                .map { deserialize(it) }
+                .firstOrNull { save -> seedList.any { seed -> isGameSaveData(seed, setup, save) } }
         }
     }
 

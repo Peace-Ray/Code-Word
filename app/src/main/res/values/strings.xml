@@ -109,8 +109,10 @@
     <string name="game_setup_note_seed_retired">This is a retired seed; the puzzle may not match expectations</string>
     <string name="game_setup_note_seed_futuristic">An app update is required to play this puzzle</string>
     <string name="game_setup_note_seed_undetermined">Checking puzzle availability…</string>
+    <string name="game_setup_note_seed_local_daily">This seed is a Daily puzzle. If you play it now, that Daily may not be available later.</string>
     <string name="game_setup_note_game_expired">This game has expired</string>
     <string name="game_setup_note_game_forthcoming">This game is forthcoming</string>
+    <string name="game_setup_note_game_local_daily">This Daily puzzle is just for you; enable update checks (in Settings) to play the global Daily</string>
 
     <string name="game_setup_qualifier_version_pending_seeded">Checking for updates…</string>
     <string name="game_setup_qualifier_version_failed_seeded">No connection; couldn\'t check current version</string>
@@ -423,10 +425,17 @@
     <string name="pref_entry_code_colors_quantro">Quantro</string>
     <string name="pref_entry_code_colors_retro">Retro</string>
 
+    <string name="pref_advanced">Advanced Settings</string>
+
     <string name="pref_accessibility">Accessibility</string>
     <string name="pref_hardware_keyboard">Allow hardware keyboard</string>
-    <string name="pref_hardware_keyboard_detail_on">Type guesses</string>
+    <string name="pref_hardware_keyboard_detail_on">Can type guesses</string>
     <string name="pref_hardware_keyboard_detail_off">Guess by screen taps</string>
+
+    <string name="pref_privacy">Privacy</string>
+    <string name="pref_check_for_updates">Check for updates</string>
+    <string name="pref_check_for_updates_detail_on">Ensure the Daily challenge is the same everywhere in the world</string>
+    <string name="pref_check_for_updates_detail_off">The Daily challenge might not match everyone else\'s</string>
 
     <!-- GAME GENIE -->
     <!-- genie: custom secret -->

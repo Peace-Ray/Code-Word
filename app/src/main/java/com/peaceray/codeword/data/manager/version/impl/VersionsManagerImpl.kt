@@ -2,6 +2,7 @@ package com.peaceray.codeword.data.manager.version.impl
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import com.peaceray.codeword.BuildConfig
 import com.peaceray.codeword.data.model.version.SupportedVersions

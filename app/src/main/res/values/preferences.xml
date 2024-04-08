@@ -9,6 +9,7 @@
     <string name="pref_key_code_colors_invert">code_color_invert</string>
     <string name="pref_key_code_characters">code_characters</string>
     <string name="pref_key_hardware_keyboard">hardware_keyboard</string>
+    <string name="pref_key_check_for_updates">check_for_updates</string>
 
     <!-- VALUES -->
 

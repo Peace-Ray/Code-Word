@@ -144,6 +144,19 @@ interface GameSetupManager {
     fun isHard(setup: GameSetup): Boolean
 
     /**
+     * Returns whether this GameSetup represents a Daily puzzle (this is explicitly represented
+     * by the GameSetup object itself).
+     */
+    fun isDaily(setup: GameSetup): Boolean
+
+    /**
+     * Returns whether this GameSetup represent a Daily puzzle or its equivalent -- "Daily" status
+     * is explicitly represented by the GameSetup object itself, but it is possible to encode a
+     * Daily game in a Setup not flagged as such. This call attempts to recognize such a case.
+     */
+    fun isDailyOrEquivalent(setup: GameSetup): Boolean
+
+    /**
      * Infers the [GameType] of the provided Game Setup.
      */
     fun getType(setup: GameSetup): GameType
@@ -205,6 +218,7 @@ interface GameSetupManager {
      * @param hard Hard mode setting
      * @param seed The seed string
      * @param language The vocabulary language to use (other Vocabulary settings will be inferred)
+     * @param daily Set whether the GameSetup is a Daily, or just some other type of puzzle
      * @param randomized Randomize the seed value w/o affecting game settings.
      */
     @Throws(UnsupportedOperationException::class)

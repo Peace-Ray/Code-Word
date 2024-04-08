@@ -58,7 +58,7 @@ class GameCreationManagerImpl @Inject constructor(
 
     override suspend fun getGame(seed: String?, setup: GameSetup): Game {
         // load a save; may dispatch for IO
-        val save = gamePersistenceManager.load(seed, setup)
+        val save = gamePersistenceManager.load(setup, seed)
         // create a game; may dispatch for IO and/or computation
         return if (save != null) getGame(save) else createGame(setup)
     }

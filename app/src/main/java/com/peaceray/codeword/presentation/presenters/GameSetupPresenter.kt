@@ -206,6 +206,8 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         val availabilityMap: MutableMap<GameSetupContract.Feature, GameSetupContract.Availability> = mutableMapOf()
         val qualifierMap: MutableMap<GameSetupContract.Feature, GameSetupContract.Qualifier> = mutableMapOf()
 
+        val daily = gameSetupManager.isDaily(setup)
+
         // only include LAUNCH if actually available; e.g. for DAILY, check if not yet complete
         val canLaunch: Pair<Boolean, GameSetupContract.Qualifier?> = isLaunchAllowed(configuration)
         val canLaunchQualifier = canLaunch.second
@@ -232,13 +234,13 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         val gameRound = saveData?.round ?: 1
         availabilityMap[GameSetupContract.Feature.ROUNDS] = if (
             gameOver
-            || setup.daily
+            || daily
             || (gameRound..(roundRec.second)).toList().size <= 1
         ) GameSetupContract.Availability.LOCKED else GameSetupContract.Availability.AVAILABLE
 
         // language: locked for in-progress, disabled for dailies
         val languageAvailability = when {
-            type == GameSetupContract.Type.DAILY || setup.daily -> GameSetupContract.Availability.DISABLED
+            type == GameSetupContract.Type.DAILY || daily -> GameSetupContract.Availability.DISABLED
             type == GameSetupContract.Type.ONGOING || gameExists -> GameSetupContract.Availability.LOCKED
             else -> GameSetupContract.Availability.AVAILABLE
         }
@@ -323,10 +325,13 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         )
     }
 
-    private suspend fun getSessionProgress(seed: String?): GameStatusReview.Status {
+    private suspend fun getSessionProgress(setup: GameSetup?, seed: String?): GameStatusReview.Status {
         return if (seed == null) GameStatusReview.Status.NEW else {
-            val loadedState = gamePersistenceManager.loadState(seed)
-            Timber.v("gamePersistenceManager loaded state for $seed : $loadedState")
+            val alternativeSeed = if (setup == null || !gameSetupManager.isDaily(setup)) null else {
+                gameSetupManager.getSeed(setup.with(daily = false))
+            }
+            val loadedState = gamePersistenceManager.loadState(null, seed, alternativeSeed)
+            Timber.v("gamePersistenceManager loaded state for $seed (alt $alternativeSeed) : $loadedState")
             when (loadedState) {
                 Game.State.GUESSING, Game.State.EVALUATING -> GameStatusReview.Status.ONGOING
                 Game.State.WON -> GameStatusReview.Status.WON
@@ -387,10 +392,10 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             when (it) {
                 GameSetupContract.Qualifier.VERSION_CHECK_PENDING,
                 GameSetupContract.Qualifier.VERSION_CHECK_FAILED -> GameStatusReview.Note.SEED_ERA_UNDETERMINED
-
                 GameSetupContract.Qualifier.VERSION_UPDATE_AVAILABLE -> null
                 GameSetupContract.Qualifier.VERSION_UPDATE_RECOMMENDED -> null
                 GameSetupContract.Qualifier.VERSION_UPDATE_REQUIRED -> GameStatusReview.Note.SEED_FUTURISTIC
+                GameSetupContract.Qualifier.LOCAL_DAILY -> if (type == GameSetupContract.Type.DAILY) GameStatusReview.Note.GAME_LOCAL_ONLY else null
             }
         }
 
@@ -402,9 +407,16 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             GameSetupManager.SeedEra.UNKNOWN -> emptySet()  // either no notes, or seed should not have reached this point
         }
 
+        val notesLocal = when {
+            gameSetupManager.isDaily(gameSetup) -> emptySet()
+            !gameSetupManager.isDailyOrEquivalent(gameSetup) -> emptySet()
+            type == GameSetupContract.Type.DAILY -> setOf(GameStatusReview.Note.GAME_LOCAL_ONLY)
+            else -> setOf(GameStatusReview.Note.SEED_IS_LOCAL_DAILY)
+        }
+
         // combine notes. Strongly suspect either or both are empty in all cases, but keep this
         // construction to simplify future updates where this may no longer be the case.
-        val notes = notesVersionQualifier.union(notesSeedEra)
+        val notes = notesVersionQualifier.union(notesSeedEra).union(notesLocal)
 
         return GameStatusReview(seed, gameSetup, status ?: GameStatusReview.Status.NEW, purpose, notes)
     }
@@ -593,7 +605,12 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             // the loadJob will be canceled if any inputs change
             loadJob = viewScope.launch {
                 ensureActive()
-                val saveData = if (review.seed == null) null else gamePersistenceManager.load(review.seed)
+                val saveData = if (review.seed == null) null else {
+                    val alternativeSeed = if (!gameSetupManager.isDaily(setup)) null else {
+                        gameSetupManager.getSeed(setup.with(daily = false))
+                    }
+                    gamePersistenceManager.load(null, review.seed, alternativeSeed)
+                }
                 ensureActive()
                 // sanity check; should always be true if the job wasn't canceled, but just to be safe
                 if (newReview.seed == seed) {
@@ -791,7 +808,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
         viewScope.launch { 
             // if loading, independently verify status
             if (configuration.review.status == GameStatusReview.Status.LOADING) {
-                val status = getSessionProgress(configuration.seed)
+                val status = getSessionProgress(configuration.setup, configuration.seed)
                 configuration = ConfigurationState(
                     configuration,
                     review = createGameStatusReview(
@@ -805,7 +822,23 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
             }
             
             val canLaunch = isLaunchAllowed(configuration)
-            if (canLaunch.first) performLaunch(configuration.type, configuration.review) else {
+            if (canLaunch.first) {
+                // at this point, if local dailies only, convert the daily to a non-daily for
+                // launch.
+                if (configuration.type == GameSetupContract.Type.DAILY && GameSetupContract.Qualifier.LOCAL_DAILY in configuration.qualifiers) {
+                    val alternativeSetup = configuration.setup.with(daily = false)
+                    val alternativeReview = createGameStatusReview(
+                        GameSetupContract.Type.DAILY,
+                        configuration.qualifiers,
+                        gameSetupManager.getSeed(alternativeSetup),
+                        alternativeSetup,
+                        configuration.review.status
+                    )
+                    performLaunch(GameSetupContract.Type.DAILY, alternativeReview)
+                } else {
+                    performLaunch(configuration.type, configuration.review)
+                }
+            } else {
                 view?.showError(GameSetupContract.Feature.LAUNCH, GameSetupContract.Error.FEATURE_NOT_ALLOWED, canLaunch.second)
             }
         }
@@ -822,7 +855,7 @@ class GameSetupPresenter @Inject constructor(): GameSetupContract.Presenter, Bas
 
                 // consider whether the modification is acceptable
                 return when {
-                    modifiedSetup.daily -> {
+                    gameSetupManager.isDaily(modifiedSetup) -> {
                         Timber.w("Daily seed $seed entered")
                         view?.showError(GameSetupContract.Feature.SEED, GameSetupContract.Error.FEATURE_VALUE_NOT_ALLOWED, null)
                         false

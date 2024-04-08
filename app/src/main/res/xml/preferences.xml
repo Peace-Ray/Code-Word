@@ -59,13 +59,21 @@
             />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/pref_accessibility">
+    <PreferenceCategory android:title="@string/pref_advanced">
         <SwitchPreference
             android:defaultValue="true"
             android:key="@string/pref_key_hardware_keyboard"
             android:title="@string/pref_hardware_keyboard"
             android:summaryOn="@string/pref_hardware_keyboard_detail_on"
             android:summaryOff="@string/pref_hardware_keyboard_detail_off"
+            />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/pref_key_check_for_updates"
+            android:title="@string/pref_check_for_updates"
+            android:summaryOn="@string/pref_check_for_updates_detail_on"
+            android:summaryOff="@string/pref_check_for_updates_detail_off"
             />
     </PreferenceCategory>
 
