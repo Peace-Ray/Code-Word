@@ -424,6 +424,9 @@
     <string name="pref_entry_code_colors_primary">Primary</string>
     <string name="pref_entry_code_colors_quantro">Quantro</string>
     <string name="pref_entry_code_colors_retro">Retro</string>
+    <string name="pref_entry_code_colors_plain">Plain</string>
+    <string name="pref_entry_code_colors_pastels">Pastels</string>
+    <string name="pref_entry_code_colors_pride">Pride</string>
 
     <string name="pref_advanced">Advanced Settings</string>
 

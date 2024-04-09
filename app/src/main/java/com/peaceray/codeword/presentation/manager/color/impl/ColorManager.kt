@@ -81,6 +81,9 @@ class ColorManager @Inject constructor(
         CodeColorScheme.PRIMARY -> R.string.pref_entry_value_code_colors_primary
         CodeColorScheme.QUANTRO -> R.string.pref_entry_value_code_colors_quantro
         CodeColorScheme.RETRO -> R.string.pref_entry_value_code_colors_retro
+        CodeColorScheme.PLAIN -> R.string.pref_entry_value_code_colors_plain
+        CodeColorScheme.PASTELS -> R.string.pref_entry_value_code_colors_pastels
+        CodeColorScheme.PRIDE -> R.string.pref_entry_value_code_colors_pride
     })
 
     private fun String.toCodeColorScheme() = when(this) {
@@ -91,6 +94,9 @@ class ColorManager @Inject constructor(
         resources.getString(R.string.pref_entry_value_code_colors_primary) -> CodeColorScheme.PRIMARY
         resources.getString(R.string.pref_entry_value_code_colors_quantro) -> CodeColorScheme.QUANTRO
         resources.getString(R.string.pref_entry_value_code_colors_retro) -> CodeColorScheme.RETRO
+        resources.getString(R.string.pref_entry_value_code_colors_plain) -> CodeColorScheme.PLAIN
+        resources.getString(R.string.pref_entry_value_code_colors_pastels) -> CodeColorScheme.PASTELS
+        resources.getString(R.string.pref_entry_value_code_colors_pride) -> CodeColorScheme.PRIDE
         else -> {
             Timber.e("Don't recognize CodeColorScheme entry value $this")
             CodeColorScheme.PRIMARY
@@ -876,6 +882,50 @@ class ColorManager @Inject constructor(
                     getColor(R.color.quantro_retro_red_blush),
                     getColor(R.color.quantro_retro_blue_deep),
                     getColor(R.color.quantro_retro_orange_burnt),
+                )
+                baseOnCodes = listOf(getColor(R.color.white))
+            }
+            CodeColorScheme.PLAIN -> {  // same greys as SKY UNTRIED colors
+                baseCodes = listOf(if (darkMode) getColor(R.color.md_grey_500) else getColor(R.color.md_grey_300))
+                baseOnCodes = listOf(if (darkMode) getColor(R.color.white) else getColor(R.color.black))
+            }
+            CodeColorScheme.PASTELS -> { // https://www.schemecolor.com/light-rainbow-pastels.php
+                baseCodes = listOf(
+                    getColor(R.color.cs_purple_pale_lavendar),
+                    getColor(R.color.cs_light_blue_water),
+                    getColor(R.color.cs_cyan_light_cyan),
+                    getColor(R.color.cs_yellow_floral_white),
+                    getColor(R.color.cs_orange_seashell),
+                    getColor(R.color.cs_pink_pale_pink)
+                )
+                baseOnCodes = listOf(getColor(R.color.md_grey_800))
+            }
+            CodeColorScheme.PRIDE -> { // see colors_flag.xml
+                baseCodes = listOf(
+                    // 6 gay pride colors
+                    getColor(R.color.fl_pride_red),
+                    getColor(R.color.fl_pride_orange),
+                    getColor(R.color.fl_pride_yellow),
+                    getColor(R.color.fl_pride_green),
+                    getColor(R.color.fl_pride_blue),
+                    getColor(R.color.fl_pride_purple),
+                    // 2 trans flag colors (omit white)
+                    getColor(R.color.fl_trans_blue),
+                    getColor(R.color.fl_trans_pink),
+                    // 3 pan flag colors
+                    getColor(R.color.fl_pan_blue),
+                    getColor(R.color.fl_pan_yellow),
+                    getColor(R.color.fl_pan_magenta),
+                    // 2 additional gay pride colors from the original 8-color flag
+                    getColor(R.color.fl_pride_8_turquoise),
+                    getColor(R.color.fl_pride_8_pink),
+                    // 3 poly flag colors
+                    getColor(R.color.fl_poly_blue),
+                    getColor(R.color.fl_poly_green),
+                    getColor(R.color.fl_poly_magenta),
+                    // 2 intersex flag colors
+                    getColor(R.color.fl_intersex_purple),
+                    getColor(R.color.fl_intersex_yellow),
                 )
                 baseOnCodes = listOf(getColor(R.color.white))
             }

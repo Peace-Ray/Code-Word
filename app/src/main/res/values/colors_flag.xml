@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Colors used in flags -->
+
+    <!-- Gay Pride Flag: https://en.wikipedia.org/wiki/File:Gay_Pride_Flag.svg -->
+    <color name="fl_pride_red">#e50000</color>
+    <color name="fl_pride_orange">#ff8d00</color>
+    <color name="fl_pride_yellow">#ffee00</color>
+    <color name="fl_pride_green">#028121</color>
+    <color name="fl_pride_blue">#004cff</color>
+    <color name="fl_pride_purple">#770088</color>
+
+    <!-- Additional 2 colors for the original, 8-color Gay Pride flag:
+        https://en.wikipedia.org/wiki/File:Gay_flag_8.svg -->
+    <color name="fl_pride_8_pink">#ff69b4</color>
+    <color name="fl_pride_8_turquoise">#00c0c0</color>
+
+    <!-- Transgender Flag: https://en.wikipedia.org/wiki/File:Transgender_Pride_flag.svg -->
+    <color name="fl_trans_pink">#f5a9b8</color>
+    <color name="fl_trans_blue">#5bcefa</color>
+
+    <!-- Pansexuality Flag: https://en.wikipedia.org/wiki/File:Pansexuality_Pride_Flag.svg -->
+    <color name="fl_pan_magenta">#ff218c</color>
+    <color name="fl_pan_yellow">#ffd800</color>   <!-- same as Intersex Yellow -->
+    <color name="fl_pan_blue">#21b1ff</color>
+
+    <!-- Intersex Flag: https://en.wikipedia.org/wiki/File:Intersex_Pride_Flag.svg -->
+    <color name="fl_intersex_yellow">#ffd800</color>  <!-- same as Pan Yellow -->
+    <color name="fl_intersex_purple">#7902aa</color>
+
+    <!-- Nonbinary Flag: https://en.wikipedia.org/wiki/File:Nonbinary_flag.svg -->
+    <color name="fl_nonbinary_yellow">#fff433</color>
+    <color name="fl_nonbinary_purple">#9b59d0</color>
+
+    <!-- Polysexuality Flag: https://en.wikipedia.org/wiki/File:Polysexuality_Pride_Flag.svg -->
+    <color name="fl_poly_magenta">#f61cb9</color>
+    <color name="fl_poly_green">#07d569</color>
+    <color name="fl_poly_blue">#1c92f6</color>
+
+</resources>
