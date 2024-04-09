@@ -170,7 +170,7 @@ class InferredMarkupFeedbackProvider(
                     // repeatedly until no changes are detected. Changes prompted by
                     // the fresh constraints may allow additional information to be gleaned from
                     // past constraints.
-                    var changed = constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, doIndirectNonElimination, policy, constraints, freshConstraints)
+                    var changed = directMarkupChanged || constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, doIndirectNonElimination, policy, constraints, freshConstraints)
                     while (changed) {
                         // do a callback before the next iteration
                         if (callback != null) {
@@ -306,14 +306,18 @@ class InferredMarkupFeedbackProvider(
         considerExact: Boolean,
         constraint: Constraint
     ): Boolean {
+        var changed = false
         when {
             // if NO, none of these letters are correct
             considerIncluded && constraint.exact == 0 && constraint.included == 0 -> {
                 constraint.candidate.toSet().forEach { char ->
                     // remove from ALL position candidates
-                    candidates.forEach { candidateSet -> candidateSet.remove(char) }
+                    candidates.forEach { candidateSet ->
+                        if (candidateSet.remove(char)) changed = true
+                    }
 
                     // remove from ALL occurrences
+                    if (occurrences[char]?.isEmpty() == false) changed = true
                     occurrences[char] = 0..0
                 }
             }
@@ -322,12 +326,12 @@ class InferredMarkupFeedbackProvider(
             considerExact && constraint.exact == 0 -> {
                 constraint.candidate.forEachIndexed { index, char ->
                     // remove from position candidates
-                    val removed = candidates[index].remove(char)
-
-                    // update occurrences
-                    if (removed) {
+                    if (candidates[index].remove(char)) {
+                        // update occurrences
                         val range = occurrences[char] ?: 0..0
                         occurrences[char] = range.bound(maximum = setOf(candidates.count { char in it }))
+
+                        changed = true
                     }
                 }
             }
@@ -336,6 +340,7 @@ class InferredMarkupFeedbackProvider(
             considerExact && constraint.exact == length -> {
                 // set all candidates
                 constraint.candidate.forEachIndexed { index, c ->
+                    if (candidates[index].size != 1 || c !in candidates[index]) changed = true
                     candidates[index] = mutableSetOf(c)
                 }
 
@@ -351,7 +356,6 @@ class InferredMarkupFeedbackProvider(
 
         // update markup from null to NO if a letter is fully eliminated. Will only happen
         // for letters in this constraint.
-        var changed = false
         constraint.candidate.toSet().forEach { char ->
             if ((occurrences[char] ?: 0..0).last <= 0 && markups[char] == null) {
                 changed = true

@@ -8,7 +8,9 @@ import org.junit.Assert.*
 
 class TestInferredMarkupFeedbackProvider {
     companion object {
+        val CHARS_AE = ('A'..'E').toList()
         val CHARS_AF = ('A'..'F').toList()
+        val CHARS_AH = ('A'..'H').toList()
         val CHARS_AZ = ('A'..'Z').toList()
     }
 
@@ -46,7 +48,7 @@ class TestInferredMarkupFeedbackProvider {
             val feedbacks = providers.map { provider -> provider.getFeedback(policy, constraintsHere) }
 
             // verify secret is possible, given feedback
-            assert(feedbacks.all { it.allows(secret) })
+            assert(feedbacks.all {  feedback -> feedback.allows(secret) })
             // provide
             feedbacks
         }.last()
@@ -209,6 +211,83 @@ class TestInferredMarkupFeedbackProvider {
             InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED,
             InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION
         )
+    }
+
+    @Test
+    fun constraint_testProvideFeedback_aggregated_incorrect_regression_4() {
+        val secret = "BADD"
+        val guesses = listOf("AECD", "AEEB", "DECA")
+        // for secret BADD, try:
+        // guess 0: AECD (E I)
+        // guess 1: AEEB (I I)
+        // guess 2: DECA (I I)
+        // guesses 1 and 2 show that AEC_ has no exact matches, revealing that the exact match
+        // in guess 0 must be ___D.
+        val feedback = testFeedback(
+            secret,
+            guesses,
+            CHARS_AF,
+            true,
+            ConstraintPolicy.AGGREGATED,
+            InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED
+        ).first()
+
+        // verify that D must be the final letter.
+        assertEquals(setOf('D'), feedback.candidates[3])
+        assert(3 in (feedback.characters['D']?.positions ?: emptySet<Char>())) { "'D' position not indicated" }
+
+        val constraints = guesses.map { Constraint.create(it, secret) }
+        val policies = setOf(
+            InferredMarkupFeedbackProvider.MarkupPolicy.INFERRED,
+            InferredMarkupFeedbackProvider.MarkupPolicy.DIRECT,
+            InferredMarkupFeedbackProvider.MarkupPolicy.SOLUTION
+        )
+
+        // try another method: provide all constraints in one go
+        InferredMarkupFeedbackProvider(
+            CHARS_AF.toSet(),
+            4,
+            4,
+            policies
+        ).let { provider ->
+            val f = provider.getFeedback(ConstraintPolicy.AGGREGATED, constraints)
+
+            // verify that D must be the final letter.
+            assertEquals(setOf('D'), f.candidates[3])
+            assert(3 in (f.characters['D']?.positions ?: emptySet<Char>())) { "'D' position not indicated" }
+        }
+
+        // another method: provide zero-length constraints first, then iterate up
+        InferredMarkupFeedbackProvider(
+            CHARS_AF.toSet(),
+            4,
+            4,
+            policies
+        ).let { provider ->
+            constraints.indices.forEach { index ->
+                provider.getFeedback(ConstraintPolicy.AGGREGATED, constraints.subList(0, index))
+            }
+            val f = provider.getFeedback(ConstraintPolicy.AGGREGATED, constraints)
+
+            // verify that D must be the final letter.
+            assertEquals(setOf('D'), f.candidates[3])
+            assert(3 in (f.characters['D']?.positions ?: emptySet<Char>())) { "'D' position not indicated" }
+        }
+
+        // one more method: try the first two constraints, then apply the third (to test caching)
+        InferredMarkupFeedbackProvider(
+            CHARS_AF.toSet(),
+            4,
+            4,
+            policies
+        ).let { provider ->
+            provider.getFeedback(ConstraintPolicy.AGGREGATED, constraints.subList(0, 2))
+            val f = provider.getFeedback(ConstraintPolicy.AGGREGATED, constraints)
+
+            // verify that D must be the final letter.
+            assertEquals(setOf('D'), f.candidates[3])
+            assert(3 in (f.characters['D']?.positions ?: emptySet<Char>())) { "'D' position not indicated" }
+        }
     }
     //---------------------------------------------------------------------------------------------
     //endregion
