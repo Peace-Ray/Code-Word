@@ -31,6 +31,9 @@ class InferredMarkupFeedbackProvider(
     val markupPolicies: Set<MarkupPolicy> = setOf(MarkupPolicy.DIRECT)
 ): CachingFeedbackProvider(characters, length, 0..maxOccurrences) {
 
+    //region Public Interface
+    //---------------------------------------------------------------------------------------------
+
     enum class MarkupPolicy {
         /**
          * Apply markup that is directly indicated on a per-character basis by Constraints.
@@ -170,7 +173,7 @@ class InferredMarkupFeedbackProvider(
                     // repeatedly until no changes are detected. Changes prompted by
                     // the fresh constraints may allow additional information to be gleaned from
                     // past constraints.
-                    var changed = constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, doIndirectNonElimination, policy, constraints, freshConstraints)
+                    var changed = directMarkupChanged || constrainFeedbackIndirectlyByAggregated(candidates, occurrences, markups, doIndirectNonElimination, policy, constraints, freshConstraints)
                     while (changed) {
                         // do a callback before the next iteration
                         if (callback != null) {
@@ -189,6 +192,39 @@ class InferredMarkupFeedbackProvider(
 
         // convert format and return. Superclass invokes the callback to finish.
         return asFeedback(candidates, occurrences, markups)
+    }
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Helpers: Directly Constrain Feedback
+    //---------------------------------------------------------------------------------------------
+
+    private fun constrainFeedbackBySolution(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>,
+        markups: MutableMap<Char, Constraint.MarkupType?>,
+        includeNonElimination: Boolean,
+        constraint: Constraint
+    ): Boolean {
+        // only if correct
+        if (constraint.correct) {
+            // set all candidates
+            constraint.candidate.forEachIndexed { index, c ->
+                candidates[index] = mutableSetOf(c)
+            }
+
+            // set all occurrences
+            occurrences.keys.forEach { char ->
+                val count = constraint.candidate.count { it == char }
+                occurrences[char] = count..count
+            }
+
+            inferMarkups(candidates, occurrences, markups, includeNonElimination)
+            return true
+        }
+
+        return false
     }
 
     private fun constrainFeedbackDirectly(
@@ -219,33 +255,6 @@ class InferredMarkupFeedbackProvider(
         ConstraintPolicy.PERFECT -> {
             constrainFeedbackDirectlyByLetter(candidates, occurrences, markups, includeNonElimination, constraint)
         }
-    }
-
-    private fun constrainFeedbackBySolution(
-        candidates: MutableList<MutableSet<Char>>,
-        occurrences: MutableMap<Char, IntRange>,
-        markups: MutableMap<Char, Constraint.MarkupType?>,
-        includeNonElimination: Boolean,
-        constraint: Constraint
-    ): Boolean {
-        // only if correct
-        if (constraint.correct) {
-            // set all candidates
-            constraint.candidate.forEachIndexed { index, c ->
-                candidates[index] = mutableSetOf(c)
-            }
-
-            // set all occurrences
-            occurrences.keys.forEach { char ->
-                val count = constraint.candidate.count { it == char }
-                occurrences[char] = count..count
-            }
-
-            inferMarkups(candidates, occurrences, markups, includeNonElimination)
-            return true
-        }
-
-        return false
     }
 
     private fun constrainFeedbackDirectlyByLetter(
@@ -306,37 +315,29 @@ class InferredMarkupFeedbackProvider(
         considerExact: Boolean,
         constraint: Constraint
     ): Boolean {
+        var changed = false
         when {
             // if NO, none of these letters are correct
             considerIncluded && constraint.exact == 0 && constraint.included == 0 -> {
                 constraint.candidate.toSet().forEach { char ->
-                    // remove from ALL position candidates
-                    candidates.forEach { candidateSet -> candidateSet.remove(char) }
-
-                    // remove from ALL occurrences
-                    occurrences[char] = 0..0
+                    // remove from all positions
+                    changed = removeCandidate(candidates, occurrences, char) || changed
                 }
             }
 
             // if no exact, no letter occurs at the given position
             considerExact && constraint.exact == 0 -> {
                 constraint.candidate.forEachIndexed { index, char ->
-                    // remove from position candidates
-                    val removed = candidates[index].remove(char)
-
-                    // update occurrences
-                    if (removed) {
-                        val range = occurrences[char] ?: 0..0
-                        occurrences[char] = range.bound(maximum = setOf(candidates.count { char in it }))
-                    }
+                    // remove from this specific position
+                    changed = removeCandidate(candidates, occurrences, char, index) || changed
                 }
             }
 
             // if all exact, ALL letters are correct
             considerExact && constraint.exact == length -> {
-                // set all candidates
+                // set all candidates; manually update occurrences afterwards
                 constraint.candidate.forEachIndexed { index, c ->
-                    candidates[index] = mutableSetOf(c)
+                    changed = setCandidate(candidates, null, c, index) || changed
                 }
 
                 // set all occurrences
@@ -351,7 +352,6 @@ class InferredMarkupFeedbackProvider(
 
         // update markup from null to NO if a letter is fully eliminated. Will only happen
         // for letters in this constraint.
-        var changed = false
         constraint.candidate.toSet().forEach { char ->
             if ((occurrences[char] ?: 0..0).last <= 0 && markups[char] == null) {
                 changed = true
@@ -360,6 +360,12 @@ class InferredMarkupFeedbackProvider(
         }
         return changed
     }
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Helpers: Constraint Feedback Indirectly
+    //---------------------------------------------------------------------------------------------
 
     private fun constrainFeedbackIndirectlyByLetter(
         candidates: MutableList<MutableSet<Char>>,
@@ -489,13 +495,14 @@ class InferredMarkupFeedbackProvider(
                 if (eiCount == necessaryAppearancesSum - (necessaryAppearances[char] ?: 0)) {
                     // "exact" and "included" are fully represented by other characters;
                     // this character cannot appear anywhere.
-                    pos.forEach {  if (candidates[it].remove(char)) changed = true }
+                    changed = removeCandidate(candidates, null, char, pos) || changed
                 } else if (constraint.included == 0) {
                     // TODO consider more complicated analysis to determine if nonzero "constraint.included"
                     // can be explained by other characters in the word.
                     // The character cannot appear anywhere other than where it was written
                     // (but any one of those locations might be incorrect).
-                    pos.filter { word[it] != char }.forEach { if (candidates[it].remove(char)) changed = true }
+                    val removePos = pos.filter { word[it] != char }
+                    changed = removeCandidate(candidates, null, char, removePos) || changed
                 }
             }
 
@@ -511,10 +518,8 @@ class InferredMarkupFeedbackProvider(
                 if (constraint.exact == otherExactCount) {
                     // If "constraint.exact" can be fully explained by other letters, this char must not
                     // appear at any current position.
-                    pos.filter { word[it] == char }
-                        .forEach { if (candidates[it].remove(char)) {
-                            changed = true
-                        } }
+                    val removePos = pos.filter { word[it] == char }
+                    changed = removeCandidate(candidates, null, char, removePos) || changed
                 }
 
                 if (constraint.included == 0) {
@@ -522,12 +527,8 @@ class InferredMarkupFeedbackProvider(
                     // can be explained by other characters in the word.
                     // Since "constraint.included" can be fully explained by other letters, it
                     // must appear at all current positions.
-                    pos.filter { word[it] == char }.forEach {
-                        if (candidates[it].size != 1) {
-                            candidates[it] = mutableSetOf(char)
-                            changed = true
-                        }
-                    }
+                    val setPos = pos.filter { word[it] == char }
+                    changed = setCandidate(candidates, null, char, setPos) || changed
                 }
             }
 
@@ -580,29 +581,22 @@ class InferredMarkupFeedbackProvider(
                 leftoverChars.forEach { char ->
                     // anywhere this letter ISN'T, it CANNOT BE.
                     val notPresentIndices = candidates.indices.filter { char != word[it] }
-                    notPresentIndices.forEach { index ->
-                        if (candidates[index].remove(char)) changed = true
-                    }
+                    changed = removeCandidate(candidates, null, char, notPresentIndices) || changed
                 }
             }
 
             // revise bounds on occurrences for each character based on candidate sets.
             // update occurrences
             characters.forEach { char ->
-                val range = occurrences[char] ?: 0..0
-                val boundedRange = range.bound(
+                changed = boundOccurrences(
+                    occurrences,
+                    char,
                     // minimum bounds: the number of exact or included matches remaining after other letters are accounted for
-                    minimum = setOf(
-                        (constraint.exact + constraint.included) - constraint.candidate.count { c -> c != char }
-                    ),
+                    minimum = (constraint.exact + constraint.included) - constraint.candidate.count { c -> c != char },
                     // maximum bounds: the number of possible candidate positions,
                     // the non-exact count if the letter does not occur
-                    maximum = setOf(if (constraint.candidate.count { it == char } != 0) length else noCount)
-                )
-                if (range.first != boundedRange.first || range.last != boundedRange.last) {
-                    occurrences[char] = boundedRange
-                    changed = true
-                }
+                    maximum = if (constraint.candidate.count { it == char } != 0) length else noCount
+                ) || changed
             }
 
             // allow new occurrences and candidates to constrain each other
@@ -661,16 +655,11 @@ class InferredMarkupFeedbackProvider(
                 if (cNotInLetters > remainingInCount) {
                     val maximumOccurrences = cInLetters + remainingInCount
                     // set the new maximum occurrences
-                    val range = occurrences[char] ?: 0..0
-                    val bounded = range.bound(maximum = setOf(cInLetters + remainingInCount))
-                    if (range.last != bounded.last) {
-                        occurrences[char] = bounded
-                        changed = true
-                    }
+                    changed = boundOccurrences(occurrences, char, maximum = maximumOccurrences) || changed
 
                     // eliminate as a candidate universally
                     if (maximumOccurrences == 0) {
-                        candidates.forEach { if (it.remove(char)) changed = true }
+                        changed = removeCandidate(candidates, null, char) || changed
                     }
                 }
             }
@@ -691,12 +680,8 @@ class InferredMarkupFeedbackProvider(
             // other letter is included. This constrains the minimum occurrences.
             if (absLetters.size == noCount) {
                 notAbsLetters.distinct().forEach { char ->
-                    val range = occurrences[char] ?: 0..0
-                    val bounded = range.bound(minimum = setOf(notAbsLetters.count { it == char }))
-                    if (range.first != bounded.first) {
-                        occurrences[char] = bounded
-                        changed = true
-                    }
+                    val minimum = notAbsLetters.count { it == char }
+                    changed = boundOccurrences(occurrences, char, minimum = minimum) || changed
                 }
             }
 
@@ -735,9 +720,7 @@ class InferredMarkupFeedbackProvider(
             if (ePos.size == constraint.exact) {
                 pos.filter { i -> i !in ePos }.forEach { i ->
                     val char = constraint.candidate[i]
-                    if (candidates[i].remove(char)) {
-                        changed = true
-                    }
+                    changed = removeCandidate(candidates, null, char, i) || changed
                 }
             }
 
@@ -748,27 +731,18 @@ class InferredMarkupFeedbackProvider(
             if (nPos.size == noCount) {
                 pos.filter { i -> i !in nPos }.forEach { i ->
                     val char = constraint.candidate[i]
-                    if (candidates[i].size != 1) {
-                        changed = true
-                        candidates[i] = mutableSetOf(char)
-                    }
+                    changed = setCandidate(candidates, null, char, i) || changed
                 }
             }
 
             // update occurrences
             characters.forEach { char ->
-                val range = occurrences[char] ?: 0..0
-                val boundedRange = range.bound(
-                    // minimum bounds: the number of "exact" matches remaining after other letters are accounted for
-                    minimum = setOf(constraint.exact - constraint.candidate.count { c -> c != char }),
-                    // maximum bounds: the non-exact count if the letter does not occur
-                    maximum = setOf(if (constraint.candidate.count { it == char } != 0) length else noCount)
-                )
-
-                if (range.first != boundedRange.first || range.last != boundedRange.last) {
-                    occurrences[char] = boundedRange
-                    changed = true
-                }
+                changed = boundOccurrences(
+                    occurrences,
+                    char,
+                    minimum = constraint.exact - constraint.candidate.count { c -> c != char },
+                    maximum = if (constraint.candidate.count { it == char } != 0) length else noCount
+                ) || changed
             }
 
             // allow new occurrences and candidates to constrain each other
@@ -781,6 +755,12 @@ class InferredMarkupFeedbackProvider(
         everChanged = inferMarkups(candidates, occurrences, markups, includeNonElimination) || everChanged
         return everChanged
     }
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Helpers: Constrain Feedback by Internal Review
+    //---------------------------------------------------------------------------------------------
 
     /**
      * Constraint candidates based on occurrences, and occurrences based on candidates.
@@ -798,28 +778,18 @@ class InferredMarkupFeedbackProvider(
         do {
             changed = false
 
-            // update occurrences based on candidates
-            for (char in characters) {
-                val range = occurrences[char] ?: 0..0
-                val boundedRange = range.bound(
-                    minimum = setOf( candidates.count { char in it && it.size == 1 } ),
-                    maximum = setOf( candidates.count { char in it } )
-                )
-                if (range.first != boundedRange.first || range.last != boundedRange.last) {
-                    occurrences[char] = boundedRange
-                    changed = true
-                }
-            }
-
-            // update occurrences based on other letter minimum occurrences
+            // update occurrences bounded by candidate exact and included positions,
+            // and (upper bound) by the positions available after all other mandatory character
+            // occurrences are accounted for.
             val totalMinOccurrences = occurrences.values.sumOf { it.first }
             for (char in characters) {
-                val range = occurrences[char] ?: 0..0
-                val max = length - (totalMinOccurrences - range.first)
-                if (max < range.last) {
-                    occurrences[char] = range.bound(maximum = setOf(max))
-                    changed = true
-                }
+                val minimum = setOf(candidates.count { it.isOnly(char) })
+                val maximum = setOf(
+                    candidates.count { char in it },
+                    length - (totalMinOccurrences - (occurrences[char] ?: 0..0).first)
+                )
+                changed = boundOccurrences(occurrences, char, minimum = minimum, maximum = maximum)
+                        || changed
             }
 
             // update candidates based on occurrences
@@ -830,12 +800,10 @@ class InferredMarkupFeedbackProvider(
                     .partition { candidates[it].size == 1 }
                 if (exactPos.size >= range.last && inexactPos.size > 1) {
                     // all positions are known; remove from inexact
-                    inexactPos.forEach { candidates[it].remove(char) }
-                    changed = true
+                    changed = removeCandidate(candidates, null, char, inexactPos) || changed
                 } else if (inexactPos.isNotEmpty() && inexactPos.size <= range.first - exactPos.size) {
                     // all inexact positions must be this character
-                    inexactPos.forEach { candidates[it] = mutableSetOf(char) }
-                    changed = true
+                    changed = setCandidate(candidates, null, char, inexactPos) || changed
                 }
             }
 
@@ -844,6 +812,11 @@ class InferredMarkupFeedbackProvider(
 
         return everChanged
     }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Helpers: Constrain Feedback by Inter-Constraint Comparison
+    //---------------------------------------------------------------------------------------------
 
     private fun constrainFeedbackIndirectlyByAggregatedConstraintComparison(
         candidates: MutableList<MutableSet<Char>>,
@@ -988,8 +961,7 @@ class InferredMarkupFeedbackProvider(
 
                 if (impossible) {
                     val removeFrom = candidates.indices - exact.toSet()
-                    val removed = removeFrom.count { candidates[it].remove(char) }
-                    if (removed > 0) changed = true
+                    changed = removeCandidate(candidates, null, char, removeFrom) || changed
                 }
             }
 
@@ -1027,7 +999,7 @@ class InferredMarkupFeedbackProvider(
         }
 
         // compare the unrepresented constraints against each other (n^2 / 2), looking for
-        // cases where the change it letters perfectly explains the change in INCLUDED count.
+        // cases where the change in letters perfectly explains the change in INCLUDED count.
         // Do this by first counting the known contributions of letters: letters included
         // up to the minimum, letters included beyond the maximum, and letters shared between
         // both. Then, for the remaining UNKNOWN changes, check for:
@@ -1105,15 +1077,10 @@ class InferredMarkupFeedbackProvider(
                     val raiseMin = raiseMinBoundsBy[char] ?: 0
                     val lowerMax = lowerMaxBoundsBy[char] ?: 0
                     if (raiseMin != 0 || lowerMax != 0) {
+                        // by definition this changes the range
                         val range = occurrences[char] ?: 0..0
-                        val adjusted = range.bound(
-                            minimum = setOf(range.first + raiseMin),
-                            maximum = setOf(range.last - lowerMax)
-                        )
-                        if (range.first != adjusted.first || range.last != adjusted.last) {
-                            changed = true
-                            occurrences[char] = adjusted
-                        }
+                        boundOccurrences(occurrences, char, minimum = range.first + raiseMin, maximum = range.last - lowerMax)
+                        changed = true
                     }
                 }
             }
@@ -1224,6 +1191,12 @@ class InferredMarkupFeedbackProvider(
 
         return changed
     }
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Helpers: Generate Markup from Feedback
+    //---------------------------------------------------------------------------------------------
     
     private fun inferMarkups(
         candidates: MutableList<MutableSet<Char>>,
@@ -1251,15 +1224,128 @@ class InferredMarkupFeedbackProvider(
         return changed
     }
 
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Helpers: Data Object Manipulation
+    //---------------------------------------------------------------------------------------------
     private fun IntRange.bound(minimum: Collection<Int> = emptySet(), maximum: Collection<Int> = emptySet()): IntRange {
         if (minimum.isEmpty() && maximum.isEmpty()) {
             return this
         }
 
         val firstValue = min(last, minimum.fold(first) { a, b -> max(a, b) })
-        val lastValue = max(first, maximum.fold(last) { a, b -> min(a, b) })
+        val lastValue = max(firstValue, maximum.fold(last) { a, b -> min(a, b) })
 
         return firstValue..lastValue
+    }
+
+    private fun IntRange.bound(minimum: Int? = null, maximum: Int? = null): IntRange {
+        if (minimum == null && maximum == null) {
+            return this
+        }
+
+        val firstValue = if (minimum == null || minimum < first) first else min(last, minimum)
+        val lastValue = if (maximum == null || maximum > last) last else max(firstValue, maximum)
+
+        return firstValue..lastValue
+    }
+
+    private fun <T> Set<T>.isOnly(value: T): Boolean {
+        return value in this && this.size == 1
+    }
+
+    /**
+     * Set the exact candidate for the specified position, returning whether the structures were
+     * updated as a result.
+     */
+    private fun setCandidate(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>?,
+        character: Char,
+        position: Int
+    ) = if (candidates[position].isOnly(character)) false else {
+        candidates[position] = mutableSetOf(character)
+        if (occurrences != null) {
+            val range = occurrences[character] ?: 0..0
+            val updated = range.bound(
+                minimum = candidates.count { set -> set.isOnly(character) },
+                maximum = candidates.count { set -> character in set }
+            )
+            occurrences[character] = updated
+        }
+        true
+    }
+
+    private fun setCandidate(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>?,
+        character: Char,
+        positions: Collection<Int>
+    ) = positions.map { setCandidate(candidates, occurrences, character, it) }.any { it }
+
+    /**
+     * Remove the indicated character from candidates and occurrences, returning whether those
+     * objects where altered as a result.
+     *
+     * If position is specified, the candidate letter will only be removed from that position.
+     * Otherwise, it will be removed from the entire word.
+     */
+    private fun removeCandidate(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>?,
+        character: Char,
+        position: Int? = null
+    ): Boolean {
+        val changed = if (position != null) candidates[position].remove(character) else {
+            candidates.map { set -> set.remove(character) }.any { it }
+        }
+
+        if (changed && occurrences != null) {
+            val range = occurrences[character] ?: 0..0
+            val updated = range.bound(maximum = candidates.count { character in it })
+            occurrences[character] = updated
+        }
+
+        return changed
+    }
+
+    private fun removeCandidate(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>?,
+        character: Char,
+        positions: Collection<Int>
+    ) = positions.map { removeCandidate(candidates, occurrences, character, it) }.any { it }
+
+    private fun removeCandidate(
+        candidates: MutableList<MutableSet<Char>>,
+        occurrences: MutableMap<Char, IntRange>?,
+        character: Char,
+        positions: IntRange
+    ) = positions.map { removeCandidate(candidates, occurrences, character, it) }.any { it }
+
+    private fun boundOccurrences(
+        occurrences: MutableMap<Char, IntRange>,
+        character: Char,
+        minimum: Set<Int> = emptySet(),
+        maximum: Set<Int> = emptySet()
+    ): Boolean {
+        val range = occurrences[character] ?: 0..0
+        val updated = range.bound(minimum = minimum, maximum = maximum)
+        occurrences[character] = updated
+        return range.first != updated.first || range.last != updated.last
+    }
+
+    private fun boundOccurrences(
+        occurrences: MutableMap<Char, IntRange>,
+        character: Char,
+        minimum: Int? = null,
+        maximum: Int? = null
+    ): Boolean {
+        val range = occurrences[character] ?: 0..0
+        val updated = range.bound(minimum = minimum, maximum = maximum)
+        occurrences[character] = updated
+        return range.first != updated.first || range.last != updated.last
     }
 
     private fun Constraint.MarkupType.value() = when(this) {
@@ -1279,4 +1365,6 @@ class InferredMarkupFeedbackProvider(
             markup = markups.toMap()
         )
     }
+    //---------------------------------------------------------------------------------------------
+    //endregion
 }

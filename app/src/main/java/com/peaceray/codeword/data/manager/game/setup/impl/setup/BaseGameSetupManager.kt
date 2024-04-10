@@ -295,6 +295,44 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
         language: CodeLanguage?,
         randomized: Boolean?
     ): GameSetup {
+        // perform the modification s.t. errors are verbose
+        return try {
+            modifyGameSetupInternal(setup, board, evaluation, vocabulary, solver, evaluator, hard, seed, language, randomized)
+        } catch (error: Exception) {
+            val params = listOf(
+                Pair("board", board?.toString()),
+                Pair("evaluation", evaluation?.toString()),
+                Pair("vocabulary", vocabulary?.toString()),
+                Pair("solver", solver?.toString()),
+                Pair("evaluator", evaluator?.toString()),
+                Pair("hard", hard?.toString()),
+                Pair("seed", seed),
+                Pair("language", language?.toString()),
+                Pair("randomized", randomized?.toString())
+            ).filter { (_, value) -> value != null }
+
+            // log and throw the details of this invocation
+            val name = "BaseGameSetupManager.modifyGameSetup ${seedCoreFactory.getSeedVersion()}"
+            val details = "setup = $setup, params = ${params.map { (name, value) -> "$name = $value" }}"
+            val msg = "$name ${error.message}: $details"
+            val exception = UnsupportedOperationException(msg, error)
+            Timber.e(exception, msg)
+            throw exception
+        }
+    }
+
+    private fun modifyGameSetupInternal(
+        setup: GameSetup,
+        board: GameSetup.Board?,
+        evaluation: GameSetup.Evaluation?,
+        vocabulary: GameSetup.Vocabulary?,
+        solver: GameSetup.Solver?,
+        evaluator: GameSetup.Evaluator?,
+        hard: Boolean?,
+        seed: String?,
+        language: CodeLanguage?,
+        randomized: Boolean?
+    ): GameSetup {
         var candidate = setup
         val defaultVersion = seedCoreFactory.getSeedVersion()
         val candidateIsHard = candidate.evaluation.enforced != ConstraintPolicy.IGNORE
@@ -338,7 +376,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 else -> newDetails.codeCharactersRecommended
             }
 
-            val repetitionsSupported = newDetails.codeCharacterRepetitionsSupported.map { if (it == 0) candidate.vocabulary.length else it }
+            val repetitionsSupported = newDetails.codeCharacterRepetitionsSupported.map { if (it == 0) vocabLength else it }
             val charOccurrences = when {
                 vocabulary != null -> vocabulary.characterOccurrences
                 candidate.vocabulary.characterOccurrences in repetitionsSupported -> candidate.vocabulary.characterOccurrences
@@ -370,6 +408,12 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                 if (preferredHard) hardModeConstraint else ConstraintPolicy.IGNORE
             )
 
+            val newBoard = when {
+                board != null -> board
+                evaluationPolicy != candidate.evaluation.type -> GameSetup.Board(getRecommendedRounds(newVocabulary, newEvaluation).first)
+                else -> null
+            }
+
             // seed is already used. We've just consumed vocabulary and hard; seed is known-null.
             // recur with the remaining settings.
             return modifyGameSetup(
@@ -377,7 +421,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
                     vocabulary = newVocabulary,
                     evaluation = newEvaluation
                 ),
-                board = board,
+                board = newBoard,
                 evaluation = evaluation,
                 solver = solver,
                 evaluator = evaluator,
@@ -456,7 +500,7 @@ class BaseGameSetupManager @Inject constructor(): GameSetupManager {
             // character occurrences must be supported by the language
             val repetitionsSupported = lDetails.codeCharacterRepetitionsSupported.map { if (it == 0) candidate.vocabulary.length else it }
             if (candidate.vocabulary.characterOccurrences !in repetitionsSupported) {
-                throw UnsupportedOperationException("Vocabulary character occurrences not supported by language")
+                throw UnsupportedOperationException("Vocabulary character occurrences ${candidate.vocabulary.characterOccurrences} not supported by language ${repetitionsSupported}")
             }
 
             // character occurrences must be possible given length and characters
