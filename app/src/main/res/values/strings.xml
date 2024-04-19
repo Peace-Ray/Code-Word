@@ -437,8 +437,8 @@
 
     <string name="pref_privacy">Privacy</string>
     <string name="pref_check_for_updates">Check for updates</string>
-    <string name="pref_check_for_updates_detail_on">Ensure the Daily challenge is the same everywhere in the world</string>
-    <string name="pref_check_for_updates_detail_off">The Daily challenge might not match everyone else\'s</string>
+    <string name="pref_check_for_updates_detail_on">Get the global Daily challenge</string>
+    <string name="pref_check_for_updates_detail_off">Your Daily challenge is local only</string>
 
     <!-- GAME GENIE -->
     <!-- genie: custom secret -->

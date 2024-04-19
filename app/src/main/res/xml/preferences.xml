@@ -69,7 +69,7 @@
             />
 
         <SwitchPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="@string/pref_key_check_for_updates"
             android:title="@string/pref_check_for_updates"
             android:summaryOn="@string/pref_check_for_updates_detail_on"

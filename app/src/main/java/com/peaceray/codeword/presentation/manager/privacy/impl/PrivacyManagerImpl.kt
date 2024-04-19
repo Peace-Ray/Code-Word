@@ -20,7 +20,7 @@ class PrivacyManagerImpl @Inject constructor(
     //---------------------------------------------------------------------------------------------
 
     override var isCheckingForUpdates: Boolean
-        get() = preferences.getBoolean(R.string.pref_key_check_for_updates, true)
+        get() = preferences.getBoolean(R.string.pref_key_check_for_updates, false)
         set(value) {
             preferences.edit { putBoolean(R.string.pref_key_check_for_updates, value) }
         }
