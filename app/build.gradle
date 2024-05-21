@@ -38,6 +38,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
         }
+        releaseReproducible {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
     }
     namespace 'com.peaceray.codeword'
 }
@@ -84,4 +89,48 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+// Use repro-apk tools to ensure the releaseReproducible build is reproducible
+// by e.g. F-Droid when 'release' build used in their reproducible flow.
+// Prefer the "release" build type unless running in a context configured
+// to match these filepaths and with no additional post-processing.
+android {
+    applicationVariants.all { variant ->
+        def buildType = variant.buildType.name
+
+        if (buildType.toLowerCase().contains("reproducible")) {
+            variant.outputs.each { output ->
+                variant.packageApplicationProvider.get().doLast {
+                    exec {
+                        // set ANDROID_HOME for zipalign
+                        environment "ANDROID_HOME", android.sdkDirectory
+                        commandLine(
+                                "py", "../../../../Tools/repro_apk/inplace_fix.py",
+                                "--zipalign", "fix-newlines", output.outputFile,
+                                "META-INF/assets/*.txt", "META-INF/assets/*.html", "META-INF/assets/*.css",
+                                "assets/*.txt", "assets/*.html", "assets/*.css"
+                        )
+                    }
+                    // re-sign w/ apksigner if needed
+                    if (variant.signingConfig != null) {
+                        def tools = "${android.sdkDirectory}/build-tools/${android.buildToolsVersion}"
+                        def sc = variant.signingConfig
+                        exec {
+                            environment "KS_PASS", sc.storePassword
+                            environment "KEY_PASS", sc.keyPassword
+                            commandLine(
+                                    "${tools}/apksigner.bat", "sign", "-v",
+                                    "--ks", sc.storeFile,
+                                    "--ks-pass", "env:KS_PASS",
+                                    "--ks-key-alias", sc.keyAlias,
+                                    "--key-pass", "env:KEY_PASS",
+                                    output.outputFile
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
