@@ -1,4 +1,4 @@
-package com.peaceray.codeword.glue.modules
+package com.peaceray.codeword.glue.modules.android
 
 import android.app.Activity
 import android.app.Application
@@ -7,6 +7,7 @@ import android.content.res.AssetManager
 import android.content.res.Resources
 import com.peaceray.codeword.glue.ForActivity
 import com.peaceray.codeword.glue.ForApplication
+import com.peaceray.codeword.glue.utils.optional.OptionalUtils
 import dagger.BindsOptionalOf
 import dagger.Module
 import dagger.Provides
@@ -99,17 +100,17 @@ object ContextModule {
     fun provideContext(
         @ForApplication context: Context,
         @ForActivity activityContext: Optional<Context>
-    ): Context = activityContext.orElse(context)
+    ): Context = OptionalUtils.orElse(activityContext, context)
 
     @Provides
     fun provideResources(
         @ForApplication resources: Resources,
         @ForActivity activityResources: Optional<Resources>
-    ): Resources = activityResources.orElse(resources)
+    ): Resources = OptionalUtils.orElse(activityResources, resources)
 
     @Provides
     fun provideAssets(
         @ForApplication assets: AssetManager,
         @ForActivity activityAssets: Optional<AssetManager>
-    ): AssetManager = activityAssets.orElse(assets)
+    ): AssetManager = OptionalUtils.orElse(activityAssets, assets)
 }

@@ -151,10 +151,12 @@ class GameSetupActivity:
         else -> super.onOptionsItemSelected(item)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         // pass to fragment
         if (isSetup) {
             binding.fragmentContainerView.getFragment<GameSetupFragment>().onCancelButtonClicked()
+            super.onBackPressed()
         } else {
             binding.fragmentContainerView.getFragment<GameInfoFragment>().onLaunchButtonClicked()
         }
