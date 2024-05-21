@@ -1,0 +1,5 @@
+New code color schemes: Pastels, Plain, Pride
+Setting: reverse the order of code color schemes
+Setting: disable version checks
+Credit word lists
+Bug fixes and optimization
