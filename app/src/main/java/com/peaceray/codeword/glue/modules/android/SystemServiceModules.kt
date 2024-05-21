@@ -8,6 +8,7 @@ import android.content.res.AssetManager
 import android.content.res.Resources
 import com.peaceray.codeword.glue.ForActivity
 import com.peaceray.codeword.glue.ForApplication
+import com.peaceray.codeword.glue.utils.optional.OptionalUtils
 import dagger.BindsOptionalOf
 import dagger.Module
 import dagger.Provides
@@ -53,5 +54,5 @@ object SystemServiceModule {
     fun provideClipboardManager(
         @ForApplication clipboardManager: ClipboardManager,
         @ForActivity activityClipboardManager: Optional<ClipboardManager>
-    ): ClipboardManager = activityClipboardManager.orElse(clipboardManager)
+    ): ClipboardManager = OptionalUtils.orElse(activityClipboardManager, clipboardManager)
 }

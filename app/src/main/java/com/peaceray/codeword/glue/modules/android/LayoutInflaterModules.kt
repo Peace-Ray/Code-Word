@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import androidx.fragment.app.Fragment
 import com.peaceray.codeword.glue.ForActivity
 import com.peaceray.codeword.glue.ForFragment
+import com.peaceray.codeword.glue.utils.optional.OptionalUtils
 import dagger.BindsOptionalOf
 import dagger.Module
 import dagger.Provides
@@ -48,5 +49,5 @@ object LayoutInflaterModule {
     fun provideLayoutInflater(
         @ForActivity inflater: LayoutInflater,
         @ForFragment fragmentLayoutInflater: Optional<LayoutInflater>
-    ): LayoutInflater = fragmentLayoutInflater.orElse(inflater)
+    ): LayoutInflater = OptionalUtils.orElse(fragmentLayoutInflater, inflater)
 }
