@@ -263,15 +263,18 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                     else -> false   // unreachable
                 }
             }
-            else -> {
+            ConstraintPolicy.ALL, ConstraintPolicy.PERFECT, ConstraintPolicy.POSITIVE -> {
                 val zipped = candidate.zip(guess)
 
-                // find an exact markup that is not satisfied, or an exact match that is not marked up
+                // find an exact markup that is not satisfied. In PERFECT policy, also check
+                // for the same letter in a spot where no EXACT match exists.
                 if (zipped.withIndex().any {
-                        val markedExact = markup[it.index] == MarkupType.EXACT
-                        val isExact = it.value.first == it.value.second
-                        markedExact != isExact
-                    }) {
+                    val markedExact = markup[it.index] == MarkupType.EXACT
+                    val isSame = it.value.first == it.value.second
+                    val exactNotReused = markedExact && !isSame
+                    val notExactReused = !markedExact && isSame
+                    exactNotReused || (notExactReused && policy == ConstraintPolicy.PERFECT)
+                }) {
                     return false
                 }
 
@@ -350,14 +353,17 @@ data class Constraint private constructor(val candidate: String, val markup: Lis
                 }
                 list.toList()
             }
-            else -> {
+            ConstraintPolicy.POSITIVE, ConstraintPolicy.ALL, ConstraintPolicy.PERFECT -> {
                 val zipped = candidate.zip(guess)
 
-                // find an exact markup that is not satisfied, or an exact match that is not marked up
+                // find an exact markup that is not satisfied. In PERFECT policy, also check
+                // for the same letter in a spot where no EXACT match exists.
                 zipped.forEachIndexed { index, pair ->
                     val markedExact = markup[index] == MarkupType.EXACT
-                    val isExact = pair.first == pair.second
-                    if (markedExact != isExact) {
+                    val isSame = pair.first == pair.second
+                    val exactNotReused = markedExact && !isSame
+                    val notExactReused = !markedExact && isSame
+                    if (exactNotReused || (notExactReused && policy == ConstraintPolicy.PERFECT)) {
                         list.add(Violation(this, guess, index, index))
                     }
                 }
