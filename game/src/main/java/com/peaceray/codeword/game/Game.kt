@@ -76,7 +76,7 @@ class Game(settings: Settings, val validator: Validator, uuid: UUID? = null) {
     enum class EvaluationError { GUESS }
 
     class IllegalSettingsException(val error: SettingsError, message: String): IllegalArgumentException(message)
-    class IllegalGuessException(val error: GuessError, val violations: List<Constraint.Violation>?, message: String): IllegalArgumentException(message)
+    class IllegalGuessException(val error: GuessError, val violations: List<Constraint.Violation>?, message: String): IllegalArgumentException("$message: $violations")
     class IllegalEvaluationException(val error: EvaluationError, message: String): IllegalArgumentException(message)
 
     val uuid = uuid ?: UUID.randomUUID()
@@ -170,7 +170,7 @@ class Game(settings: Settings, val validator: Validator, uuid: UUID? = null) {
             throw IllegalGuessException(
                 GuessError.CONSTRAINTS,
                 violations,
-                "Guess does not match previous evaluation constraints"
+                "Guess does not match previous evaluation constraints under ${settings.constraintPolicy} policy"
             )
         }
 
