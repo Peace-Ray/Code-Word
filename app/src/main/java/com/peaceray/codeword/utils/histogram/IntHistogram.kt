@@ -289,6 +289,33 @@ class IntHistogram(min: Int? = null, max: Int? = null, default: Int = 0): Mutabl
 
         return this
     }
+
+    /**
+     * Add all values in the provided histogram to the values present here, as an in-place mutation.
+     *
+     * @param histogram The values to add.
+     */
+    fun addIn(histogram: IntHistogram) {
+        // TODO handle nonzero or non-matching defaults
+        if (default != 0 || histogram.default != 0) {
+            throw IllegalArgumentException("addAll must use 0 defaults")
+        }
+
+        histogram.entries.forEach { put(it.key, get(it.key) + it.value) }
+    }
+
+    /**
+     * Add all values in the provided histogram to the vaules present here, as a new IntHistogram
+     * instance.
+     *
+     * @param histogram The values to add.
+     */
+    fun combination(histogram: IntHistogram): IntHistogram {
+        val result = IntHistogram(default = default)
+        result.addIn(this)
+        result.addIn(histogram)
+        return result
+    }
     //---------------------------------------------------------------------------------------------
     //endregion
 

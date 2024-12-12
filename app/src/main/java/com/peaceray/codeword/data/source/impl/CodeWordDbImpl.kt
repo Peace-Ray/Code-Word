@@ -119,7 +119,7 @@ class CodeWordDbImpl @Inject constructor(
                 val db = dbHelper.writableDatabase
                 val cvIn = readPerformanceRecords(selection).firstOrNull()
                 if (cvIn == null) {
-                    Timber.d("no performance record; creating a new one")
+                    Timber.d("no performance record; creating a new one for $selection")
                     val isTotal = selection[COLUMN_NAME_GAME_TYPE] == COLUMN_VALUE_GAME_TYPE_ALL
                     val record = if (isTotal) TotalPerformanceRecord(daily) else {
                         GameTypePerformanceRecord(gameType, daily)
@@ -141,7 +141,7 @@ class CodeWordDbImpl @Inject constructor(
                     cvOut.put(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
                     db.insert(TABLE_NAME, "", cvOut)
                 } else {
-                    Timber.d("updating existing performance record")
+                    Timber.d("updating existing performance record for $selection")
                     val cvOut = ContentValues()
                     add.forEach { entry ->
                         val column = getTurnCountColumn(entry.first)
@@ -186,9 +186,9 @@ class CodeWordDbImpl @Inject constructor(
         return GameRecordContract.GameTypePerformanceEntry.run {
             val record = TotalPerformanceRecord(null)
             cvs.forEach { cv ->
-                record.winningTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
-                record.losingTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
-                record.forfeitTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                record.winningTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS)))
+                record.losingTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS)))
+                record.forfeitTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS)))
             }
             record
         }
@@ -204,9 +204,9 @@ class CodeWordDbImpl @Inject constructor(
         return GameRecordContract.GameTypePerformanceEntry.run {
             val record = GameTypePerformanceRecord(gameType, daily)
             cvs.forEach { cv ->
-                record.winningTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
-                record.losingTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
-                record.forfeitTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                record.winningTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS)))
+                record.losingTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS)))
+                record.forfeitTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS)))
             }
             record
         }
@@ -271,11 +271,19 @@ class CodeWordDbImpl @Inject constructor(
 
     //region Database Helper
     //---------------------------------------------------------------------------------------------
-    class CodeWordDbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+    private class CodeWordDbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
         override fun onCreate(db: SQLiteDatabase?) {
             db?.execSQL("${GameRecordContract.GameOutcomeEntry.SQL_CREATE_TABLE};")
             db?.execSQL("${GameRecordContract.GameTypePerformanceEntry.SQL_CREATE_TABLE};")
             db?.execSQL("${GameRecordContract.PlayerStreakEntry.SQL_CREATE_TABLE};")
+        }
+
+        fun onReset(db: SQLiteDatabase?) {
+            db?.execSQL("DROP TABLE IF EXISTS ${GameRecordContract.PlayerStreakEntry.TABLE_NAME};")
+            db?.execSQL("DROP TABLE IF EXISTS ${GameRecordContract.GameTypePerformanceEntry.TABLE_NAME};")
+            db?.execSQL("DROP TABLE IF EXISTS ${GameRecordContract.GameOutcomeEntry.TABLE_NAME};")
+
+            onCreate(db)
         }
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -494,6 +502,15 @@ class CodeWordDbImpl @Inject constructor(
     //---------------------------------------------------------------------------------------------
     //endregion
 
+    //region Database Management
+    //---------------------------------------------------------------------------------------------
+
+    fun resetDatabase() {
+        dbHelper.onReset(dbHelper.writableDatabase)
+    }
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
 
     //region Database Contracts
     //---------------------------------------------------------------------------------------------
@@ -664,7 +681,7 @@ class CodeWordDbImpl @Inject constructor(
                     when (column) {
                         COLUMN_NAME_GAME_TYPE -> when (t) {
                             is GameTypePerformanceRecord -> cv.put(column, t.type.toString())
-                            is TotalPerformanceRecord -> cv.put(column, COLUMN_NAME_DAILY)
+                            is TotalPerformanceRecord -> cv.put(column, COLUMN_VALUE_GAME_TYPE_ALL)
                         }
                         COLUMN_NAME_DAILY -> when (t) {
                             is GameTypePerformanceRecord -> cv.put(column, t.daily)
