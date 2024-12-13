@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.DialogInterface
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.Spannable
 import android.text.SpannableStringBuilder
@@ -246,6 +247,14 @@ class GameSetupFragment: Fragment(R.layout.game_setup), GameSetupContract.View {
             val view = inflater.inflate(R.layout.game_setup_seed_entry, null)
             val editText = view.findViewById<EditText>(R.id.seed)
             editText.setText(seed)
+
+            val copyButton = view.findViewById<View>(R.id.seedCopyButton)
+            if (copyButton is TextView) {
+                copyButton.setTextColor(ColorStateList.valueOf(colorManager.colorSwatch.container.onBackground))
+            } else if (copyButton is ImageView) {
+                copyButton.imageTintList = ColorStateList.valueOf(colorManager.colorSwatch.container.onBackground)
+            }
+            copyButton.setOnClickListener { onCopySeedClicked(editText.text.toString(), null) }
 
             builder.setView(view)
             builder.setPositiveButton(
