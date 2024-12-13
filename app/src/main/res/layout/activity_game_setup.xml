@@ -18,7 +18,35 @@
         app:popupTheme="@style/ThemeOverlay.CodeWord.Popup"
         android:background="?attr/colorPrimary"
         android:elevation="@dimen/toolbar_elevation"
-        />
+        >
+
+        <!-- Erases the title, but adds a Create Puzzle button -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
+
+            <!-- colorSecondaryVariant is used; see styles.xml -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/createPuzzleButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/action_create"
+                android:backgroundTint="?attr/colorSecondaryVariant"
+                android:textColor="?attr/colorOnSecondary"
+                app:icon="@drawable/ic_rounded_puzzle_create_24"
+                app:drawableTint="?attr/colorOnSecondary"
+                app:iconTint="?attr/colorOnSecondary"
+                android:drawablePadding="@dimen/button_icon_padding"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginEnd="@dimen/button_margin"
+                />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.appcompat.widget.Toolbar>
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"

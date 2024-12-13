@@ -122,6 +122,7 @@
 
     <!-- Buttons -->
     <dimen name="button_icon_padding">8dp</dimen>
+    <dimen name="button_margin">18dp</dimen>
 
     <!-- setup controls -->
     <dimen name="setup_control_height">48dp</dimen>

@@ -178,7 +178,7 @@ class GameCreationManagerImpl @Inject constructor(
         if (vocabulary) {
             validators.add(when (setup.vocabulary.type) {
                 GameSetup.Vocabulary.VocabularyType.LIST -> {
-                    val wordList = getWordList(setup.vocabulary.length, WordListType.VALID)
+                    val wordList = getWordList(setup.vocabulary.length, WordListType.DICTIONARY)
                     Validators.words(wordList)
                 }
                 GameSetup.Vocabulary.VocabularyType.ENUMERATED -> {
@@ -331,14 +331,15 @@ class GameCreationManagerImpl @Inject constructor(
     //region Vocabulary File I/O
     //---------------------------------------------------------------------------------------------
 
-    enum class WordListType { SECRETS, GUESSES, ACCEPTABLE, VALID }
+    enum class WordListType { SECRETS, GUESSES, ACCEPTABLE, DICTIONARY }
 
     // TODO if adding new vocabulary files, e.g. for different languages, consider cache eviction
     private val cachedWordLists = mutableMapOf<String, List<String>>()
     private val cachedWordListMutex = Mutex()
 
     private suspend fun getWordList(length: Int = 5, type: WordListType, truncate: Int? = null, portion: Float? = null): List<String> {
-        val keyBase = "en-US/standard/length-${length}"
+        val dirBase = "en-US/standard"
+        val lenBase = "length-${length}"
 
         var portionTruncate = 1.0f
         val portionBase = when {
@@ -355,10 +356,10 @@ class GameCreationManagerImpl @Inject constructor(
         }
 
         val words = when(type) {
-            WordListType.SECRETS -> readWordList("${keyBase}/secrets${portionBase}.txt")
-            WordListType.GUESSES -> readWordList("${keyBase}/guesses.txt")
-            WordListType.ACCEPTABLE -> readWordList("${keyBase}/acceptable.txt")
-            WordListType.VALID -> readWordList("${keyBase}/valid.txt")
+            WordListType.SECRETS -> readWordList("${dirBase}/${lenBase}/secrets${portionBase}.txt")
+            WordListType.GUESSES -> readWordList("${dirBase}/${lenBase}/guesses.txt")
+            WordListType.ACCEPTABLE -> readWordList("${dirBase}/${lenBase}/acceptable.txt")
+            WordListType.DICTIONARY -> readWordList("${dirBase}/dictionary.txt").filter { it.length == length }
         }
 
         var endIndex = words.size - 1

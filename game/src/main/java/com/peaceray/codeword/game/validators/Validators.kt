@@ -49,12 +49,18 @@ class Validators {
          * assumed to hold one word on each line. Blank lines are discarded.
          *
          * @param vocabularyFiles The vocabulary available for words, as a newline-separated list.
+         * @param length If provided, will use only words of the indicated length.
          */
-        fun vocabulary(vocabularyFiles: Iterable<File>): Validator {
+        fun vocabulary(vocabularyFiles: Iterable<File>, length: Int = -1): Validator {
             val wordList = mutableListOf<String>()
             vocabularyFiles.forEach { wordList.addAll(it.readLines()) }
 
-            return words(wordList.filter { it.isNotBlank() })
+            var candidates = wordList.toList()
+            if (length > 0) candidates = candidates.filter { it.length == length }
+            candidates = candidates.filter { it.isNotBlank() }
+
+
+            return words(candidates)
         }
 
         //-----------------------------------------------------------------------------------------
