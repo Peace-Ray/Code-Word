@@ -83,6 +83,13 @@ class GameSetupActivity:
             if (isSetup) R.string.game_setup_title
             else R.string.game_info_title
         )
+        binding.createPuzzleButton.setOnClickListener {
+            if (isSetup) {
+                binding.fragmentContainerView.getFragment<GameSetupFragment>().onLaunchButtonClicked()
+            } else {
+                binding.fragmentContainerView.getFragment<GameInfoFragment>().onLaunchButtonClicked()
+            }
+        }
 
         if (savedInstanceState == null) {
             if (!isSetup) {
@@ -120,9 +127,12 @@ class GameSetupActivity:
         // Retain menu
         this.menu = menu
 
+        // No need to add or configure action bar items; a custom view is used.
         // Add and configure action bar items
+        /*
         menuInflater.inflate(R.menu.toolbar_setup, menu)
         setLaunchButtonEnabled()
+            */
 
         // Done
         return true
@@ -168,6 +178,8 @@ class GameSetupActivity:
     //---------------------------------------------------------------------------------------------
     private fun setLaunchButtonEnabled(enabled: Boolean? = null) {
         val setEnabled = enabled ?: isTabLaunchButtonEnabled()
+
+        // enable menu button
         menu?.let {
             for (i in 0 until it.size) {
                 val item = it.getItem(i)
@@ -179,6 +191,17 @@ class GameSetupActivity:
                             if (!item.isEnabled) item.icon?.alpha = 128
                         }
                     }
+                }
+            }
+        }
+
+        // enable custom "create" button
+        binding.createPuzzleButton.isEnabled = setEnabled
+        if (setEnabled) binding.createPuzzleButton.animate().alpha(1.0f) else {
+            binding.createPuzzleButton.postDelayed(250) {
+                if (!binding.createPuzzleButton.isEnabled) {
+                    binding.createPuzzleButton.animate().alpha(0.0f)
+                    binding.createPuzzleButton.alpha = 0.5f
                 }
             }
         }
