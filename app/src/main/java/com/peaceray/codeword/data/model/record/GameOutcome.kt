@@ -11,7 +11,7 @@ import java.util.*
  * ending. In other words, there is no need to allow game sessions to be resumed
  * from this data, nor to maintain compatibility with future Game objects in later updates.
  */
-class GameOutcome(
+data class GameOutcome(
     val uuid: UUID,
     val type: GameType,
     val daily: Boolean,

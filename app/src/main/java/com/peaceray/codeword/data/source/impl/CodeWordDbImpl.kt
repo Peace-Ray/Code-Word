@@ -119,7 +119,7 @@ class CodeWordDbImpl @Inject constructor(
                 val db = dbHelper.writableDatabase
                 val cvIn = readPerformanceRecords(selection).firstOrNull()
                 if (cvIn == null) {
-                    Timber.d("no performance record; creating a new one")
+                    Timber.d("no performance record; creating a new one for $selection")
                     val isTotal = selection[COLUMN_NAME_GAME_TYPE] == COLUMN_VALUE_GAME_TYPE_ALL
                     val record = if (isTotal) TotalPerformanceRecord(daily) else {
                         GameTypePerformanceRecord(gameType, daily)
@@ -141,7 +141,7 @@ class CodeWordDbImpl @Inject constructor(
                     cvOut.put(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
                     db.insert(TABLE_NAME, "", cvOut)
                 } else {
-                    Timber.d("updating existing performance record")
+                    Timber.d("updating existing performance record for $selection")
                     val cvOut = ContentValues()
                     add.forEach { entry ->
                         val column = getTurnCountColumn(entry.first)
@@ -186,9 +186,9 @@ class CodeWordDbImpl @Inject constructor(
         return GameRecordContract.GameTypePerformanceEntry.run {
             val record = TotalPerformanceRecord(null)
             cvs.forEach { cv ->
-                record.winningTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
-                record.losingTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
-                record.forfeitTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                record.winningTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS)))
+                record.losingTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS)))
+                record.forfeitTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS)))
             }
             record
         }
@@ -204,9 +204,9 @@ class CodeWordDbImpl @Inject constructor(
         return GameRecordContract.GameTypePerformanceEntry.run {
             val record = GameTypePerformanceRecord(gameType, daily)
             cvs.forEach { cv ->
-                record.winningTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS))
-                record.losingTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS))
-                record.forfeitTurnCounts += IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS))
+                record.winningTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS)))
+                record.losingTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS)))
+                record.forfeitTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS)))
             }
             record
         }
@@ -271,11 +271,19 @@ class CodeWordDbImpl @Inject constructor(
 
     //region Database Helper
     //---------------------------------------------------------------------------------------------
-    class CodeWordDbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+    private class CodeWordDbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
         override fun onCreate(db: SQLiteDatabase?) {
             db?.execSQL("${GameRecordContract.GameOutcomeEntry.SQL_CREATE_TABLE};")
             db?.execSQL("${GameRecordContract.GameTypePerformanceEntry.SQL_CREATE_TABLE};")
             db?.execSQL("${GameRecordContract.PlayerStreakEntry.SQL_CREATE_TABLE};")
+        }
+
+        fun onReset(db: SQLiteDatabase?) {
+            db?.execSQL("DROP TABLE IF EXISTS ${GameRecordContract.PlayerStreakEntry.TABLE_NAME};")
+            db?.execSQL("DROP TABLE IF EXISTS ${GameRecordContract.GameTypePerformanceEntry.TABLE_NAME};")
+            db?.execSQL("DROP TABLE IF EXISTS ${GameRecordContract.GameOutcomeEntry.TABLE_NAME};")
+
+            onCreate(db)
         }
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -322,13 +330,70 @@ class CodeWordDbImpl @Inject constructor(
             }
 
             if (oldVersion < 3) {
-                // at this first, a "hinting_round" column was added to game_outcome, indicating
+                // at this version, a "hinting_round" column was added to game_outcome, indicating
                 // when the player activated hints with "-1" meaning no hints activated.
                 GameRecordContract.GameOutcomeEntry.run {
                     // wanted non-null, but with no default value. This is impossible to do in
                     // SQLite, at least safely, since you can't ALTER COLUMN to add a "non-null"
                     // constraint or remove a default value.
                     db?.execSQL("ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_NAME_HINTING_ROUND INTEGER DEFAULT -1")
+                }
+            }
+
+            if (oldVersion < 4 && db != null) {
+                // at this version, two bugs in this class were fixed. One of them affected
+                // previously stored records that should now be repaired. In short, the
+                // "total performance record" of all games was stored with an incorrect string
+                // literal. Since retrieval (including for in-place updates) used the correct literal,
+                // this bug caused the creation of a new row with every game.
+                // Load all such rows, combine them, and write the update to the correct row(s).
+                // Then delete the incorrect ones.
+                // (can't do the update as a SQL statement because of the complexity of combining
+                // IntHistogram string representations).
+                GameRecordContract.GameTypePerformanceEntry.run {
+                    for (solver in GameSetup.Solver.entries) {
+                        for (evaluator in GameSetup.Evaluator.entries) {
+                            for (daily in listOf(true, false)) {
+                                val map = mutableMapOf(
+                                    Pair(
+                                        COLUMN_NAME_GAME_TYPE,
+                                        COLUMN_NAME_DAILY       // this is the incorrect field literal
+                                    ),
+                                    Pair(COLUMN_NAME_SOLVER_ROLE, solver.name),
+                                    Pair(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name),
+                                    Pair(COLUMN_NAME_DAILY, if (daily) "1" else "0")
+                                )
+                                val selection = map.toMap()
+                                val cvs = readPerformanceRecords(db, selection, columns = arrayOf(
+                                    COLUMN_NAME_WINNING_TURN_COUNTS,
+                                    COLUMN_NAME_LOSING_TURN_COUNTS,
+                                    COLUMN_NAME_FORFEIT_TURN_COUNTS
+                                ))
+                                val combined = GameRecordContract.GameTypePerformanceEntry.run {
+                                    val record = TotalPerformanceRecord(daily)
+                                    cvs.forEach { cv ->
+                                        record.winningTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_WINNING_TURN_COUNTS)))
+                                        record.losingTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_LOSING_TURN_COUNTS)))
+                                        record.forfeitTurnCounts.addIn(IntHistogram.fromString(cv.getAsString(COLUMN_NAME_FORFEIT_TURN_COUNTS)))
+                                    }
+                                    record
+                                }
+                                // write
+                                val cvOut = toContentValues(combined)
+                                cvOut.put(COLUMN_NAME_SOLVER_ROLE, solver.name)
+                                cvOut.put(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
+                                db.insert(TABLE_NAME, "", cvOut)
+                                // remove legacy entries
+                                val selectionEntries = selection.entries.toList()
+                                val entriesRemoved = db.delete(
+                                    TABLE_NAME,
+                                    selectionEntries.joinToString(" AND ") { "${it.key} = ?"},
+                                    selectionEntries.map { it.value.toString() }.toTypedArray()
+                                )
+                                Timber.d("Fixing total performance records; removed $entriesRemoved entries with solver $solver, evaluator $evaluator, daily $daily")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -338,8 +403,9 @@ class CodeWordDbImpl @Inject constructor(
              * Version 1: Original
              * Version 2: Expanded GameType string representation to explicitly note Feedback Type
              * Version 3: Adds "hinting_round" to Outcome, indicating when hinting was first enabled (-1 for never).
+             * Version 4: DB Schema unchanged, but corrects faulty record keeping for "all" game type performance histograms.
              */
-            const val DATABASE_VERSION = 3
+            const val DATABASE_VERSION = 4
             const val DATABASE_NAME = "game_record.db"
         }
     }
@@ -348,60 +414,18 @@ class CodeWordDbImpl @Inject constructor(
 
     //region Database Reads
     //---------------------------------------------------------------------------------------------
+    private fun readGameOutcomes(uuid: UUID, columns: Array<String> = GameRecordContract.GameOutcomeEntry.COLUMNS) =
+        readGameOutcomes(dbHelper.readableDatabase, uuid, columns)
 
-    private fun readGameOutcomes(uuid: UUID, columns: Array<String> = GameRecordContract.GameOutcomeEntry.COLUMNS): List<ContentValues> {
-        val selection = mapOf(Pair(GameRecordContract.GameOutcomeEntry.COLUMN_NAME_GAME_UUID, uuid))
-        return readGameOutcomes(selection, columns)
-    }
-
-    private fun readGameOutcomes(selection: Map<String, Any>, columns: Array<String> = GameRecordContract.GameOutcomeEntry.COLUMNS): List<ContentValues> {
-        return GameRecordContract.GameOutcomeEntry.run {
-            if (selection.keys.any { it !in COLUMNS }) throw IllegalArgumentException("Unsupported selection column")
-            val selectionEntries = selection.entries.toList()
-            dbHelper.readableDatabase.query(
-                TABLE_NAME,
-                columns,
-                selectionEntries.joinToString(" AND ") { "${it.key} = ?" },
-                selectionEntries.map { it.value.toString() }.toTypedArray(),
-                "", "", ""
-            ).use {
-                if (!it.moveToFirst()) emptyList() else {
-                    val entries = mutableListOf<ContentValues>()
-                    do {
-                        val cv = ContentValues()
-                        for (i in columns.indices) {
-                            when (val column = columns[i]) {
-                                COLUMN_NAME_ROUNDS -> cv.putOrNull(column, it.getIntOrNull(i))
-                                COLUMN_NAME_RECORDED_AT -> cv.putOrNull(column, it.getLongOrNull(i))
-                                else -> cv.putOrNull(column, it.getStringOrNull(i))
-                            }
-                        }
-                        entries.add(cv)
-                        it.moveToNext()
-                    } while (!it.isAfterLast)
-                    entries.toList()
-                }
-            }
-        }
-    }
+    private fun readGameOutcomes(selection: Map<String, Any>, columns: Array<String> = GameRecordContract.GameOutcomeEntry.COLUMNS) =
+        readGameOutcomes(dbHelper.readableDatabase, selection, columns)
 
     private fun readPerformanceRecords(
         solver: GameSetup.Solver,
         evaluator: GameSetup.Evaluator,
         daily: Boolean?,
         columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS
-    ): List<ContentValues> {
-        val selection = GameRecordContract.GameTypePerformanceEntry.run {
-            val map = mutableMapOf(
-                Pair(COLUMN_NAME_GAME_TYPE, COLUMN_VALUE_GAME_TYPE_ALL),
-                Pair(COLUMN_NAME_SOLVER_ROLE, solver.name),
-                Pair(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
-            )
-            if (daily != null) map[COLUMN_NAME_DAILY] = if (daily) "1" else "0"
-            map.toMap()
-        }
-        return readPerformanceRecords(selection, columns)
-    }
+    ) = readPerformanceRecords(dbHelper.readableDatabase, solver, evaluator, daily, columns)
 
     private fun readPerformanceRecords(
         gameType: GameType,
@@ -409,83 +433,158 @@ class CodeWordDbImpl @Inject constructor(
         evaluator: GameSetup.Evaluator,
         daily: Boolean?,
         columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS
-    ): List<ContentValues> {
-        val selection = GameRecordContract.GameTypePerformanceEntry.run {
-            val map = mutableMapOf(
-                Pair(COLUMN_NAME_GAME_TYPE, gameType.toString()),
-                Pair(COLUMN_NAME_SOLVER_ROLE, solver.name),
-                Pair(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
-            )
-            if (daily != null) map[COLUMN_NAME_DAILY] = if (daily) "1" else "0"
-            map.toMap()
-        }
-        return readPerformanceRecords(selection, columns)
-    }
+    ) = readPerformanceRecords(dbHelper.readableDatabase, gameType, solver, evaluator, daily, columns)
 
-    private fun readPerformanceRecords(selection: Map<String, Any>, columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS): List<ContentValues> {
-        return GameRecordContract.GameTypePerformanceEntry.run {
-            if (selection.keys.any { it !in COLUMNS }) throw IllegalArgumentException("Unsupported selection column")
-            val selectionEntries = selection.entries.toList()
-            dbHelper.readableDatabase.query(
-                TABLE_NAME,
-                columns,
-                selectionEntries.joinToString(" AND ") { "${it.key} = ?" },
-                selectionEntries.map { it.value.toString() }.toTypedArray(),
-                "", "", ""
-            ).use {
-                if (!it.moveToFirst()) emptyList() else {
-                    val entries = mutableListOf<ContentValues>()
-                    do {
-                        val cv = ContentValues()
-                        for (i in columns.indices) {
-                            cv.putOrNull(columns[i], it.getStringOrNull(i))
-                        }
-                        entries.add(cv)
-                        it.moveToNext()
-                    } while (!it.isAfterLast)
-                    entries.toList()
+    private fun readPerformanceRecords(selection: Map<String, Any>, columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS) =
+        readPerformanceRecords(dbHelper.readableDatabase, selection, columns)
+
+    private fun readPlayerStreaks(gameType: GameType, columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS) =
+        readPlayerStreaks(dbHelper.readableDatabase, gameType, columns)
+
+    private fun readPlayerStreaks(selection: Map<String, Any>, columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS) =
+        readPlayerStreaks(dbHelper.readableDatabase, selection, columns)
+
+    companion object {
+        private fun readGameOutcomes(db: SQLiteDatabase, uuid: UUID, columns: Array<String> = GameRecordContract.GameOutcomeEntry.COLUMNS): List<ContentValues> {
+            val selection = mapOf(Pair(GameRecordContract.GameOutcomeEntry.COLUMN_NAME_GAME_UUID, uuid))
+            return readGameOutcomes(db, selection, columns)
+        }
+
+        private fun readGameOutcomes(db: SQLiteDatabase, selection: Map<String, Any>, columns: Array<String> = GameRecordContract.GameOutcomeEntry.COLUMNS): List<ContentValues> {
+            return GameRecordContract.GameOutcomeEntry.run {
+                if (selection.keys.any { it !in COLUMNS }) throw IllegalArgumentException("Unsupported selection column")
+                val selectionEntries = selection.entries.toList()
+                db.query(
+                    TABLE_NAME,
+                    columns,
+                    selectionEntries.joinToString(" AND ") { "${it.key} = ?" },
+                    selectionEntries.map { it.value.toString() }.toTypedArray(),
+                    "", "", ""
+                ).use {
+                    if (!it.moveToFirst()) emptyList() else {
+                        val entries = mutableListOf<ContentValues>()
+                        do {
+                            val cv = ContentValues()
+                            for (i in columns.indices) {
+                                when (val column = columns[i]) {
+                                    COLUMN_NAME_ROUNDS -> cv.putOrNull(column, it.getIntOrNull(i))
+                                    COLUMN_NAME_RECORDED_AT -> cv.putOrNull(column, it.getLongOrNull(i))
+                                    else -> cv.putOrNull(column, it.getStringOrNull(i))
+                                }
+                            }
+                            entries.add(cv)
+                            it.moveToNext()
+                        } while (!it.isAfterLast)
+                        entries.toList()
+                    }
                 }
             }
         }
-    }
 
-    private fun readPlayerStreaks(gameType: GameType, columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS): List<ContentValues> {
-        return GameRecordContract.PlayerStreakEntry.run {
-            readPlayerStreaks(mapOf(
-                Pair(COLUMN_NAME_GAME_TYPE, gameType.toString())
-            ), columns)
+        private fun readPerformanceRecords(
+            db: SQLiteDatabase,
+            solver: GameSetup.Solver,
+            evaluator: GameSetup.Evaluator,
+            daily: Boolean?,
+            columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS
+        ): List<ContentValues> {
+            val selection = GameRecordContract.GameTypePerformanceEntry.run {
+                val map = mutableMapOf(
+                    Pair(COLUMN_NAME_GAME_TYPE, COLUMN_VALUE_GAME_TYPE_ALL),
+                    Pair(COLUMN_NAME_SOLVER_ROLE, solver.name),
+                    Pair(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
+                )
+                if (daily != null) map[COLUMN_NAME_DAILY] = if (daily) "1" else "0"
+                map.toMap()
+            }
+            return readPerformanceRecords(db, selection, columns)
         }
-    }
 
-    private fun readPlayerStreaks(selection: Map<String, Any>, columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS): List<ContentValues> {
-        return GameRecordContract.PlayerStreakEntry.run {
-            if (selection.keys.any { it !in COLUMNS }) throw IllegalArgumentException("Unsupported selection column")
-            val selectionEntries = selection.entries.toList()
-            dbHelper.readableDatabase.query(
-                TABLE_NAME,
-                columns,
-                selectionEntries.joinToString( " AND ") { "${it.key} = ?" },
-                selectionEntries.map { it.value.toString() }.toTypedArray(),
-                "", "", ""
-            ).use {
-                if (!it.moveToFirst()) emptyList() else {
-                    val entries = mutableListOf<ContentValues>()
-                    do {
-                        val cv = ContentValues()
-                        for (i in columns.indices) {
-                            when (val column = columns[i]) {
-                                COLUMN_NAME_STREAK,
-                                COLUMN_NAME_DAILY_STREAK,
-                                COLUMN_NAME_BEST_STREAK,
-                                COLUMN_NAME_BEST_DAILY_STREAK -> cv.putOrNull(column, it.getIntOrNull(i))
-                                else -> cv.putOrNull(column, it.getStringOrNull(i))
+        private fun readPerformanceRecords(
+            db: SQLiteDatabase,
+            gameType: GameType,
+            solver: GameSetup.Solver,
+            evaluator: GameSetup.Evaluator,
+            daily: Boolean?,
+            columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS
+        ): List<ContentValues> {
+            val selection = GameRecordContract.GameTypePerformanceEntry.run {
+                val map = mutableMapOf(
+                    Pair(COLUMN_NAME_GAME_TYPE, gameType.toString()),
+                    Pair(COLUMN_NAME_SOLVER_ROLE, solver.name),
+                    Pair(COLUMN_NAME_EVALUATOR_ROLE, evaluator.name)
+                )
+                if (daily != null) map[COLUMN_NAME_DAILY] = if (daily) "1" else "0"
+                map.toMap()
+            }
+            return readPerformanceRecords(db, selection, columns)
+        }
+
+        private fun readPerformanceRecords(db: SQLiteDatabase, selection: Map<String, Any>, columns: Array<String> = GameRecordContract.GameTypePerformanceEntry.COLUMNS): List<ContentValues> {
+            return GameRecordContract.GameTypePerformanceEntry.run {
+                if (selection.keys.any { it !in COLUMNS }) throw IllegalArgumentException("Unsupported selection column")
+                val selectionEntries = selection.entries.toList()
+                db.query(
+                    TABLE_NAME,
+                    columns,
+                    selectionEntries.joinToString(" AND ") { "${it.key} = ?" },
+                    selectionEntries.map { it.value.toString() }.toTypedArray(),
+                    "", "", ""
+                ).use {
+                    if (!it.moveToFirst()) emptyList() else {
+                        val entries = mutableListOf<ContentValues>()
+                        do {
+                            val cv = ContentValues()
+                            for (i in columns.indices) {
+                                cv.putOrNull(columns[i], it.getStringOrNull(i))
                             }
-                            cv.putOrNull(columns[i], it.getStringOrNull(i))
-                        }
-                        entries.add(cv)
-                        it.moveToNext()
-                    } while (!it.isAfterLast)
-                    entries.toList()
+                            entries.add(cv)
+                            it.moveToNext()
+                        } while (!it.isAfterLast)
+                        entries.toList()
+                    }
+                }
+            }
+        }
+
+        private fun readPlayerStreaks(db: SQLiteDatabase, gameType: GameType, columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS): List<ContentValues> {
+            return GameRecordContract.PlayerStreakEntry.run {
+                readPlayerStreaks(db, mapOf(
+                    Pair(COLUMN_NAME_GAME_TYPE, gameType.toString())
+                ), columns)
+            }
+        }
+
+        private fun readPlayerStreaks(db: SQLiteDatabase, selection: Map<String, Any>, columns: Array<String> = GameRecordContract.PlayerStreakEntry.COLUMNS): List<ContentValues> {
+            return GameRecordContract.PlayerStreakEntry.run {
+                if (selection.keys.any { it !in COLUMNS }) throw IllegalArgumentException("Unsupported selection column")
+                val selectionEntries = selection.entries.toList()
+                db.query(
+                    TABLE_NAME,
+                    columns,
+                    selectionEntries.joinToString( " AND ") { "${it.key} = ?" },
+                    selectionEntries.map { it.value.toString() }.toTypedArray(),
+                    "", "", ""
+                ).use {
+                    if (!it.moveToFirst()) emptyList() else {
+                        val entries = mutableListOf<ContentValues>()
+                        do {
+                            val cv = ContentValues()
+                            for (i in columns.indices) {
+                                when (val column = columns[i]) {
+                                    COLUMN_NAME_STREAK,
+                                    COLUMN_NAME_DAILY_STREAK,
+                                    COLUMN_NAME_BEST_STREAK,
+                                    COLUMN_NAME_BEST_DAILY_STREAK -> cv.putOrNull(column, it.getIntOrNull(i))
+                                    else -> cv.putOrNull(column, it.getStringOrNull(i))
+                                }
+                                cv.putOrNull(columns[i], it.getStringOrNull(i))
+                            }
+                            entries.add(cv)
+                            it.moveToNext()
+                        } while (!it.isAfterLast)
+                        entries.toList()
+                    }
                 }
             }
         }
@@ -494,6 +593,15 @@ class CodeWordDbImpl @Inject constructor(
     //---------------------------------------------------------------------------------------------
     //endregion
 
+    //region Database Management
+    //---------------------------------------------------------------------------------------------
+
+    fun resetDatabase() {
+        dbHelper.onReset(dbHelper.writableDatabase)
+    }
+
+    //---------------------------------------------------------------------------------------------
+    //endregion
 
     //region Database Contracts
     //---------------------------------------------------------------------------------------------
@@ -664,7 +772,7 @@ class CodeWordDbImpl @Inject constructor(
                     when (column) {
                         COLUMN_NAME_GAME_TYPE -> when (t) {
                             is GameTypePerformanceRecord -> cv.put(column, t.type.toString())
-                            is TotalPerformanceRecord -> cv.put(column, COLUMN_NAME_DAILY)
+                            is TotalPerformanceRecord -> cv.put(column, COLUMN_VALUE_GAME_TYPE_ALL)
                         }
                         COLUMN_NAME_DAILY -> when (t) {
                             is GameTypePerformanceRecord -> cv.put(column, t.daily)

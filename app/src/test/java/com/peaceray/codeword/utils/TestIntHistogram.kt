@@ -24,6 +24,9 @@ class TestIntHistogram {
     private val populatedMap = mapOf(Pair(1, 2), Pair(2, 0), Pair(3, 7), Pair(6, 10), Pair(7, -2), Pair(8, 10), Pair(10, 1))
     private val populatedMapAsString = ">1=2,>2=0,>3=7,>6=10,>7=-2,>8=10,>10=1"
     private val widespreadKeys: Set<Int> = setOf(-10000000, -1000, -999, -500, -100, -50, -10, -5, -2, -1, 0, 1, 2, 3, 4, 5, 10, 50, 100, 1000, 100000000)
+
+    private val populatedMapAlternative = mapOf(Pair(2, 3), Pair(3, 1), Pair(5, 2), Pair(6, 2), Pair(8, -4))
+    private val populatedMapAlternativeAsString = ">2=3,>3=1,>5=2,>6=2,>8=-4"
     //---------------------------------------------------------------------------------------------
     //endregion
 
@@ -849,6 +852,34 @@ class TestIntHistogram {
             assertTrue(it.remove(3, 7))
         }
     }
+    //---------------------------------------------------------------------------------------------
+    //endregion
+
+    //region Instance Tests: Combination
+    //---------------------------------------------------------------------------------------------
+
+    @Test
+    fun addAll_toEmpty() {
+        val histogram = IntHistogram()
+        histogram.addIn(IntHistogram.fromString(populatedMapAsString))
+        histogram.assertEquals(populatedMap)
+
+        val histogram2 = IntHistogram()
+        histogram2.addIn(IntHistogram.fromString(populatedMapAlternativeAsString))
+        histogram2.assertEquals(populatedMapAlternative)
+    }
+
+    @Test
+    fun addAll_toPopulated() {
+        val histogram = IntHistogram.fromString(populatedMapAsString)
+        histogram.addIn(IntHistogram.fromString(populatedMapAlternativeAsString))
+
+        // manually combine maps
+        val keys = populatedMap.keys.union(populatedMapAlternative.keys)
+        val expected = keys.associateWith { (populatedMap[it] ?: 0) + (populatedMapAlternative[it] ?: 0) }
+        histogram.assertEquals(expected)
+    }
+
     //---------------------------------------------------------------------------------------------
     //endregion
 
