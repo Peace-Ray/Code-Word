@@ -1,0 +1,4 @@
+Tweak: more obvious "Play" button on game setup screen
+Tweak: larger word list for valid guesses
+Fix: allow more valid guesses in Hard Mode
+Fix: properly store and retrieve play statistics
