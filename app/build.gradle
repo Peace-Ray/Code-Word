@@ -32,13 +32,23 @@ android {
         jvmTarget = '1.8'
     }
 
+    // disable the dependenciesInfo metadata block by default; the block, if included,
+    // is encrypted by Google's public key and is therefore considered suspect by F-Droid.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
         }
+
+        // TODO an alternate build type (or flavor) that includes dependenciesInfo for Google Play?
     }
+
     namespace 'com.peaceray.codeword'
 }
 
@@ -85,15 +95,3 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
-
-// apply additional effects
-// to apply specific build rules, use:
-//
-//android {
-//    applicationVariants.all { variant ->
-//        def buildType = variant.buildType.name
-//        if (buildType.toLowerCase().contains("term")) {
-//            ...
-//        }
-//    }
-//}
